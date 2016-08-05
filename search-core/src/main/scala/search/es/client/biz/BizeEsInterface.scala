@@ -11,7 +11,7 @@ import org.apache.http.client.utils.HttpClientUtils
 import org.apache.http.util.EntityUtils
 import search.common.cache.pagecache.ESSearchPageCache
 import search.common.config.EsConfiguration
-import search.common.entity.bizesinterface.Result
+import search.common.entity.bizesinterface.{IndexObjEntity, QueryData, Result}
 import search.common.entity.state.ProcessState
 import search.common.http.HttpClientUtil
 import search.common.listener.graph.{Request, UpdateState}
@@ -33,13 +33,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val keywordStringField = "keyword_string"
   val pinyinField = "pinyin"
   val scoreField = "score"
+  val relevantKwsField = "relevant_kws"
 
-  val pinyinScoreThreshold = 30.0
-  val matchScoreThreshold = 27.0
 
   def totalIndexRun(indexName: String, typeName: String) = {
     clinet.totalIndexRun(indexName, typeName)
-    //Thread.currentThread().suspend()
+    Thread.currentThread().suspend()
   }
 
   def searchTopKeyWord(sessionId: String, keyword: String): NiNi = {
@@ -49,6 +48,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
+  def wrapIndexByKeywords(keywords: java.util.Collection[IndexObjEntity]): NiNi = {
+    Util.caculateCostTime {
+      indexDataWithRw(keywords)
+    }
+  }
   def indexByKeywords(sessionId: String, originQuery: String, keywords: java.util.Collection[String]): NiNi = {
     Util.caculateCostTime {
       indexData(sessionId, originQuery, keywords)
@@ -62,6 +66,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
   }
 
+
+  def wrapCleanRedisByNamespace(namespace: String): NiNi = {
+    Util.caculateCostTime {
+      cleanRedisByNamespace(namespace)
+    }
+  }
 
   /**
     *
@@ -93,6 +103,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     clinet.incrementIndex(graphIndexName, graphTypName, keywords)
   }
 
+  def indexDataWithRw(keywords: java.util.Collection[IndexObjEntity]): Boolean = {
+    clinet.incrementIndexWithRw(graphIndexName, graphTypName, keywords)
+  }
 
   def cacheQueryBestKeyWord(query: String): AnyRef = {
     ESSearchPageCache.cacheShowStateAndGetByQuery(query, {
@@ -157,13 +170,15 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     if (targetKeyword == null && !reSearch) {
       //no data, save status to redis and request to trigger crawler with fetch data asynchronous
 
-      updateState(sessionId, keyword, KnowledgeGraphStatus.FETCH_PROCESS, FinshedStatus.UNFINISHED)
+      //updateState(sessionId, keyword, KnowledgeGraphStatus.FETCH_PROCESS, FinshedStatus.UNFINISHED)
       var dataString: String = null
       //dataString = realTimeCrawler(keyword)
+      //TODO
 
       if (dataString == null) {
         //return no data
-        updateState(sessionId, keyword, KnowledgeGraphStatus.FETCH_PROCESS, FinshedStatus.FINISHED)
+        //TODO
+        //updateState(sessionId, keyword, KnowledgeGraphStatus.FETCH_PROCESS, FinshedStatus.FINISHED)
         return returnNoData
       } else {
         val dataJson = JSON.parseObject(dataString)
@@ -187,7 +202,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     } else if (targetKeyword != null) {
       //request nlp
       //found keyword
-      val result = requestNlp(sessionId, keyword, targetKeyword)
+      val result = wrapRequestNlp(sessionId, keyword, targetKeyword)
       if (!reSearch)
         updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
       else {
@@ -208,17 +223,38 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           if (score != null && matchScore < score) {
             targetKeyword = keyWord
             updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
-            logInfo(s"${keyword} have been matched according pinyin and relevant,pinyin score:${score}  targetKeyword: $targetKeyword")
+            logInfo(s"${keyword} have been matched according pinyin and relevant,relevant score:${matchScore} pinyin score:${score}  targetKeyword: $targetKeyword")
           } else {
             val matchKeyWord = doc.get(keywordField).toString
             targetKeyword = matchKeyWord
             updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
-            logInfo(s"${keyword} have been matched according relevant,pinyin score:${score}  targetKeyword: $targetKeyword")
+            logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore} pinyin score:${score}  targetKeyword: $targetKeyword")
           }
         } else if (score != null && score >= pinyinScoreThreshold) {
           targetKeyword = keyWord
           updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
-          logDebug(s"${keyword} have been matched according relevant,pinyin score:${score}  targetKeyword: $targetKeyword")
+          logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore} pinyin score:${score}  targetKeyword: $targetKeyword")
+        } else {
+
+          relevantTargetKeyWordByRelevantKw(keyword)
+        }
+      } else {
+        relevantTargetKeyWordByRelevantKw(keyword)
+      }
+
+    }
+
+
+    //like kfc->肯德基
+    def relevantTargetKeyWordByRelevantKw(keyWord: String) = {
+      val matchQueryResult = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, relevantKwsField, keyWord)
+      if (matchQueryResult != null && matchQueryResult.length > 0) {
+        val doc = matchQueryResult.head
+        val rlvKWScore = doc.get(scoreField).toString.toFloat
+        val matchKeyWord = doc.get(keywordField).toString
+        if (rlvKWScore >= matchRelevantKWThreshold) {
+          targetKeyword = matchKeyWord
+          logInfo(s"${keyword} have been matched by relevantKw,relevant score:${rlvKWScore}} targetKeyword: $targetKeyword")
         } else {
           //word2Vec expand query
           word2VectorProcess(keyword)
@@ -243,7 +279,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           val matchKeyWord = doc.get(keywordField).toString
           if (word2VecScore >= matchScoreThreshold) {
             targetKeyword = matchKeyWord
-            logInfo(s"${keyword} have been matched by word2vec,similarity keywords: ${relevantWords.mkString(" ")} targetKeyword: $targetKeyword")
+            logInfo(s"${keyword} have been matched by word2vec,relevant score:${word2VecScore},similarity keywords: ${relevantWords.mkString(" ")} targetKeyword: $targetKeyword")
           }
         }
       }
@@ -252,10 +288,20 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     null
   }
 
-  def cleanRedisByNamespace(nameSpace: String) = {
-    val sets = conf.storage.keys(s"$nameSpace:*")
-    sets.foreach(conf.storage.del(_))
-    logInfo(s"clean ${nameSpace} from redis successfully!")
+  def cleanRedisByNamespace(namespace: String): String = {
+    try {
+      val sets = conf.storage.keys(s"$namespace:*")
+      sets.foreach(conf.storage.del(_))
+      logInfo(s"clean ${namespace} from redis successfully!")
+      s"clean ${namespace} from redis successfully"
+    } catch {
+      case e: Exception =>
+        val result = s"need clean ${namespace} from redis again"
+        logInfo(result)
+        result
+
+    }
+
   }
 
   /**
@@ -281,6 +327,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     } finally {
       HttpClientUtils.closeQuietly(httpResp)
     }
+  }
+
+
+  private def wrapRequestNlp(sessionId: String, originQuery: String, query: String): QueryData = {
+    new QueryData(originQuery, query, requestNlp(sessionId, originQuery, query))
   }
 
 
@@ -325,14 +376,45 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
   }
 
+
+  def wrapDeleteAllMongoData(): NiNi = {
+    Util.caculateCostTime {
+      deleteAllMongoData
+    }
+  }
+
+  def deleteAllMongoData(): Boolean = {
+    conf.mongoDataManager.deleteAllData()
+  }
+
+
+  def delAllData(): Boolean = {
+    clinet.delAllData(graphIndexName, graphTypName)
+  }
+
   def main(args: Array[String]) {
     //testTotalIndexRun
     //testQueryBestKeyWord
     //testRealTimeCrawler
     //testShowStateByQuery
-    testDecrementIndex
+    //testDecrementIndex
+    //testCleanRedisByNamespace
+    //testDeleteAllMongoData()
+     //testDelAllData
   }
 
+
+  private def testDelAllData() = {
+    println(BizeEsInterface.delAllData())
+  }
+
+  private def testDeleteAllMongoData() = {
+    println(BizeEsInterface.deleteAllMongoData())
+  }
+
+  private def testCleanRedisByNamespace() = {
+    BizeEsInterface.cleanRedisByNamespace("graph_state")
+  }
 
   private def testRealTimeCrawler() = {
     BizeEsInterface.realTimeCrawler("王老吉")

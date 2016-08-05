@@ -2,6 +2,7 @@ package search.solr.client.searchInterface
 
 import java.util
 import java.util.concurrent.LinkedBlockingQueue
+import javax.servlet.http.HttpServletRequest
 
 import org.apache.solr.client.solrj.SolrQuery
 import org.apache.solr.client.solrj.SolrQuery.ORDER
@@ -183,6 +184,20 @@ object SearchInterface extends Logging with SolrConfiguration {
   }
 
 
+  def recordSearchLog(keyWords: java.lang.String, req: HttpServletRequest,sessionId: String): Unit = {
+    val ip: String = req.getRemoteHost
+    val cookies = req.getCookies
+    var cookiesString = cookies.mkString("-")
+    if (cookiesString.equals("")) cookiesString = "-"
+    val userAgent: String = req.getHeader("User-Agent")
+    val userId: String = "-"
+    recordSearchLog(keyWords, "-", ip, userAgent, "-", cookiesString, userId,sessionId)
+  }
+
+
+  def recordSearchLog(keyWords: java.lang.String, appKey: java.lang.String, clientIp: java.lang.String, userAgent: java.lang.String, sourceType: java.lang.String, cookies: java.lang.String, userId: java.lang.String): Unit = {
+    recordSearchLog(keyWords, appKey, clientIp, userAgent, sourceType, cookies, userId,null)
+  }
   /**
     *
     * search keywords log record
@@ -197,7 +212,7 @@ object SearchInterface extends Logging with SolrConfiguration {
     * @param userId
     *
     */
-  def recordSearchLog(keyWords: java.lang.String, appKey: java.lang.String, clientIp: java.lang.String, userAgent: java.lang.String, sourceType: java.lang.String, cookies: java.lang.String, userId: java.lang.String): Unit = {
+  def recordSearchLog(keyWords: java.lang.String, appKey: java.lang.String, clientIp: java.lang.String, userAgent: java.lang.String, sourceType: java.lang.String, cookies: java.lang.String, userId: java.lang.String,sessionId: String): Unit = {
     val currentTime = System.currentTimeMillis()
     logInfo(s"record search log:keyWords:$keyWords-appKey:$appKey-clientIp:$clientIp-userAgent:$userAgent-sourceType:$sourceType-cookies:-$cookies-userId:$userId-currentTime:$currentTime")
     val map = new util.HashMap[String, Object]()
@@ -209,6 +224,7 @@ object SearchInterface extends Logging with SolrConfiguration {
     map.put("cookies", cookies)
     map.put("userId", userId)
     map.put("currentTime", currentTime.toString)
+    map.put("sessionId", sessionId)
     logQueue.put(map)
     //mongoSearchLog.write(keyWords, appKey, clientIp, userAgent, sourceType, cookies, userId, Util.timestampToDate(currentTime))
 
@@ -220,9 +236,9 @@ object SearchInterface extends Logging with SolrConfiguration {
 
     override def run() {
       while (true) {
-         mongoSearchLog.write(logQueue.take())
+        mongoSearchLog.write(logQueue.take())
         //stastics hot keywords,just one week
-       // HotSearch.recordAndStatictisKeywords(logQueue.take())
+        // HotSearch.recordAndStatictisKeywords(logQueue.take())
       }
     }
   }

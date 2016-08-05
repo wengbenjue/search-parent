@@ -15,7 +15,9 @@ private[search] trait EsConfiguration extends Configuration {
 
   lazy val esHosts = Try(esConfig.getString("es.hosts")).getOrElse("127.0.0.1:9300")
 
-
+  lazy val pinyinScoreThreshold = Try(esConfig.getDouble("match.pinyinScoreThreshold")).getOrElse(37.0)
+  lazy val matchScoreThreshold = Try(esConfig.getDouble("match.matchScoreThreshold")).getOrElse(23.0)
+  lazy val matchRelevantKWThreshold = Try(esConfig.getDouble("match.matchRelevantKWThreshold")).getOrElse(30.0)
 
   lazy val esClients = Try(esConfig.getInt("es.clients")).getOrElse(3)
 

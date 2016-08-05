@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit
 import com.mongodb.{BasicDBObject, DBObject, DBCursor}
 import org.elasticsearch.client.Client
 import search.common.config.{RedisConfiguration, EsConfiguration}
+import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.util.{Util, Logging}
 import search.es.client.EsClient._
 import search.es.client.util.EsClientConf
@@ -95,6 +96,42 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       }
     }
 
+    if (list.size() > 0) conf.mongoDataManager.getCollection.insert(list)
+
+    if (docs.size() > 0) {
+      addDocuments(indexName, typeName, docs)
+    } else false
+
+  }
+
+  override def incrementIndexWithRw(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity]): Boolean = {
+    val docs = new java.util.ArrayList[java.util.Map[String, Object]]
+    var list = new java.util.ArrayList[BasicDBObject]()
+    var cnt = conf.mongoDataManager.count()
+    data.foreach { k =>
+      val keyword = k.getKeyword
+      val rvKw = k.getRvkw
+      val doc = conf.mongoDataManager.queryOneByKeyWord(keyword)
+      if (doc == null) {
+        cnt += 1
+        val dbObject = new BasicDBObject()
+        val currentTime = System.currentTimeMillis()
+        dbObject.append("_id", cnt)
+        dbObject.append("keyword", keyword)
+        if (rvKw != null)
+          dbObject.append("relevant_kws", rvKw)
+        dbObject.append("updateDate", currentTime)
+        list.add(dbObject)
+
+        val newDoc = new java.util.HashMap[String, Object]()
+        newDoc.put("_id", cnt)
+        newDoc.put("keyword", keyword)
+        if (rvKw != null)
+          newDoc.put("relevant_kws", rvKw)
+        newDoc.put("updateDate", java.lang.Long.valueOf(currentTime))
+        docs.add(newDoc)
+      }
+    }
 
     if (list.size() > 0) conf.mongoDataManager.getCollection.insert(list)
 
@@ -146,6 +183,10 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     EsClient.deletIndex(getClientFromPool(), indexName)
   }
 
+
+  override def delAllData(indexName: String, typeName: String): Boolean = {
+    EsClient.delAllData(getClientFromPool(), indexName, typeName)
+  }
 
   override def matchQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
     EsClient.matchQuery(getClientFromPool(), indexName, typeName, from, to, field, keyWords)

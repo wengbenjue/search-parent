@@ -24,6 +24,15 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     getCollection(MongoTableConstants.NEWS_SEARCH_LOGS)
   }
 
+  def deleteAllData() = {
+    try {
+      val result = getCollection.remove(new BasicDBObject())
+      true
+    } catch {
+      case e: Exception => false
+    }
+  }
+
   def loadGraphNodeDataToMongo() = {
     //val filePath = "D:\\news_graph.dic"
     val filePath = "D:\\all_nodes.txt"

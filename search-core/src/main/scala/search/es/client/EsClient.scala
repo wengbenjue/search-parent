@@ -13,6 +13,7 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
 import org.elasticsearch.action.bulk.{BulkResponse, BulkRequest}
 import org.elasticsearch.action.delete.DeleteResponse
+import org.elasticsearch.action.deletebyquery.{DeleteByQueryAction, DeleteByQueryRequestBuilder}
 import org.elasticsearch.action.index.IndexResponse
 import org.elasticsearch.action.search.{SearchType, SearchResponse}
 import org.elasticsearch.action.update.{UpdateResponse, UpdateRequestBuilder}
@@ -25,6 +26,7 @@ import org.elasticsearch.index.query._
 import org.elasticsearch.plugin.deletebyquery.DeleteByQueryPlugin
 import org.elasticsearch.search.SearchHit
 import search.common.config.EsConfiguration
+import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.util.Logging
 import scala.collection.JavaConversions._
 
@@ -49,6 +51,8 @@ private[search] trait EsClient extends EsConfiguration {
 
   def incrementIndex(indexName: String, typeName: String, data: java.util.Collection[String]): Boolean
 
+  def incrementIndexWithRw(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity]): Boolean
+
   def decrementIndex(indexName: String, typeName: String, data: java.util.Collection[String]): Boolean
 
   def addDocument(indexName: String, typeName: String, doc: java.util.Map[String, Object]): Boolean
@@ -61,6 +65,7 @@ private[search] trait EsClient extends EsConfiguration {
 
   def commonTermQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]]
 
+  def delAllData(indexName: String, typeName: String): Boolean
 
   def boolMustQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]]
 
@@ -83,7 +88,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
     clientType match {
       case "transport" =>
         val client = TransportClient.builder().settings(settings)
-          //.addPlugin(classOf[DeleteByQueryPlugin])
+          .addPlugin(classOf[DeleteByQueryPlugin])
           .build()
         val nodes = esHosts.split(",")
         nodes.foreach { node =>
@@ -148,16 +153,22 @@ private[search] object EsClient extends EsConfiguration with Logging {
     response.get.isFound
   }
 
-  /*def delIndexByQuery(client: Client, indexName: String, typeName: String, field: String,value: String): Boolean = {
+  def delAllData(client: Client, indexName: String, typeName: String): Boolean = {
+
     try {
-      val queryBuilder = QueryBuilders.termQuery(field, value)
-      val deleteByQueryResponse = client.prep(indexName).setTypes(typeName)
-      .setQuery(queryBuilder)
-        .get();
-    } catch (ElasticsearchException e) {
-      e.printStackTrace();
+      val response = new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE)
+        .setIndices(indexName)
+        .setTypes(typeName)
+        .setQuery(QueryBuilders.termQuery("match_all", new Object()))
+        .execute().actionGet()
+      true
+    } catch {
+      case e: Exception =>
+        logError(s"delete index ${indexName} with type ${typeName} failed", e)
+        false
     }
-  }*/
+
+  }
 
   def createIndexTypeMapping(client: Client, indexName: String, indexAlias: String, numShards: Int, numReplicas: Int, typeName: String, builderMapping: XContentBuilder): Boolean = {
     try {
