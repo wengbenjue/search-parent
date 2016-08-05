@@ -1,0 +1,12 @@
+target/
+.idea/
+.cache
+*.iml
+.class
+.log
+seachclient.iml
+*.log
+*.project
+*.settings
+.settings
+.classpath
