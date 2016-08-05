@@ -257,7 +257,8 @@ public class Word2VEC {
         Word2VEC word2VEC = new Word2VEC();
         int REL_NEWS_SIZE = 10;
         word2VEC.setTopNSize(REL_NEWS_SIZE);
-        InputStream in = Util.getContextClassLoader().getResourceAsStream("model/newsfinal11.bin");
+        // InputStream in = Util.getContextClassLoader().getResourceAsStream("model/newsfinal11.bin");
+        InputStream in = Util.getContextClassLoader().getResourceAsStream("model/hotnews_2016.bin");
         //word2VEC.loadModel("D:/workspace/search/word2vec/newsfinal11.bin");
         word2VEC.loadModel(in);
         Set<WordEntry> persononVectory = word2VEC.distance("人工智能");

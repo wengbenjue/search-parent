@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.google.common.collect.Maps
+import org.elasticsearch.ElasticsearchException
 import org.elasticsearch.action.ActionFuture
 import org.elasticsearch.action.admin.indices.alias.Alias
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
@@ -73,7 +74,8 @@ private[search] object EsClient extends EsConfiguration with Logging {
 
   val settings = Settings.settingsBuilder()
     .put("client.transport.sniff", true)
-    //.put("plugin.types", DeleteByQueryPlugin.NAME)
+    .put("number_of_shards", number_of_shards)
+    .put("number_of_replicas", number_of_replicas)
     .put("cluster.name", esClusterName)
     .build()
 
@@ -81,13 +83,14 @@ private[search] object EsClient extends EsConfiguration with Logging {
     clientType match {
       case "transport" =>
         val client = TransportClient.builder().settings(settings)
-          .addPlugin(classOf[DeleteByQueryPlugin])
+          //.addPlugin(classOf[DeleteByQueryPlugin])
           .build()
         val nodes = esHosts.split(",")
         nodes.foreach { node =>
           if (node.trim.length > 0) {
             val hostPort = node.split(":")
             client.addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(hostPort(0)), hostPort(1).toInt))
+            logInfo(s"client: host:${hostPort(0)},port:${hostPort(1)}")
           }
         }
         client
@@ -144,6 +147,17 @@ private[search] object EsClient extends EsConfiguration with Logging {
     val response = client.prepareDelete(indexName, typeName, id).execute()
     response.get.isFound
   }
+
+  /*def delIndexByQuery(client: Client, indexName: String, typeName: String, field: String,value: String): Boolean = {
+    try {
+      val queryBuilder = QueryBuilders.termQuery(field, value)
+      val deleteByQueryResponse = client.prep(indexName).setTypes(typeName)
+      .setQuery(queryBuilder)
+        .get();
+    } catch (ElasticsearchException e) {
+      e.printStackTrace();
+    }
+  }*/
 
   def createIndexTypeMapping(client: Client, indexName: String, indexAlias: String, numShards: Int, numReplicas: Int, typeName: String, builderMapping: XContentBuilder): Boolean = {
     try {

@@ -19,10 +19,10 @@ public class EsSearchControllerHttpClientTest {
 
     public static void main(String[] args) {
         //testSearchByKeywords();
-        //testIndexByKeywords();
+        testIndexByKeywords();
         //testRecordLogs();
        //testShowStateByQuery();
-        testDelIndexByKeywords();
+        //testDelIndexByKeywords();
     }
 
     public static void testRecordLogs() {
@@ -59,14 +59,18 @@ public class EsSearchControllerHttpClientTest {
         }
     }
 
+
+
+
     public static void testIndexByKeywords() {
-        String url = "http://localhost:8999/es/index/keywords";
+        //String url = "http://localhost:8999/es/index/keywords";
+        String url = "http://54.222.222.172:8999/es/index/keywords";
 
         IndexKeywordsParameter obj = new IndexKeywordsParameter();
         List keywords = new ArrayList<String>();
-        keywords.add("无人机");
+        keywords.add("石墨烯");
         obj.setKeywords(keywords);
-        obj.setOriginQuery("无人机对话");
+        //obj.setOriginQuery("无人机对话");
 
         Map headers = new java.util.HashMap<String, String>();
         headers.put("Content-Type", "application/json");

@@ -132,7 +132,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     val mustResult = clinet.boolMustQuery(graphIndexName, graphTypName, 0, 1, keywordStringField, keyword)
     if (mustResult != null && mustResult.length > 0) {
       termSetTargetKeword
-      logDebug(s"${keyword} have been matched accurately  targetKeyword: $targetKeyword")
+      logInfo(s"${keyword} have been matched accurately  targetKeyword: $targetKeyword")
     } else {
       //pinyin query
       val pinyinResult = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, pinyinField, keyword)
@@ -142,7 +142,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         val docKeyword = doc.get(keywordField).toString
         if (docScore > pinyinScoreThreshold && keyword.length == keyword.trim.length) {
           targetKeyword = docKeyword
-          logDebug(s"${keyword} have been matched according pinyin,pinyin score:${docScore}  targetKeyword: $targetKeyword")
+          logInfo(s"${keyword} have been matched according pinyin,pinyin score:${docScore}  targetKeyword: $targetKeyword")
         } else {
           //relevant query
           relevantTargetKeyWord(score = docScore, keyWord = docKeyword)
@@ -156,8 +156,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     if (targetKeyword == null && !reSearch) {
       //no data, save status to redis and request to trigger crawler with fetch data asynchronous
+
       updateState(sessionId, keyword, KnowledgeGraphStatus.FETCH_PROCESS, FinshedStatus.UNFINISHED)
-      val dataString = realTimeCrawler(keyword)
+      var dataString: String = null
+      //dataString = realTimeCrawler(keyword)
 
       if (dataString == null) {
         //return no data
@@ -206,12 +208,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           if (score != null && matchScore < score) {
             targetKeyword = keyWord
             updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
-            logDebug(s"${keyword} have been matched according pinyin and relevant,pinyin score:${score}  targetKeyword: $targetKeyword")
+            logInfo(s"${keyword} have been matched according pinyin and relevant,pinyin score:${score}  targetKeyword: $targetKeyword")
           } else {
             val matchKeyWord = doc.get(keywordField).toString
             targetKeyword = matchKeyWord
             updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
-            logDebug(s"${keyword} have been matched according relevant,pinyin score:${score}  targetKeyword: $targetKeyword")
+            logInfo(s"${keyword} have been matched according relevant,pinyin score:${score}  targetKeyword: $targetKeyword")
           }
         } else if (score != null && score >= pinyinScoreThreshold) {
           targetKeyword = keyWord
@@ -241,13 +243,19 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           val matchKeyWord = doc.get(keywordField).toString
           if (word2VecScore >= matchScoreThreshold) {
             targetKeyword = matchKeyWord
-            logDebug(s"${keyword} have been matched by word2vec,similarity keywords: ${relevantWords.mkString(" ")} targetKeyword: $targetKeyword")
+            logInfo(s"${keyword} have been matched by word2vec,similarity keywords: ${relevantWords.mkString(" ")} targetKeyword: $targetKeyword")
           }
         }
       }
     }
 
     null
+  }
+
+  def cleanRedisByNamespace(nameSpace: String) = {
+    val sets = conf.storage.keys(s"$nameSpace:*")
+    sets.foreach(conf.storage.del(_))
+    logInfo(s"clean ${nameSpace} from redis successfully!")
   }
 
   /**
