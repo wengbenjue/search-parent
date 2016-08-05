@@ -20,7 +20,7 @@ public class EsSearchControllerHttpClientTest {
 
     public static void main(String[] args) {
         //testSearchByKeywords();
-        testIndexByKeywords();
+        //testIndexByKeywords();
         //testRecordLogs();
         //testShowStateByQuery();
         //testDelIndexByKeywords();
@@ -49,6 +49,21 @@ public class EsSearchControllerHttpClientTest {
 
     public static void testIndexAll() {
         String url = "http://localhost:8999/es/index/all/?indexName=nlp&typeName=graph";
+
+        CloseableHttpResponse httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null);
+        try {
+            HttpEntity entity = httpResp.getEntity();
+            String sResponse = EntityUtils.toString(entity);
+            System.out.println(sResponse);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            HttpClientUtils.closeQuietly(httpResp);
+        }
+    }
+
+    public static void testdeleteMongo() {
+        String url = "http://localhost:8999/search/del/mongo/index";
 
         CloseableHttpResponse httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null);
         try {

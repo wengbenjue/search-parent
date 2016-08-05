@@ -53,6 +53,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       indexDataWithRw(keywords)
     }
   }
+
   def indexByKeywords(sessionId: String, originQuery: String, keywords: java.util.Collection[String]): NiNi = {
     Util.caculateCostTime {
       indexData(sessionId, originQuery, keywords)
@@ -179,6 +180,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         //return no data
         //TODO
         //updateState(sessionId, keyword, KnowledgeGraphStatus.FETCH_PROCESS, FinshedStatus.FINISHED)
+        updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
         return returnNoData
       } else {
         val dataJson = JSON.parseObject(dataString)
@@ -199,16 +201,20 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       updateState(sessionId, keyword, KnowledgeGraphStatus.NLP_PROCESS, FinshedStatus.FINISHED)
       //return nodata
       return returnNoData
-    } else if (targetKeyword != null) {
-      //request nlp
-      //found keyword
-      val result = wrapRequestNlp(sessionId, keyword, targetKeyword)
-      if (!reSearch)
+    } else {
+      if (targetKeyword != null) {
+        //request nlp
+        //found keyword
+        val result = wrapRequestNlp(sessionId, keyword, targetKeyword)
+        if (!reSearch)
+          updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
+        else {
+          updateState(sessionId, keyword, KnowledgeGraphStatus.NLP_PROCESS, FinshedStatus.FINISHED)
+        }
+        return result
+      }else {
         updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
-      else {
-        updateState(sessionId, keyword, KnowledgeGraphStatus.NLP_PROCESS, FinshedStatus.FINISHED)
       }
-      return result
     }
 
 
@@ -400,7 +406,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testDecrementIndex
     //testCleanRedisByNamespace
     //testDeleteAllMongoData()
-     //testDelAllData
+    //testDelAllData
   }
 
 
