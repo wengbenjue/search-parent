@@ -96,7 +96,9 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       }
     }
 
-    if (list.size() > 0) conf.mongoDataManager.getCollection.insert(list)
+    if (list.size() > 0) {
+      conf.mongoDataManager.insert(list)
+    }
 
     if (docs.size() > 0) {
       addDocuments(indexName, typeName, docs)
@@ -133,7 +135,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       }
     }
 
-    if (list.size() > 0) conf.mongoDataManager.getCollection.insert(list)
+    if (list.size() > 0) conf.mongoDataManager.insert(list)
 
     if (docs.size() > 0) {
       addDocuments(indexName, typeName, docs)

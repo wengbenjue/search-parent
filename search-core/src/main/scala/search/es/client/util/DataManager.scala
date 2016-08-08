@@ -69,15 +69,33 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
   }
 
   def queryOneByKeyWord(keyword: String): java.util.Map[_, _] = {
-    val dbResult = getCollection().findOne(new BasicDBObject("keyword", keyword))
-    if (dbResult == null) return null
-    else dbResult.toMap
+    try {
+      val dbResult = getCollection().findOne(new BasicDBObject("keyword", keyword))
+      if (dbResult == null) return null
+      else dbResult.toMap
+    } catch {
+      case e: Exception =>
+        null
+    }
+  }
+
+  def insert(docs: java.util.List[BasicDBObject]) = {
+    try {
+      getCollection.insert(docs)
+    } catch {
+      case e: Exception =>
+    }
   }
 
   def findAndRemove(keyword: String): java.util.Map[_, _] = {
-    val dbResult = getCollection().findAndRemove(new BasicDBObject("keyword", keyword))
-    if (dbResult == null) return null
-    else dbResult.toMap
+    try {
+      val dbResult = getCollection().findAndRemove(new BasicDBObject("keyword", keyword))
+      if (dbResult == null) return null
+      else dbResult.toMap
+    } catch {
+      case e: Exception =>
+        null
+    }
   }
 
 

@@ -27,8 +27,8 @@ object EsSearchHttpClientTest {
   }
 
   def testIndexByKeywordsWithRw {
-    //val url: String = "http://localhost:8999/es/index/rws"
-    val url: String = "http://54.222.222.172:8999/es/index/rws"
+    val url: String = "http://localhost:8999/es/index/rws"
+    //val url: String = "http://54.222.222.172:8999/es/index/rws"
     val keywords: java.util.List[IndexObjEntity] = new java.util.ArrayList[IndexObjEntity]
     val filePath = "D:\\all_nodes_new.txt"
     for (line <- Source.fromFile(filePath).getLines if (!line.trim.equalsIgnoreCase(""))) {

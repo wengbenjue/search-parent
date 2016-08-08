@@ -1,13 +1,15 @@
 package search.es.client.biz
 
 import java.io.IOException
+import java.net.{URLEncoder, URI}
 import java.util
 
 import com.alibaba.fastjson.JSON
 import org.ansj.splitWord.analysis.ToAnalysis
 import org.apache.http.HttpEntity
 import org.apache.http.client.methods.CloseableHttpResponse
-import org.apache.http.client.utils.HttpClientUtils
+import org.apache.http.client.utils.{URIUtils, URLEncodedUtils, HttpClientUtils}
+import org.apache.http.message.BasicNameValuePair
 import org.apache.http.util.EntityUtils
 import search.common.cache.pagecache.ESSearchPageCache
 import search.common.config.EsConfiguration
@@ -212,7 +214,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           updateState(sessionId, keyword, KnowledgeGraphStatus.NLP_PROCESS, FinshedStatus.FINISHED)
         }
         return result
-      }else {
+      } else {
         updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
       }
     }
@@ -318,9 +320,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @return
     */
   private def requestNlp(sessionId: String, originQuery: String, query: String): AnyRef = {
-    val url: String = s"${graphUrl}$query"
-    val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "get", null, null)
+    val url: String = s"${graphUrl}${URLEncoder.encode(query, "UTF-8")}"
+    var httpResp: CloseableHttpResponse = null
     try {
+      httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null)
       val entity: HttpEntity = httpResp.getEntity
       val sResponse: String = EntityUtils.toString(entity)
       JSON.parseObject(sResponse)
@@ -331,7 +334,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         null
       }
     } finally {
-      HttpClientUtils.closeQuietly(httpResp)
+      if (httpResp != null)
+        HttpClientUtils.closeQuietly(httpResp)
     }
   }
 
