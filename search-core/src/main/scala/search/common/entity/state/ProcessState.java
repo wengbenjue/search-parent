@@ -1,5 +1,7 @@
 package search.common.entity.state;
 
+import search.common.util.Util;
+
 /**
  * Created by soledede.weng on 2016/8/4.
  */
@@ -30,5 +32,11 @@ public class ProcessState {
 
     public void setFinished(Integer finished) {
         this.finished = finished;
+    }
+
+    @Override
+    public ProcessState clone() throws CloneNotSupportedException {
+        ProcessState state = new ProcessState(this.currentState,this.finished);
+        return state;
     }
 }

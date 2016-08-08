@@ -84,17 +84,25 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   def showStateAndGetByQuery(query: String): Result = {
     val state = conf.stateCache.getObj[ProcessState](query)
     if (state != null) {
-      val isFinished = state.getFinished
-      if (isFinished == FinshedStatus.UNFINISHED) {
-        new Result(state)
-      } else {
-        new Result(state, cacheQueryBestKeyWord(query))
-      }
+      val imutableState = state.clone()
+        val isFinished = imutableState.getFinished
+        if (isFinished == FinshedStatus.UNFINISHED) {
+          new Result(imutableState)
+        } else {
+          val result = new Result(imutableState, cacheQueryBestKeyWord(query))
+          result
+        }
+
     } else {
-      val state = new ProcessState(0, 0)
-      conf.waiter.post(Request(query))
-      new Result(state)
+      triggerQuery(query)
     }
+
+  }
+
+  def triggerQuery(query: String): Result = {
+    val state = new ProcessState(0, 0)
+    conf.waiter.post(Request(query))
+    new Result(state)
   }
 
   /**
@@ -135,6 +143,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     */
   def queryBestKeyWord(sessionId: String, keyword: String, reSearch: Boolean = false): AnyRef = {
 
+
     if (keyword == null || keyword.trim.equalsIgnoreCase("")) {
       logError("keyword can't be null")
       return returnNoData
@@ -144,10 +153,81 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
     var targetKeyword: String = null
+
+
+    def relevantTargetKeyWord(score: java.lang.Float, keyWord: String): Unit = {
+      val matchQueryResult1 = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword)
+      if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
+        val doc = matchQueryResult1.head
+        val matchScore = doc.get(scoreField).toString.toFloat
+        if (matchScore > matchScoreThreshold) {
+          if (score != null && matchScore < score) {
+            targetKeyword = keyWord
+            updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
+            logInfo(s"${keyword} have been matched according pinyin and relevant,relevant score:${matchScore} pinyin score:${score}  targetKeyword: $targetKeyword")
+          } else {
+            val matchKeyWord = doc.get(keywordField).toString
+            targetKeyword = matchKeyWord
+            updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
+            logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore}  targetKeyword: $targetKeyword")
+          }
+        } else if (score != null && score >= pinyinScoreThreshold) {
+          targetKeyword = keyWord
+          updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
+          logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore} pinyin score:${score}  targetKeyword: $targetKeyword")
+        } else {
+          relevantTargetKeyWordByRelevantKw(keyword)
+        }
+      } else {
+        relevantTargetKeyWordByRelevantKw(keyword)
+      }
+
+    }
+
+
+    //like kfc->肯德基
+    def relevantTargetKeyWordByRelevantKw(keyWord: String) = {
+      val matchQueryResult = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, relevantKwsField, keyWord)
+      if (matchQueryResult != null && matchQueryResult.length > 0) {
+        val doc = matchQueryResult.head
+        val rlvKWScore = doc.get(scoreField).toString.toFloat
+        val matchKeyWord = doc.get(keywordField).toString
+        if (rlvKWScore >= matchRelevantKWThreshold) {
+          targetKeyword = matchKeyWord
+          logInfo(s"${keyword} have been matched by relevantKw,relevant score:${rlvKWScore}} targetKeyword: $targetKeyword")
+        } else {
+          //word2Vec expand query
+          word2VectorProcess(keyword)
+        }
+      } else {
+        word2VectorProcess(keyword)
+      }
+
+    }
+
+
+
+    def word2VectorProcess(keyWord: String) = {
+      val relevantWords = splitWords(keyWord).flatMap(conf.similarityCaculate.word2Vec(_))
+      if (relevantWords != null && !relevantWords.isEmpty && relevantWords.size > 0) {
+        val matchQueryResult1 = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, relevantWords.mkString(" "))
+        if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
+          val doc = matchQueryResult1.head
+          val word2VecScore = doc.get(scoreField).toString.toFloat
+          val matchKeyWord = doc.get(keywordField).toString
+          if (word2VecScore >= matchScoreThreshold) {
+            targetKeyword = matchKeyWord
+            logInfo(s"${keyword} have been matched by word2vec,relevant score:${word2VecScore},similarity keywords: ${relevantWords.mkString(" ")} targetKeyword: $targetKeyword")
+          }
+        }
+      }
+    }
+
+
     // term query
     val mustResult = clinet.boolMustQuery(graphIndexName, graphTypName, 0, 1, keywordStringField, keyword)
     if (mustResult != null && mustResult.length > 0) {
-      termSetTargetKeword
+      targetKeyword = mustResult.head.get(keywordField).toString
       logInfo(s"${keyword} have been matched accurately  targetKeyword: $targetKeyword")
     } else {
       //pinyin query
@@ -216,84 +296,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         return result
       } else {
         updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
+        return returnNoData
       }
     }
 
 
-
-
-    def relevantTargetKeyWord(score: java.lang.Float, keyWord: String): Unit = {
-      val matchQueryResult1 = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword)
-      if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
-        val doc = matchQueryResult1.head
-        val matchScore = doc.get(scoreField).toString.toFloat
-        if (matchScore > matchScoreThreshold) {
-          if (score != null && matchScore < score) {
-            targetKeyword = keyWord
-            updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
-            logInfo(s"${keyword} have been matched according pinyin and relevant,relevant score:${matchScore} pinyin score:${score}  targetKeyword: $targetKeyword")
-          } else {
-            val matchKeyWord = doc.get(keywordField).toString
-            targetKeyword = matchKeyWord
-            updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
-            logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore} pinyin score:${score}  targetKeyword: $targetKeyword")
-          }
-        } else if (score != null && score >= pinyinScoreThreshold) {
-          targetKeyword = keyWord
-          updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
-          logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore} pinyin score:${score}  targetKeyword: $targetKeyword")
-        } else {
-
-          relevantTargetKeyWordByRelevantKw(keyword)
-        }
-      } else {
-        relevantTargetKeyWordByRelevantKw(keyword)
-      }
-
-    }
-
-
-    //like kfc->肯德基
-    def relevantTargetKeyWordByRelevantKw(keyWord: String) = {
-      val matchQueryResult = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, relevantKwsField, keyWord)
-      if (matchQueryResult != null && matchQueryResult.length > 0) {
-        val doc = matchQueryResult.head
-        val rlvKWScore = doc.get(scoreField).toString.toFloat
-        val matchKeyWord = doc.get(keywordField).toString
-        if (rlvKWScore >= matchRelevantKWThreshold) {
-          targetKeyword = matchKeyWord
-          logInfo(s"${keyword} have been matched by relevantKw,relevant score:${rlvKWScore}} targetKeyword: $targetKeyword")
-        } else {
-          //word2Vec expand query
-          word2VectorProcess(keyword)
-        }
-      } else {
-        word2VectorProcess(keyword)
-      }
-
-    }
-
-    def termSetTargetKeword: Unit = {
-      targetKeyword = mustResult.head.get(keywordField).toString
-    }
-
-    def word2VectorProcess(keyWord: String) = {
-      val relevantWords = splitWords(keyWord).flatMap(conf.similarityCaculate.word2Vec(_))
-      if (relevantWords != null && !relevantWords.isEmpty && relevantWords.size > 0) {
-        val matchQueryResult1 = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, relevantWords.mkString(" "))
-        if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
-          val doc = matchQueryResult1.head
-          val word2VecScore = doc.get(scoreField).toString.toFloat
-          val matchKeyWord = doc.get(keywordField).toString
-          if (word2VecScore >= matchScoreThreshold) {
-            targetKeyword = matchKeyWord
-            logInfo(s"${keyword} have been matched by word2vec,relevant score:${word2VecScore},similarity keywords: ${relevantWords.mkString(" ")} targetKeyword: $targetKeyword")
-          }
-        }
-      }
-    }
-
-    null
   }
 
   def cleanRedisByNamespace(namespace: String): String = {

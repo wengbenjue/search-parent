@@ -1,6 +1,6 @@
 package search.common.util
 
-import java.io.IOException
+import java.io._
 import java.net.{Inet4Address, NetworkInterface, InetAddress}
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
@@ -43,6 +43,26 @@ private[search] object Util extends Logging {
     val d = format.format(timestamp)
     val date = format.parse(d)
     date
+  }
+
+  // for clone
+  def deepClone(src: Object): Object = {
+    var o: Object = null
+    try {
+      if (src != null) {
+        val baos = new ByteArrayOutputStream()
+        val oos = new ObjectOutputStream(baos)
+        oos.writeObject(src)
+        oos.close()
+        val bais = new ByteArrayInputStream(baos.toByteArray())
+        val ois = new ObjectInputStream(bais)
+        o = ois.readObject()
+        ois.close()
+      }
+    } catch {
+      case e: Exception => logError("clone failed!", e.getCause)
+    }
+    return o
   }
 
   def convertDateFormat(time: Long, format: String = "yyyy-MM-dd HH:mm:ss SSS"): String = {
