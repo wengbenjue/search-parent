@@ -23,7 +23,7 @@ public class EsSearchControllerHttpClientTest {
         //testIndexByKeywords();
         //testRecordLogs();
         //testShowStateByQuery();
-        //testDelIndexByKeywords();
+        testDelIndexByKeywords();
         //testDelNamespaceFromRedis();
         //testIndexByKeywordsWithRw();
     }
@@ -132,6 +132,7 @@ public class EsSearchControllerHttpClientTest {
         IndexKeywordsParameter obj = new IndexKeywordsParameter();
         List keywords = new ArrayList<String>();
         keywords.add("机动车贸易");
+        keywords.add("注入资产");
         obj.setKeywords(keywords);
 
         Map headers = new java.util.HashMap<String, String>();

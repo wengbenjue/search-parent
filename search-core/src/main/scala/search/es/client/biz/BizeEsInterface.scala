@@ -324,6 +324,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   def cleanRedisByNamespace(namespace: String): String = {
     try {
+      conf.stateCache.cleanAll()
       val sets = conf.storage.keys(s"$namespace:*")
       sets.foreach(conf.storage.del(_))
       logInfo(s"clean ${namespace} from redis successfully!")
@@ -333,7 +334,6 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         val result = s"need clean ${namespace} from redis again"
         logInfo(result)
         result
-
     }
 
   }
@@ -428,6 +428,19 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     clinet.delAllData(graphIndexName, graphTypName)
   }
 
+
+  def wrapCleanAllFromMongoAndIndex = {
+    Util.caculateCostTime {
+      cleanAllFromMongoAndIndex()
+    }
+  }
+
+  def cleanAllFromMongoAndIndex(): Boolean = {
+    deleteAllMongoData()
+    delAllData()
+  }
+
+
   def main(args: Array[String]) {
     //testTotalIndexRun
     //testQueryBestKeyWord
@@ -436,7 +449,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testDecrementIndex
     //testCleanRedisByNamespace
     //testDeleteAllMongoData()
-    testDelAllData
+    //testDelAllData
   }
 
 

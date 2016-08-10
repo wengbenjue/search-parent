@@ -30,6 +30,8 @@ trait KVCache {
 
   def putCache[T: ClassTag](key: String, value: T, expiredTime: Long = 60 * 60 * 2): Boolean = false
 
+  def cleanAll(): Boolean = false
+
 
 }
 

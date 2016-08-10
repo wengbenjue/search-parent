@@ -72,45 +72,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
   override def incrementIndex(indexName: String, typeName: String, data: java.util.Collection[String]): Boolean = {
-    val docs = new java.util.ArrayList[java.util.Map[String, Object]]
-    var list = new java.util.ArrayList[BasicDBObject]()
-    var cnt = conf.mongoDataManager.count()
-    var indexId = cnt
-    var logType = "added"
-    data.foreach { k =>
-     // val doc = conf.mongoDataManager.queryOneByKeyWord(k)
-      val doc = conf.mongoDataManager.findAndRemove(k)
-      if (doc == null) {
-        cnt += 1
-        indexId = cnt
-      }else {
-        logType = "updated"
-        indexId = doc.get("_id").toString.toInt
-      }
-        val dbObject = new BasicDBObject()
-        val currentTime = System.currentTimeMillis()
-        dbObject.append("_id", indexId)
-        dbObject.append("keyword", k)
-        dbObject.append("updateDate", currentTime)
-        list.add(dbObject)
-
-        val newDoc = new java.util.HashMap[String, Object]()
-        newDoc.put("_id", indexId)
-        newDoc.put("keyword", k)
-        newDoc.put("updateDate", java.lang.Long.valueOf(currentTime))
-        docs.add(newDoc)
-
-      logInfo(s"$logType index,keyword:$k")
-    }
-
-    if (list.size() > 0) {
-      conf.mongoDataManager.insert(list)
-    }
-
-    if (docs.size() > 0) {
-      addDocuments(indexName, typeName, docs)
-    } else false
-
+    incrementIndexWithRw(indexName, typeName, data.map(new IndexObjEntity(_, null)))
   }
 
   override def incrementIndexWithRw(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity]): Boolean = {
@@ -127,32 +89,32 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       if (doc == null) {
         cnt += 1
         indexId = cnt
-      }else {
+      } else {
         indexId = doc.get("_id").toString.toInt
         logType = "updated"
       }
 
-        val dbObject = new BasicDBObject()
-        val currentTime = System.currentTimeMillis()
-        dbObject.append("_id", indexId)
-        dbObject.append("keyword", keyword)
-        if (rvKw != null)
-          dbObject.append("relevant_kws", rvKw)
-        dbObject.append("updateDate", currentTime)
-        list.add(dbObject)
+      val dbObject = new BasicDBObject()
+      val currentTime = System.currentTimeMillis()
+      dbObject.append("_id", indexId)
+      dbObject.append("keyword", keyword)
+      if (rvKw != null)
+        dbObject.append("relevant_kws", rvKw)
+      dbObject.append("updateDate", currentTime)
+      list.add(dbObject)
 
-        val newDoc = new java.util.HashMap[String, Object]()
-        newDoc.put("_id", indexId)
-        newDoc.put("keyword", keyword)
-        if (rvKw != null)
-          newDoc.put("relevant_kws", rvKw)
-        newDoc.put("updateDate", java.lang.Long.valueOf(currentTime))
-        docs.add(newDoc)
+      val newDoc = new java.util.HashMap[String, Object]()
+      newDoc.put("_id", indexId)
+      newDoc.put("keyword", keyword)
+      if (rvKw != null)
+        newDoc.put("relevant_kws", rvKw)
+      newDoc.put("updateDate", java.lang.Long.valueOf(currentTime))
+      docs.add(newDoc)
 
-      if(rvKw!=null){
-        logInfo(s"$logType index,keyword:$k -> relevant keyword:$rvKw")
-      }else{
-        logInfo(s"$logType index,keyword:$k")
+      if (rvKw != null) {
+        logInfo(s"$logType index,keyword:$keyword -> relevant keyword:$rvKw")
+      } else {
+        logInfo(s"$logType index,keyword:$keyword")
       }
 
     }
@@ -169,16 +131,21 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   override def decrementIndex(indexName: String, typeName: String, data: java.util.Collection[String]): Boolean = {
     val m = conf.mongoDataManager
     var cnt = 0
+    var delType = "deleted"
     data.foreach { k =>
       val doc = m.findAndRemove(k)
       if (doc == null) {
+        delType = "indexed"
         //add document to index
         if (incrementIndexOne(indexName, typeName, k)) cnt += 1
       } else {
         val id = doc.get("_id").toString
         //delete document from index by id
         val delBool = delIndexById(getClientFromPool(), indexName, typeName, id)
-        if (delBool) cnt += 1
+        if (delBool) {
+          cnt += 1
+          logInfo(s"$delType  keyword: $k from index,id: $id")
+        }
       }
     }
     val size = data.size()

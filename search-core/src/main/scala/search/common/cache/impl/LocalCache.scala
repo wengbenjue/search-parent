@@ -12,7 +12,7 @@ import scala.reflect.ClassTag
 /**
   * Created by soledede.weng on 2016/8/3.
   */
-private[search] class LocalCache extends KVCache{
+private[search] class LocalCache extends KVCache {
 
 
   import search.common.cache.impl.LocalCache._
@@ -24,9 +24,18 @@ private[search] class LocalCache extends KVCache{
 
 
   override def getObj[T: ClassTag](key: String): T = {
-     stateCacheManager.getIfPresent(key).asInstanceOf[T]
+    stateCacheManager.getIfPresent(key).asInstanceOf[T]
   }
 
+  override def cleanAll(): Boolean = {
+    try {
+      stateCacheManager.invalidateAll()
+      true
+    } catch {
+      case e: Exception =>
+        false
+    }
+  }
 }
 
 object LocalCache extends RedisConfiguration {

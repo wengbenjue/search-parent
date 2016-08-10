@@ -106,6 +106,10 @@ public class EsSearchController {
         return BizeEsInterface.wrapDeleteAllMongoData();
     }
 
+    @RequestMapping(value = "/search/clean/all", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi cleanAllFromMongoAndIndex() {
+        return BizeEsInterface.wrapCleanAllFromMongoAndIndex();
+    }
 
     public static String getSessionId() {
         RequestAttributes ra = RequestContextHolder.getRequestAttributes();
