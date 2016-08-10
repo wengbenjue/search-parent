@@ -22,7 +22,7 @@ public class EsSearchController {
 
     //search and filter by keywords
     @RequestMapping(value = "/search/keywords", method = {RequestMethod.POST, RequestMethod.GET})
-    public NiNi searchByKeywords(@RequestBody final KnowledgeGraphParameter knowledgeGraphParameter) {
+    public NiNi searchByKeywords(final KnowledgeGraphParameter knowledgeGraphParameter) {
         String keywords = knowledgeGraphParameter.getKeyword();
         if (keywords == null) {
             NiNi nini = new NiNi();
@@ -102,7 +102,7 @@ public class EsSearchController {
 
 
     @RequestMapping(value = "/search/del/mongo/index", method = {RequestMethod.POST, RequestMethod.GET})
-    public NiNi deleteAllMongoData(final String namespace) {
+    public NiNi deleteAllMongoData() {
         return BizeEsInterface.wrapDeleteAllMongoData();
     }
 

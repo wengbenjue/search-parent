@@ -159,7 +159,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
       val response = new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE)
         .setIndices(indexName)
         .setTypes(typeName)
-        .setQuery(QueryBuilders.termQuery("match_all", new Object()))
+        .setQuery(QueryBuilders.matchAllQuery())
         .execute().actionGet()
       true
     } catch {

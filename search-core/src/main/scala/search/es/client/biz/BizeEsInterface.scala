@@ -4,7 +4,7 @@ import java.io.IOException
 import java.net.{URLEncoder, URI}
 import java.util
 
-import com.alibaba.fastjson.JSON
+import com.alibaba.fastjson.{JSONObject, JSON}
 import org.ansj.splitWord.analysis.ToAnalysis
 import org.apache.http.HttpEntity
 import org.apache.http.client.methods.CloseableHttpResponse
@@ -45,7 +45,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   def searchTopKeyWord(sessionId: String, keyword: String): NiNi = {
     Util.caculateCostTime {
-      queryBestKeyWord(sessionId, keyword, false)
+      cacheQueryBestKeyWord(keyword)
     }
   }
 
@@ -85,6 +85,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     val state = conf.stateCache.getObj[ProcessState](query)
     if (state != null) {
       val imutableState = state.clone()
+      val currentState = imutableState.getCurrentState
+      if (currentState == 0) triggerQuery(query)
+      else {
         val isFinished = imutableState.getFinished
         if (isFinished == FinshedStatus.UNFINISHED) {
           new Result(imutableState)
@@ -92,6 +95,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           val result = new Result(imutableState, cacheQueryBestKeyWord(query))
           result
         }
+      }
 
     } else {
       triggerQuery(query)
@@ -163,31 +167,29 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         if (matchScore > matchScoreThreshold) {
           if (score != null && matchScore < score) {
             targetKeyword = keyWord
-            updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
             logInfo(s"${keyword} have been matched according pinyin and relevant,relevant score:${matchScore} pinyin score:${score}  targetKeyword: $targetKeyword")
           } else {
             val matchKeyWord = doc.get(keywordField).toString
             targetKeyword = matchKeyWord
-            updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
             logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore}  targetKeyword: $targetKeyword")
           }
         } else if (score != null && score >= pinyinScoreThreshold) {
           targetKeyword = keyWord
-          updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
           logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore} pinyin score:${score}  targetKeyword: $targetKeyword")
         } else {
-          relevantTargetKeyWordByRelevantKw(keyword)
+          //word2Vec expand query
+          word2VectorProcess(keyword)
         }
       } else {
-        relevantTargetKeyWordByRelevantKw(keyword)
+        word2VectorProcess(keyword)
       }
 
     }
 
 
     //like kfc->肯德基
-    def relevantTargetKeyWordByRelevantKw(keyWord: String) = {
-      val matchQueryResult = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, relevantKwsField, keyWord)
+    def relevantTargetKeyWordByRelevantKw = {
+      val matchQueryResult = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, relevantKwsField, keyword)
       if (matchQueryResult != null && matchQueryResult.length > 0) {
         val doc = matchQueryResult.head
         val rlvKWScore = doc.get(scoreField).toString.toFloat
@@ -196,11 +198,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           targetKeyword = matchKeyWord
           logInfo(s"${keyword} have been matched by relevantKw,relevant score:${rlvKWScore}} targetKeyword: $targetKeyword")
         } else {
-          //word2Vec expand query
-          word2VectorProcess(keyword)
+          //pinyin match
+          pinyinMatch
         }
       } else {
-        word2VectorProcess(keyword)
+        pinyinMatch
       }
 
     }
@@ -224,19 +226,14 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
 
 
-    // term query
-    val mustResult = clinet.boolMustQuery(graphIndexName, graphTypName, 0, 1, keywordStringField, keyword)
-    if (mustResult != null && mustResult.length > 0) {
-      targetKeyword = mustResult.head.get(keywordField).toString
-      logInfo(s"${keyword} have been matched accurately  targetKeyword: $targetKeyword")
-    } else {
+    def pinyinMatch: Unit = {
       //pinyin query
       val pinyinResult = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, pinyinField, keyword)
       if (pinyinResult != null && pinyinResult.length > 0) {
         val doc = pinyinResult.head
         val docScore = doc.get(scoreField).toString.toFloat
         val docKeyword = doc.get(keywordField).toString
-        if (docScore > pinyinScoreThreshold && keyword.length == keyword.trim.length) {
+        if (docScore > pinyinScoreThreshold && keyword.length == docKeyword.trim.length) {
           targetKeyword = docKeyword
           logInfo(s"${keyword} have been matched according pinyin,pinyin score:${docScore}  targetKeyword: $targetKeyword")
         } else {
@@ -247,8 +244,18 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         //relevant query
         relevantTargetKeyWord(score = null, keyWord = null)
       }
-
     }
+
+    // term query
+    val mustResult = clinet.boolMustQuery(graphIndexName, graphTypName, 0, 1, keywordStringField, keyword)
+    if (mustResult != null && mustResult.length > 0) {
+      targetKeyword = mustResult.head.get(keywordField).toString
+      logInfo(s"${keyword} have been matched accurately  targetKeyword: $targetKeyword")
+    } else {
+      relevantTargetKeyWordByRelevantKw
+    }
+
+
 
     if (targetKeyword == null && !reSearch) {
       //no data, save status to redis and request to trigger crawler with fetch data asynchronous
@@ -287,11 +294,23 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       if (targetKeyword != null) {
         //request nlp
         //found keyword
-        val result = wrapRequestNlp(sessionId, keyword, targetKeyword)
+        var result = wrapRequestNlp(sessionId, keyword, targetKeyword)
         if (!reSearch)
           updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
         else {
           updateState(sessionId, keyword, KnowledgeGraphStatus.NLP_PROCESS, FinshedStatus.FINISHED)
+        }
+        try {
+          val nlpObj = result.getData
+          if (nlpObj != null && nlpObj.isInstanceOf[JSONObject]) {
+            val nlpJsonObj = nlpObj.asInstanceOf[JSONObject]
+            val dataType = nlpJsonObj.getString("type")
+            if (dataType.trim.equalsIgnoreCase("ERROR")) {
+              result = null
+            }
+          }
+        } catch {
+          case e: Exception =>
         }
         return result
       } else {
@@ -417,7 +436,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testDecrementIndex
     //testCleanRedisByNamespace
     //testDeleteAllMongoData()
-    //testDelAllData
+    testDelAllData
   }
 
 

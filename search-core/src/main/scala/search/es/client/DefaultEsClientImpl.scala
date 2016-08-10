@@ -75,25 +75,32 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     val docs = new java.util.ArrayList[java.util.Map[String, Object]]
     var list = new java.util.ArrayList[BasicDBObject]()
     var cnt = conf.mongoDataManager.count()
+    var indexId = cnt
+    var logType = "added"
     data.foreach { k =>
-      val doc = conf.mongoDataManager.queryOneByKeyWord(k)
+     // val doc = conf.mongoDataManager.queryOneByKeyWord(k)
+      val doc = conf.mongoDataManager.findAndRemove(k)
       if (doc == null) {
         cnt += 1
+        indexId = cnt
+      }else {
+        logType = "updated"
+        indexId = doc.get("_id").toString.toInt
+      }
         val dbObject = new BasicDBObject()
         val currentTime = System.currentTimeMillis()
-        dbObject.append("_id", cnt)
+        dbObject.append("_id", indexId)
         dbObject.append("keyword", k)
         dbObject.append("updateDate", currentTime)
         list.add(dbObject)
 
         val newDoc = new java.util.HashMap[String, Object]()
-        newDoc.put("_id", cnt)
+        newDoc.put("_id", indexId)
         newDoc.put("keyword", k)
         newDoc.put("updateDate", java.lang.Long.valueOf(currentTime))
         docs.add(newDoc)
 
-
-      }
+      logInfo(s"$logType index,keyword:$k")
     }
 
     if (list.size() > 0) {
@@ -110,15 +117,24 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     val docs = new java.util.ArrayList[java.util.Map[String, Object]]
     var list = new java.util.ArrayList[BasicDBObject]()
     var cnt = conf.mongoDataManager.count()
+    var logType = "added"
+    var indexId = cnt
     data.foreach { k =>
       val keyword = k.getKeyword
       val rvKw = k.getRvkw
-      val doc = conf.mongoDataManager.queryOneByKeyWord(keyword)
+      //val doc = conf.mongoDataManager.queryOneByKeyWord(keyword)
+      val doc = conf.mongoDataManager.findAndRemove(keyword)
       if (doc == null) {
         cnt += 1
+        indexId = cnt
+      }else {
+        indexId = doc.get("_id").toString.toInt
+        logType = "updated"
+      }
+
         val dbObject = new BasicDBObject()
         val currentTime = System.currentTimeMillis()
-        dbObject.append("_id", cnt)
+        dbObject.append("_id", indexId)
         dbObject.append("keyword", keyword)
         if (rvKw != null)
           dbObject.append("relevant_kws", rvKw)
@@ -126,13 +142,19 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
         list.add(dbObject)
 
         val newDoc = new java.util.HashMap[String, Object]()
-        newDoc.put("_id", cnt)
+        newDoc.put("_id", indexId)
         newDoc.put("keyword", keyword)
         if (rvKw != null)
           newDoc.put("relevant_kws", rvKw)
         newDoc.put("updateDate", java.lang.Long.valueOf(currentTime))
         docs.add(newDoc)
+
+      if(rvKw!=null){
+        logInfo(s"$logType index,keyword:$k -> relevant keyword:$rvKw")
+      }else{
+        logInfo(s"$logType index,keyword:$k")
       }
+
     }
 
     if (list.size() > 0) conf.mongoDataManager.insert(list)
