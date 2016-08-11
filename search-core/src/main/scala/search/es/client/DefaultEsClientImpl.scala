@@ -1,6 +1,5 @@
 package search.es.client
 
-import java.util
 import java.util.concurrent.TimeUnit
 
 import com.mongodb.{BasicDBObject, DBObject, DBCursor}
@@ -72,7 +71,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
   override def incrementIndex(indexName: String, typeName: String, data: java.util.Collection[String]): Boolean = {
-    incrementIndexWithRw(indexName, typeName, data.map(new IndexObjEntity(_, null)))
+    incrementIndexWithRw(indexName, typeName, data.map(new IndexObjEntity(_, null.asInstanceOf[java.util.List[String]])))
   }
 
   override def incrementIndexWithRw(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity]): Boolean = {
@@ -98,7 +97,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       val currentTime = System.currentTimeMillis()
       dbObject.append("_id", indexId)
       dbObject.append("keyword", keyword)
-      if (rvKw != null)
+      if (rvKw != null && rvKw.size() > 0)
         dbObject.append("relevant_kws", rvKw)
       dbObject.append("updateDate", currentTime)
       list.add(dbObject)
@@ -106,13 +105,13 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       val newDoc = new java.util.HashMap[String, Object]()
       newDoc.put("_id", indexId)
       newDoc.put("keyword", keyword)
-      if (rvKw != null)
+      if (rvKw != null&& rvKw.size() > 0)
         newDoc.put("relevant_kws", rvKw)
       newDoc.put("updateDate", java.lang.Long.valueOf(currentTime))
       docs.add(newDoc)
 
-      if (rvKw != null) {
-        logInfo(s"$logType index,keyword:$keyword -> relevant keyword:$rvKw")
+      if (rvKw != null && rvKw.size() > 0) {
+        logInfo(s"$logType index,keyword:$keyword -> relevant keywords:${rvKw.mkString(",")}")
       } else {
         logInfo(s"$logType index,keyword:$keyword")
       }

@@ -22,8 +22,8 @@ public class EsSearchControllerHttpClientTest {
         //testSearchByKeywords();
         //testIndexByKeywords();
         //testRecordLogs();
-        //testShowStateByQuery();
-        testDelIndexByKeywords();
+        testShowStateByQuery();
+        //testDelIndexByKeywords();
         //testDelNamespaceFromRedis();
         //testIndexByKeywordsWithRw();
     }
@@ -110,7 +110,7 @@ public class EsSearchControllerHttpClientTest {
         IndexObjEntity kv = new IndexObjEntity();
         keywords.add(kv);
         kv.setKeyword("体天");
-        kv.setRvkw("klw7");
+       // kv.setRvkw("klw7");
 
         Map headers = new java.util.HashMap<String, String>();
         headers.put("Content-Type", "application/json");
@@ -178,8 +178,8 @@ public class EsSearchControllerHttpClientTest {
        /* KnowledgeGraphParameter obj = new KnowledgeGraphParameter();
         obj.setKeyword("人类基因组");*/
         Map obj = new java.util.HashMap<String, String>();
-        obj.put("keyword", "kfc");
-
+        obj.put("keyword", "test");
+        obj.put("needSearch",0);
         Map headers = new java.util.HashMap<String, String>();
         //headers.put("Content-Type", "application/json");
         CloseableHttpResponse httpResp = HttpClientUtil.requestHttpSyn(url, "post", obj, null);

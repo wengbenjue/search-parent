@@ -58,9 +58,18 @@ private[search] class RedisStorage private extends Storage with Logging with Red
   }
 
   override def getBykey[T: ClassTag](key: String): T = {
-    val client = RedisClient("close")
-    val result = client.get(key).asInstanceOf[T]
-    result
+    val client = RedisClient("default")
+    try {
+      val result = client.get(key).asInstanceOf[T]
+      result
+    } catch {
+      case e: Exception =>
+        logError("get cache from redis faield!", e)
+        null.asInstanceOf[T]
+    } finally {
+      client.close()
+    }
+
   }
 
   override def getAllByKeyPreffix[T: ClassTag](preffix: String): Seq[T] = ???

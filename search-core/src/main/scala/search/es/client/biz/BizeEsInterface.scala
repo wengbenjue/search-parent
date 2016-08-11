@@ -45,7 +45,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   def searchTopKeyWord(sessionId: String, keyword: String): NiNi = {
     Util.caculateCostTime {
-      cacheQueryBestKeyWord(keyword)
+      cacheQueryBestKeyWord(keyword, 1)
     }
   }
 
@@ -63,9 +63,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
-  def wrapShowStateAndGetByQuery(query: String): NiNi = {
+  def wrapShowStateAndGetByQuery(query: String, needSearch: Int): NiNi = {
     Util.caculateCostTime {
-      showStateAndGetByQuery(query)
+      showStateAndGetByQuery(query, needSearch)
     }
   }
 
@@ -81,31 +81,31 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param query
     * @return
     */
-  def showStateAndGetByQuery(query: String): Result = {
+  def showStateAndGetByQuery(query: String, needSearch: Int): Result = {
     val state = conf.stateCache.getObj[ProcessState](query)
     if (state != null) {
       val imutableState = state.clone()
       val currentState = imutableState.getCurrentState
-      if (currentState == 0) triggerQuery(query)
+      if (currentState == 0) triggerQuery(query, needSearch)
       else {
         val isFinished = imutableState.getFinished
         if (isFinished == FinshedStatus.UNFINISHED) {
           new Result(imutableState)
         } else {
-          val result = new Result(imutableState, cacheQueryBestKeyWord(query))
+          val result = new Result(imutableState, cacheQueryBestKeyWord(query, needSearch))
           result
         }
       }
 
     } else {
-      triggerQuery(query)
+      triggerQuery(query, needSearch)
     }
 
   }
 
-  def triggerQuery(query: String): Result = {
+  def triggerQuery(query: String, needSearch: Int): Result = {
     val state = new ProcessState(0, 0)
-    conf.waiter.post(Request(query))
+    conf.waiter.post(Request(query, needSearch))
     new Result(state)
   }
 
@@ -115,16 +115,20 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @return
     */
   def indexData(sessionId: String, originQuery: String, keywords: java.util.Collection[String]): Boolean = {
-    clinet.incrementIndex(graphIndexName, graphTypName, keywords)
+    val resutlt = clinet.incrementIndex(graphIndexName, graphTypName, keywords)
+    cleanRedisByNamespace(cleanNameSpace)
+    resutlt
   }
 
   def indexDataWithRw(keywords: java.util.Collection[IndexObjEntity]): Boolean = {
-    clinet.incrementIndexWithRw(graphIndexName, graphTypName, keywords)
+    val result = clinet.incrementIndexWithRw(graphIndexName, graphTypName, keywords)
+    cleanRedisByNamespace(cleanNameSpace)
+    result
   }
 
-  def cacheQueryBestKeyWord(query: String): AnyRef = {
+  def cacheQueryBestKeyWord(query: String, needSearch: Int): AnyRef = {
     ESSearchPageCache.cacheShowStateAndGetByQuery(query, {
-      queryBestKeyWord(null, query, false)
+      queryBestKeyWord(null, query, false, needSearch)
     })
   }
 
@@ -145,7 +149,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param reSearch
     * @return
     */
-  def queryBestKeyWord(sessionId: String, keyword: String, reSearch: Boolean = false): AnyRef = {
+  def queryBestKeyWord(sessionId: String, keyword: String, reSearch: Boolean = false, needSearch: Int): AnyRef = {
 
 
     if (keyword == null || keyword.trim.equalsIgnoreCase("")) {
@@ -153,8 +157,16 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       return returnNoData
     }
 
+
+
     updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.UNFINISHED)
 
+    if (needSearch != 1) {
+
+      val result = wrapRequestNlp(sessionId, keyword, keyword)
+      updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
+      return result
+    }
 
     var targetKeyword: String = null
 
@@ -283,7 +295,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           //fetch request nlp
           //TODO
           //requery
-          return queryBestKeyWord(sessionId, keyword, true)
+          return queryBestKeyWord(sessionId, keyword, true, 1)
         }
       }
     } else if (targetKeyword == null && reSearch) {
@@ -470,7 +482,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   private def testQueryBestKeyWord() = {
-    val result = BizeEsInterface.queryBestKeyWord(null, "百度")
+    val result = BizeEsInterface.queryBestKeyWord(null, "百度", false, 1)
     println(result)
   }
 
@@ -482,7 +494,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   private def testShowStateByQuery() = {
     val query = "百度凤凰"
-    val result = BizeEsInterface.showStateAndGetByQuery(query)
+    val result = BizeEsInterface.showStateAndGetByQuery(query, 1)
     println(result)
   }
 

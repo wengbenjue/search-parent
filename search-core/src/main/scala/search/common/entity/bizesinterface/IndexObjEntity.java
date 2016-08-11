@@ -1,16 +1,27 @@
 package search.common.entity.bizesinterface;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 /**
  * Created by soledede.weng on 2016/8/5.
  */
 public class IndexObjEntity {
     private String keyword;
-    private String rvkw;
+    private Collection<String> rvkw;
 
     public IndexObjEntity() {
     }
 
     public IndexObjEntity(String keyword, String rvkw) {
+        this.keyword = keyword;
+        List<String> list = new ArrayList<>();
+        list.add(rvkw);
+        this.rvkw = list;
+    }
+
+    public IndexObjEntity(String keyword, Collection<String> rvkw) {
         this.keyword = keyword;
         this.rvkw = rvkw;
     }
@@ -23,11 +34,11 @@ public class IndexObjEntity {
         this.keyword = keyword;
     }
 
-    public String getRvkw() {
+    public Collection<String> getRvkw() {
         return rvkw;
     }
 
-    public void setRvkw(String rvkw) {
+    public void setRvkw(Collection<String> rvkw) {
         this.rvkw = rvkw;
     }
 }

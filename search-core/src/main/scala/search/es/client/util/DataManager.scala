@@ -5,6 +5,7 @@ import java.util
 import com.mongodb.{DBCollection, BasicDBObject, DBObject}
 import org.bson.types.ObjectId
 import search.common.mongo.base.{MongoTableConstants, MongoBase}
+import search.common.util.Logging
 import scala.collection.JavaConversions._
 
 import scala.io.Source
@@ -12,7 +13,7 @@ import scala.io.Source
 /**
   * Created by soledede.weng on 2016/7/27.
   */
-private[search] class DataManager(conf: EsClientConf) extends MongoBase {
+private[search] class DataManager(conf: EsClientConf) extends MongoBase{
 
 
   override def getCollection: DBCollection = {

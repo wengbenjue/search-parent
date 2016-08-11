@@ -17,6 +17,6 @@ class KnowledgeGraphListenerImpl(conf: EsClientConf) extends KnowledgeGraphListe
   }
 
   override def onNewRequest(request: Request): Unit = {
-    BizeEsInterface.cacheQueryBestKeyWord(request.query)
+    BizeEsInterface.cacheQueryBestKeyWord(request.query,request.needSearch)
   }
 }

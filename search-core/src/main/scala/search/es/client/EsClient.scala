@@ -279,7 +279,6 @@ private[search] object EsClient extends EsConfiguration with Logging {
 
     import scala.collection.JavaConversions._
     try {
-
       val request: BulkRequest = Requests.bulkRequest
       for (doc <- docs) {
         var id = doc.get("id")

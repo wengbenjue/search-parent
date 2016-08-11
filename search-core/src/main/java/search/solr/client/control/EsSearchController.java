@@ -88,7 +88,7 @@ public class EsSearchController {
             nini.setMsg("keywords is null!");
             return nini;
         } else {
-            NiNi result = BizeEsInterface.wrapShowStateAndGetByQuery(keywords);
+            NiNi result = BizeEsInterface.wrapShowStateAndGetByQuery(keywords,knowledgeGraphParameter.getNeedSearch());
             SearchInterface.recordSearchLog(keywords, request(), getSessionId());
             return result;
         }

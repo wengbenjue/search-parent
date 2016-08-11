@@ -2,9 +2,7 @@ package search.solr.client.control
 
 import java.io.IOException
 import java.util
-import java.util.List
 
-import com.mongodb.BasicDBObject
 import org.apache.http.HttpEntity
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.utils.HttpClientUtils
@@ -43,10 +41,20 @@ object EsSearchHttpClientTest {
         keyword = kvs(0).trim
       }
 
+
+
       println(s"add${keyword} -> ${rvw} success")
-      keywords.add(new IndexObjEntity(keyword, rvw))
+
+    //  keywords.add(new IndexObjEntity(keyword, rvw))
     }
-    val headers: util.Map[String, String] = new util.HashMap[String, String]
+
+    var list: java.util.List[String] = new java.util.ArrayList[String]()
+    list.add("a")
+    list.add("b")
+    //list = new util.ArrayList[String]()
+    val kvN =  "test"
+    keywords.add(new IndexObjEntity(kvN, list))
+    val headers: java.util.Map[String, String] = new java.util.HashMap[String, String]
     headers.put("Content-Type", "application/json")
     val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", keywords, headers)
     try {
@@ -77,7 +85,7 @@ object EsSearchHttpClientTest {
     val obj: IndexKeywordsParameter = new IndexKeywordsParameter
     obj.setKeywords(keywords)
     //obj.setOriginQuery("无人机对话");
-    val headers: util.Map[String, String] = new util.HashMap[String, String]
+    val headers: java.util.Map[String, String] = new java.util.HashMap[String, String]
     headers.put("Content-Type", "application/json")
     val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", obj, headers)
     try {
