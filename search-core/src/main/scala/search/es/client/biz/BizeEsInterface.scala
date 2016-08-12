@@ -13,7 +13,7 @@ import org.apache.http.message.BasicNameValuePair
 import org.apache.http.util.EntityUtils
 import search.common.cache.pagecache.ESSearchPageCache
 import search.common.config.EsConfiguration
-import search.common.entity.bizesinterface.{IndexObjEntity, QueryData, Result}
+import search.common.entity.bizesinterface.{QueryEntityWithCnt, IndexObjEntity, QueryData, Result}
 import search.common.entity.state.ProcessState
 import search.common.http.HttpClientUtil
 import search.common.listener.graph.{Request, UpdateState}
@@ -137,6 +137,30 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     Util.caculateCostTime {
       delIndexByKeywords(keywords)
     }
+  }
+
+  def wrapMatchAllQueryWithCount(from: Int, to: Int): NiNi = {
+    Util.caculateCostTime {
+      matchAllQueryWithCount(from, to)
+    }
+  }
+
+  def matchAllQueryWithCount(from: Int, to: Int): QueryEntityWithCnt = {
+    val resultWithCnt = clinet.matchAllQueryWithCount(graphIndexName, graphTypName, from, to)
+    var size =0
+    val obj = resultWithCnt._2
+    if(obj!=null) size = obj.size
+    new QueryEntityWithCnt(from,to,resultWithCnt._1, size,resultWithCnt._2)
+  }
+
+  def wrapCount(): NiNi = {
+    Util.caculateCostTime {
+      count()
+    }
+  }
+
+  def count(): Long = {
+    clinet.count(graphIndexName, graphTypName)
   }
 
   def delIndexByKeywords(keywords: java.util.Collection[String]): Boolean = {
@@ -462,6 +486,18 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testCleanRedisByNamespace
     //testDeleteAllMongoData()
     //testDelAllData
+
+    //testCount
+    testMatchAllQueryWithCount
+  }
+
+  def testMatchAllQueryWithCount() = {
+    val result = BizeEsInterface.matchAllQueryWithCount(0,20)
+    println(result)
+  }
+
+  private def testCount() = {
+    println(BizeEsInterface.count())
   }
 
 

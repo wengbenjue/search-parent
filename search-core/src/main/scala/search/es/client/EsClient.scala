@@ -4,7 +4,9 @@ import java.net.InetAddress
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
+import com.alibaba.fastjson.{JSON, JSONObject}
 import com.google.common.collect.Maps
+import org.apache.lucene.queryparser.xml.FilterBuilder
 import org.elasticsearch.ElasticsearchException
 import org.elasticsearch.action.ActionFuture
 import org.elasticsearch.action.admin.indices.alias.Alias
@@ -14,7 +16,7 @@ import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRespon
 import org.elasticsearch.action.bulk.{BulkResponse, BulkRequest}
 import org.elasticsearch.action.delete.DeleteResponse
 import org.elasticsearch.action.deletebyquery.{DeleteByQueryAction, DeleteByQueryRequestBuilder}
-import org.elasticsearch.action.index.IndexResponse
+import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.{SearchType, SearchResponse}
 import org.elasticsearch.action.update.{UpdateResponse, UpdateRequestBuilder}
 import org.elasticsearch.client.{Requests, Client}
@@ -24,18 +26,19 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentFactory, XContentBuilder}
 import org.elasticsearch.index.query._
 import org.elasticsearch.plugin.deletebyquery.DeleteByQueryPlugin
-import org.elasticsearch.search.SearchHit
+import org.elasticsearch.search.{SearchHits, SearchHit}
 import search.common.config.EsConfiguration
 import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.util.Logging
 import scala.collection.JavaConversions._
 
-import scala.util.Random
 
 /**
   * Created by soledede.weng on 2016/7/26.
   */
 private[search] trait EsClient extends EsConfiguration {
+
+  def count(indexName: String, typeName: String): Long
 
   def createIndex(indexName: String, indexAliases: String, typeName: String): Boolean
 
@@ -60,6 +63,8 @@ private[search] trait EsClient extends EsConfiguration {
   def addDocuments(indexName: String, typeName: String, docs: java.util.List[java.util.Map[String, Object]]): Boolean
 
   def matchQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]]
+
+  def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int): (Long, Array[java.util.Map[String, Object]])
 
   def termQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]]
 
@@ -136,6 +141,10 @@ private[search] object EsClient extends EsConfiguration with Logging {
     }
   }
 
+  def count(client: Client, indexName: String, typeName: String) = {
+    matchAllQueryWithCount(client, indexName, typeName, 0, 0)
+  }
+
   /**
     * delete the index
     *
@@ -151,6 +160,21 @@ private[search] object EsClient extends EsConfiguration with Logging {
     //val response: ActionFuture[DeleteResponse] = client.delete(Requests.deleteRequest(indexName).`type`(typeName).id(id))
     val response = client.prepareDelete(indexName, typeName, id).execute()
     response.get.isFound
+  }
+
+  def delByKeyword(client: Client, indexName: String, typeName: String, field: String, keyWord: String): Boolean = {
+    try {
+      val response = new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE)
+        .setIndices(indexName)
+        .setTypes(typeName)
+        .setQuery(QueryBuilders.termQuery(field, keyWord))
+        .execute().actionGet()
+      true
+    } catch {
+      case e: Exception =>
+        logError(s"delete index ${indexName} with type ${typeName} failed", e)
+        false
+    }
   }
 
   def delAllData(client: Client, indexName: String, typeName: String): Boolean = {
@@ -349,14 +373,15 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @param qb
     * @return
     */
-  def query(client: Client, indexName: String, typeName: String, from: Int, to: Int, qb: QueryBuilder): Array[SearchHit] = {
+  def query(client: Client, indexName: String, typeName: String, from: Int, to: Int, qb: QueryBuilder): SearchHits = {
     try {
       val res: SearchResponse = client.
         prepareSearch(indexName)
         .setTypes(typeName)
         .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
-        .setQuery(qb).setFrom(from).setSize(to).execute.actionGet
-      res.getHits.getHits
+        .setQuery(qb)
+        .setFrom(from).setSize(to).execute.actionGet
+      res.getHits
     } catch {
       case e: Exception =>
         logError(s"es cliet error:${e.getMessage}", e)
@@ -366,7 +391,8 @@ private[search] object EsClient extends EsConfiguration with Logging {
 
 
   def queryAsMap(client: Client, indexName: String, typeName: String, from: Int, to: Int, qb: QueryBuilder): Array[java.util.Map[String, Object]] = {
-    val hits = query(client, indexName, typeName, from, to, qb)
+    val allHits = query(client, indexName, typeName, from, to, qb)
+    val hits = allHits.getHits
     if (hits == null || hits.size == 0) return null
     val result = hits.map { hit =>
       val _id = hit.getId
@@ -377,6 +403,22 @@ private[search] object EsClient extends EsConfiguration with Logging {
       doc
     }
     result
+  }
+
+  def queryAsMapWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, qb: QueryBuilder): (Long, Array[java.util.Map[String, Object]]) = {
+    val allHits = query(client, indexName, typeName, from, to, qb)
+    val hits = allHits.getHits
+    val cnt = allHits.getTotalHits
+    if (hits == null || hits.size == 0) return (cnt, null)
+    val result = hits.map { hit =>
+      val _id = hit.getId
+      val _score = java.lang.Float.valueOf(hit.getScore)
+      val doc = hit.sourceAsMap()
+      doc.put("id", _id)
+      doc.put("score", _score)
+      doc
+    }
+    (cnt, result)
   }
 
   /**
@@ -391,6 +433,10 @@ private[search] object EsClient extends EsConfiguration with Logging {
     */
   def matchAllQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int): Array[java.util.Map[String, Object]] = {
     queryAsMap(client, indexName, typeName, from, to, QueryBuilders.matchAllQuery)
+  }
+
+  def matchAllQueryWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCount(client, indexName, typeName, from, to, QueryBuilders.matchAllQuery)
   }
 
   def boolMustQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
@@ -494,6 +540,197 @@ private[search] object EsClient extends EsConfiguration with Logging {
 
   def constantScoreQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object, score: Float): Array[java.util.Map[String, Object]] = {
     queryAsMap(client, indexName, typeName, from, to, QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(field, keyWords)).boost(score))
+  }
+
+
+  /**
+    * 为一份文档建立索引
+    *
+    * @param indexName 索引名，相当于关系型数据库的库名
+    * @param typeName  文档类型，相当于关系型数据库的表名
+    * @param json      json格式的数据集，必须含有属性"id"
+    * @return
+    */
+  @throws(classOf[Exception])
+  def indexDoc(client: Client, indexName: String, typeName: String, json: String): IndexResponse = {
+    val kvMap = JSON.parseObject(json)
+    indexDoc(client, indexName, typeName, kvMap)
+  }
+
+
+  /**
+    * 为一份文档建立索引
+    *
+    * @param indexName 索引名，相当于关系型数据库的库名
+    * @param typeName  文档类型，相当于关系型数据库的表名
+    * @param kvMap     键值对形式的数据集，map中必须有属性key: "id"
+    * @return
+    */
+  @throws(classOf[Exception])
+  def indexDoc(client: Client, indexName: String, typeName: String, kvMap: java.util.Map[String, Object]): IndexResponse = {
+    if (!kvMap.containsKey("id")) {
+      throw new Exception("创建索引时，传入的map或json串中没有属性'id'! ");
+    }
+    val id = kvMap.get("id").toString;
+    if (id == null) {
+      throw new Exception("创建索引时，传入的map或json的属性'id'的值为null! ");
+    }
+
+    val builder = client.prepareIndex(indexName, typeName, id);
+    val response = builder.setSource(kvMap)
+      .execute()
+      .actionGet()
+    return response
+  }
+
+  /**
+    * 为多份文档建立索引
+    *
+    * @param indexName 索引名，相当于关系型数据库的库名
+    * @param typeName  文档类型，相当于关系型数据库的表名
+    * @param jsons     json格式的数据集，其下json串必须有属性"id"
+    * @return
+    */
+  @throws(classOf[Exception])
+  def batchIndexDocsForJson(client: Client, indexName: String, typeName: String, jsons: java.util.List[String]): BulkResponse = {
+    if (jsons.isEmpty()) {
+      throw new Exception("批量创建索引时，传入的参数'jsons'为空！");
+    }
+
+    val kvList = new java.util.ArrayList[java.util.Map[String, Object]](jsons.size());
+    for (json <- jsons) {
+      val kvMap = JSON.parseObject(json)
+      kvList.add(kvMap)
+    }
+
+    val response = batchIndexDocsForMap(client, indexName, typeName, kvList)
+    kvList.clear()
+    return response
+  }
+
+
+  /**
+    * 为多份文档建立索引
+    *
+    * @param indexName 索引名，相当于关系型数据库的库名
+    * @param typeName  文档类型，相当于关系型数据库的表名
+    * @param kvList    键值对形式的数据集，其下map中必须有属性key: "id"
+    * @return
+    */
+  @throws(classOf[Exception])
+  def batchIndexDocsForMap(client: Client, indexName: String, typeName: String, kvList: java.util.List[java.util.Map[String, Object]]): BulkResponse = {
+    if (kvList.isEmpty()) {
+      throw new Exception("批量创建索引时，传入的参数'kvList'为空！")
+    }
+
+    val requestList = new java.util.ArrayList[IndexRequest](kvList.size())
+
+    for (kvMap <- kvList) {
+      if (!kvMap.containsKey("id")) {
+        throw new Exception("批量创建索引时，传入的map或json串中没有属性'id'! ")
+      }
+      val id = kvMap.get("id").toString
+      if (id == null) {
+        throw new Exception("批量创建索引时，传入的map或json的属性'id'的值为null! ")
+      }
+
+      val request = client
+        .prepareIndex(indexName, typeName, id).setSource(kvMap)
+        .request()
+      requestList.add(request)
+    }
+
+    val bulkRequest = client.prepareBulk()
+    for (request <- requestList) {
+      bulkRequest.add(request)
+    }
+
+    val response = bulkRequest
+      .execute()
+      .actionGet()
+
+    return response
+  }
+
+
+  /**
+    * 删除一个文档
+    *
+    * @param indexName 索引名，相当于关系型数据库的库名
+    * @param typeName  文档类型，相当于关系型数据库的表名
+    * @param id        键值对形式的数据集
+    * @return
+    */
+  @throws(classOf[Exception])
+  def deleteDoc(client: Client, indexName: String, typeName: String, id: String): DeleteResponse = {
+    val builder = client.prepareDelete(indexName, typeName, id)
+    val response = builder
+      .execute()
+      .actionGet()
+    return response
+  }
+
+  /**
+    * 根据条件删除多个文档
+    *
+    * @param indexName    索引名，相当于关系型数据库的库名
+    * @param typeName     文档类型，相当于关系型数据库的表名
+    * @param queryBuilder 查询器
+    * @return
+    */
+  @throws(classOf[Exception])
+  def deleteDocsByQuery(client: Client, indexName: String, typeName: String, queryBuilder: QueryBuilder) = {
+    val response = new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE)
+      .setIndices(indexName)
+      .setTypes(typeName)
+      .setQuery(queryBuilder)
+      .execute().actionGet()
+  }
+
+
+  /**
+    * 指定id获取文档
+    *
+    * @param indexName 索引名，相当于关系型数据库的库名
+    * @param typeName  文档类型，相当于关系型数据库的表名
+    * @param id        文档id
+    * @return
+    */
+  def getDoc(client: Client, indexName: String, typeName: String, id: String): java.util.Map[String, Object] = {
+    val response = client.prepareGet(indexName, typeName, id)
+      .execute()
+      .actionGet()
+
+    val retMap = response.getSourceAsMap()
+    return retMap;
+  }
+
+
+  def search(client: Client, indexName: String, typeName: String, queryBuilder: QueryBuilder, filterMap: java.util.Map[String, Object]): java.util.List[java.util.Map[String, Object]] = {
+    var builder = client.prepareSearch(indexName).setTypes(typeName)
+    if (queryBuilder != null) {
+      builder = builder.setQuery(queryBuilder)
+    }
+    if (filterMap != null) {
+      builder = builder.setPostFilter(filterMap)
+    }
+
+    val searchResponse = builder.execute().actionGet()
+
+    val hits = searchResponse.getHits()
+    log.info("Es Hits count: " + hits.getTotalHits())
+
+    val kvList = new java.util.ArrayList[java.util.Map[String, Object]]()
+
+    val hitArray = hits.getHits()
+    if (hitArray.length > 0) {
+      for (hit <- hitArray) {
+        val kvMap = hit.getSource()
+        kvMap.put("id", hit.getId())
+        kvList.add(kvMap)
+      }
+    }
+    return kvList
   }
 
 }

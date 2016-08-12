@@ -6,6 +6,7 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import search.common.entity.bizesinterface.IndexObjEntity;
+import search.common.entity.bizesinterface.QueryEntityWithCnt;
 import search.es.client.biz.BizeEsInterface;
 import search.common.entity.searchinterface.NiNi;
 import search.common.entity.searchinterface.parameter.*;
@@ -88,7 +89,7 @@ public class EsSearchController {
             nini.setMsg("keywords is null!");
             return nini;
         } else {
-            NiNi result = BizeEsInterface.wrapShowStateAndGetByQuery(keywords,knowledgeGraphParameter.getNeedSearch());
+            NiNi result = BizeEsInterface.wrapShowStateAndGetByQuery(keywords, knowledgeGraphParameter.getNeedSearch());
             SearchInterface.recordSearchLog(keywords, request(), getSessionId());
             return result;
         }
@@ -109,6 +110,19 @@ public class EsSearchController {
     @RequestMapping(value = "/search/clean/all", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi cleanAllFromMongoAndIndex() {
         return BizeEsInterface.wrapCleanAllFromMongoAndIndex();
+    }
+
+    @RequestMapping(value = "/search/count", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi count() {
+        return BizeEsInterface.wrapCount();
+    }
+
+
+    @RequestMapping(value = "/search/all", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi matchAllQueryWithCount(@RequestParam(value="from",required=false, defaultValue="0") Integer from, @RequestParam(value="to",required=false, defaultValue="10") Integer to) {
+        NiNi result = BizeEsInterface.wrapMatchAllQueryWithCount(from, to);
+        return result;
+
     }
 
     public static String getSessionId() {

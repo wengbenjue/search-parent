@@ -7,7 +7,6 @@ import org.elasticsearch.client.Client
 import search.common.config.{RedisConfiguration, EsConfiguration}
 import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.util.{Util, Logging}
-import search.es.client.EsClient._
 import search.es.client.util.EsClientConf
 import scala.collection.JavaConversions._
 
@@ -19,6 +18,8 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
   val keyPreffix = s"$nameSpace:"
 
+  val keywordField = "keyword"
+
   var coreThreadsNumber = consumerCoreThreadsNum
 
 
@@ -28,14 +29,20 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   if (consumerThreadsNum > 0) currentThreadsNum = consumerThreadsNum
   val indexRunnerThreadPool = Util.newDaemonFixedThreadPool(currentThreadsNum, "index_runner_thread_excutor")
 
-  import search.es.client.EsClient._
+
+
+  override def count(indexName: String, typeName: String): Long = {
+    val cnt = EsClient.count(EsClient.getClientFromPool(), indexName, typeName)._1
+    cnt
+  }
+
 
   override def createIndex(indexName: String, indexAliases: String, typeName: String): Boolean = {
-    createIndexTypeMapping(getClientFromPool(), indexName, indexAliases, number_of_shards, number_of_replicas, typeName, null)
+    EsClient.createIndexTypeMapping(EsClient.getClientFromPool(), indexName, indexAliases, number_of_shards, number_of_replicas, typeName, null)
   }
 
   override def indexExists(indexName: String): Boolean = {
-    EsClient.indexExists(getClientFromPool(), indexName)
+    EsClient.indexExists(EsClient.getClientFromPool(), indexName)
   }
 
 
@@ -105,7 +112,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       val newDoc = new java.util.HashMap[String, Object]()
       newDoc.put("_id", indexId)
       newDoc.put("keyword", keyword)
-      if (rvKw != null&& rvKw.size() > 0)
+      if (rvKw != null && rvKw.size() > 0)
         newDoc.put("relevant_kws", rvKw)
       newDoc.put("updateDate", java.lang.Long.valueOf(currentTime))
       docs.add(newDoc)
@@ -120,7 +127,9 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
     if (list.size() > 0) conf.mongoDataManager.insert(list)
 
-    if (docs.size() > 0) {
+    if (docs.size() == 1) {
+      addDocument(indexName, typeName, docs.head)
+    } else if (docs.size() > 1) {
       addDocuments(indexName, typeName, docs)
     } else false
 
@@ -134,13 +143,17 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     data.foreach { k =>
       val doc = m.findAndRemove(k)
       if (doc == null) {
-        delType = "indexed"
-        //add document to index
-        if (incrementIndexOne(indexName, typeName, k)) cnt += 1
+        if (EsClient.delByKeyword(EsClient.getClientFromPool(), indexName, typeName, keywordField, k)){
+          cnt += 1
+          logInfo(s"$delType  keyword: $k from index,delByKeyword")
+        }
+        /* delType = "indexed"
+         //add document to index
+         if (incrementIndexOne(indexName, typeName, k)) cnt += 1*/
       } else {
         val id = doc.get("_id").toString
         //delete document from index by id
-        val delBool = delIndexById(getClientFromPool(), indexName, typeName, id)
+        val delBool = EsClient.delIndexById(EsClient.getClientFromPool(), indexName, typeName, id)
         if (delBool) {
           cnt += 1
           logInfo(s"$delType  keyword: $k from index,id: $id")
@@ -153,7 +166,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
   override def addDocument(indexName: String, typeName: String, doc: java.util.Map[String, Object]): Boolean = {
-    val id = postDocument(getClientFromPool(), indexName, typeName, doc)
+    val id = EsClient.postDocument(EsClient.getClientFromPool(), indexName, typeName, doc)
     if (null != id && !id.trim.equals("")) true
     else false
   }
@@ -161,7 +174,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
   override def addDocuments(indexName: String, typeName: String, docs: java.util.List[java.util.Map[String, Object]]): Boolean = {
     try {
-      bulkPostDocument(getClientFromPool(), indexName, typeName, docs)
+      EsClient.bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
       true
     } catch {
       case e: Exception => logError("add documents faield!", e)
@@ -170,29 +183,32 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
   override def deleteIndex(indexName: String): Boolean = {
-    EsClient.deletIndex(getClientFromPool(), indexName)
+    EsClient.deletIndex(EsClient.getClientFromPool(), indexName)
   }
 
 
   override def delAllData(indexName: String, typeName: String): Boolean = {
-    EsClient.delAllData(getClientFromPool(), indexName, typeName)
+    EsClient.delAllData(EsClient.getClientFromPool(), indexName, typeName)
   }
 
   override def matchQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
-    EsClient.matchQuery(getClientFromPool(), indexName, typeName, from, to, field, keyWords)
+    EsClient.matchQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, keyWords)
   }
 
+  override def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int): (Long, Array[java.util.Map[String, Object]]) = {
+    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to)
+  }
 
   override def termQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
-    EsClient.termQuery(getClientFromPool(), indexName, typeName, from, to, field, keyWords)
+    EsClient.termQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, keyWords)
   }
 
   override def commonTermQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
-    EsClient.commonTermQuery(getClientFromPool(), indexName, typeName, from, to, field, keyWords)
+    EsClient.commonTermQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, keyWords)
   }
 
   override def boolMustQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
-    EsClient.boolMustQuery(getClientFromPool(), indexName, typeName, from, to, field, keyWords)
+    EsClient.boolMustQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, keyWords)
   }
 
 
@@ -219,8 +235,7 @@ private[search] class EsIndexRunner(indexName: String, typeName: String, conf: E
       //postDocument(getClientFromPool(), indexName, typeName,doc.asInstanceOf[java.util.Map[String,Object]])
     }
     if (docs.size() > 0) {
-      bulkPostDocument(getClientFromPool(), indexName, typeName, docs)
-
+      EsClient.bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
       logDebug(s"post document ${docs.size()} successful!")
     }
   }
