@@ -30,7 +30,6 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   val indexRunnerThreadPool = Util.newDaemonFixedThreadPool(currentThreadsNum, "index_runner_thread_excutor")
 
 
-
   override def count(indexName: String, typeName: String): Long = {
     val cnt = EsClient.count(EsClient.getClientFromPool(), indexName, typeName)._1
     cnt
@@ -143,7 +142,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     data.foreach { k =>
       val doc = m.findAndRemove(k)
       if (doc == null) {
-        if (EsClient.delByKeyword(EsClient.getClientFromPool(), indexName, typeName, keywordField, k)){
+        if (EsClient.delByKeyword(EsClient.getClientFromPool(), indexName, typeName, keywordField, k)) {
           cnt += 1
           logInfo(s"$delType  keyword: $k from index,delByKeyword")
         }
@@ -173,13 +172,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
 
   override def addDocuments(indexName: String, typeName: String, docs: java.util.List[java.util.Map[String, Object]]): Boolean = {
-    try {
       EsClient.bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
-      true
-    } catch {
-      case e: Exception => logError("add documents faield!", e)
-        false
-    }
   }
 
   override def deleteIndex(indexName: String): Boolean = {

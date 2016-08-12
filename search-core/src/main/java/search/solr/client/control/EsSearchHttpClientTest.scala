@@ -50,9 +50,8 @@ object EsSearchHttpClientTest {
 
     var list: java.util.List[String] = new java.util.ArrayList[String]()
     list.add("a")
-    list.add("b")
     //list = new util.ArrayList[String]()
-    val kvN =  "test"
+    val kvN =  "test1"
     keywords.add(new IndexObjEntity(kvN, list))
     val headers: java.util.Map[String, String] = new java.util.HashMap[String, String]
     headers.put("Content-Type", "application/json")

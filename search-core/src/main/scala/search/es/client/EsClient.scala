@@ -299,7 +299,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @param typeName
     * @param docs
     */
-  def bulkPostDocument(client: Client, indexName: String, typeName: String, docs: java.util.List[java.util.Map[String, Object]]): Unit = {
+  def bulkPostDocument(client: Client, indexName: String, typeName: String, docs: java.util.List[java.util.Map[String, Object]]): Boolean = {
 
     import scala.collection.JavaConversions._
     try {
@@ -318,11 +318,13 @@ private[search] object EsClient extends EsConfiguration with Logging {
       val response = client.bulk(request).actionGet()
       if (response.hasFailures) {
         logError(s"build index failed with bulk [${response.buildFailureMessage()}]")
+        return false
       }
-      logDebug(s"build index,size:[${docs.size()}],costPeriod:[${response.getTookInMillis} ms]")
-
+      logInfo(s"build index,size:[${docs.size()}],costPeriod:[${response.getTookInMillis} ms]")
+      return true
     } catch {
       case e: Exception => logError("bulk post document failed!", e)
+        return false
     }
 
   }

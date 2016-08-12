@@ -9,7 +9,6 @@ import org.ansj.splitWord.analysis.ToAnalysis
 import org.apache.http.HttpEntity
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.utils.{URIUtils, URLEncodedUtils, HttpClientUtils}
-import org.apache.http.message.BasicNameValuePair
 import org.apache.http.util.EntityUtils
 import search.common.cache.pagecache.ESSearchPageCache
 import search.common.config.EsConfiguration
@@ -18,6 +17,7 @@ import search.common.entity.state.ProcessState
 import search.common.http.HttpClientUtil
 import search.common.listener.graph.{Request, UpdateState}
 import search.common.util.{FinshedStatus, Util, KnowledgeGraphStatus, Logging}
+import search.es.client.EsClient
 import search.es.client.util.EsClientConf
 import search.common.entity.searchinterface.NiNi
 import scala.collection.JavaConversions._
@@ -26,10 +26,8 @@ import scala.collection.JavaConversions._
   * Created by soledede.weng on 2016/7/28.
   */
 private[search] object BizeEsInterface extends Logging with EsConfiguration {
-
-  val conf = new EsClientConf()
-  conf.init()
-  val clinet = conf.esClient
+  var conf: EsClientConf = _
+  var client: EsClient = _
 
   val keywordField = "keyword"
   val keywordStringField = "keyword_string"
@@ -37,9 +35,16 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val scoreField = "score"
   val relevantKwsField = "relevant_kws"
 
+  init()
+
+  def init() = {
+    this.conf = new EsClientConf()
+    this.conf.init()
+    this.client = conf.esClient
+  }
 
   def totalIndexRun(indexName: String, typeName: String) = {
-    clinet.totalIndexRun(indexName, typeName)
+    client.totalIndexRun(indexName, typeName)
     Thread.currentThread().suspend()
   }
 
@@ -115,13 +120,13 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @return
     */
   def indexData(sessionId: String, originQuery: String, keywords: java.util.Collection[String]): Boolean = {
-    val resutlt = clinet.incrementIndex(graphIndexName, graphTypName, keywords)
+    val resutlt = client.incrementIndex(graphIndexName, graphTypName, keywords)
     cleanRedisByNamespace(cleanNameSpace)
     resutlt
   }
 
   def indexDataWithRw(keywords: java.util.Collection[IndexObjEntity]): Boolean = {
-    val result = clinet.incrementIndexWithRw(graphIndexName, graphTypName, keywords)
+    val result = client.incrementIndexWithRw(graphIndexName, graphTypName, keywords)
     cleanRedisByNamespace(cleanNameSpace)
     result
   }
@@ -146,11 +151,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   def matchAllQueryWithCount(from: Int, to: Int): QueryEntityWithCnt = {
-    val resultWithCnt = clinet.matchAllQueryWithCount(graphIndexName, graphTypName, from, to)
-    var size =0
+    val resultWithCnt = client.matchAllQueryWithCount(graphIndexName, graphTypName, from, to)
+    var size = 0
     val obj = resultWithCnt._2
-    if(obj!=null) size = obj.size
-    new QueryEntityWithCnt(from,to,resultWithCnt._1, size,resultWithCnt._2)
+    if (obj != null) size = obj.size
+    new QueryEntityWithCnt(from, to, resultWithCnt._1, size, resultWithCnt._2)
   }
 
   def wrapCount(): NiNi = {
@@ -160,11 +165,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   def count(): Long = {
-    clinet.count(graphIndexName, graphTypName)
+    client.count(graphIndexName, graphTypName)
   }
 
   def delIndexByKeywords(keywords: java.util.Collection[String]): Boolean = {
-    clinet.decrementIndex(graphIndexName, graphTypName, keywords)
+    client.decrementIndex(graphIndexName, graphTypName, keywords)
   }
 
   /**
@@ -192,11 +197,33 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       return result
     }
 
+
+    var result = wrapRequestNlp(sessionId, keyword, keyword)
+    try {
+      val nlpObj = result.getData
+      if (nlpObj != null && nlpObj.isInstanceOf[JSONObject]) {
+        val nlpJsonObj = nlpObj.asInstanceOf[JSONObject]
+        val dataType = nlpJsonObj.getString("type")
+        if (dataType.trim.equalsIgnoreCase("ERROR")) {
+          result = null
+        }
+      }
+    } catch {
+      case e: Exception =>
+        result = null
+    }
+
+    if (result != null) {
+      updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
+      return result
+    }
+
+
     var targetKeyword: String = null
 
 
     def relevantTargetKeyWord(score: java.lang.Float, keyWord: String): Unit = {
-      val matchQueryResult1 = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword)
+      val matchQueryResult1 = client.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword)
       if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
         val doc = matchQueryResult1.head
         val matchScore = doc.get(scoreField).toString.toFloat
@@ -225,7 +252,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     //like kfc->肯德基
     def relevantTargetKeyWordByRelevantKw = {
-      val matchQueryResult = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, relevantKwsField, keyword)
+      val matchQueryResult = client.matchQuery(graphIndexName, graphTypName, 0, 1, relevantKwsField, keyword)
       if (matchQueryResult != null && matchQueryResult.length > 0) {
         val doc = matchQueryResult.head
         val rlvKWScore = doc.get(scoreField).toString.toFloat
@@ -248,7 +275,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     def word2VectorProcess(keyWord: String) = {
       val relevantWords = splitWords(keyWord).flatMap(conf.similarityCaculate.word2Vec(_))
       if (relevantWords != null && !relevantWords.isEmpty && relevantWords.size > 0) {
-        val matchQueryResult1 = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, relevantWords.mkString(" "))
+        val matchQueryResult1 = client.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, relevantWords.mkString(" "))
         if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
           val doc = matchQueryResult1.head
           val word2VecScore = doc.get(scoreField).toString.toFloat
@@ -264,7 +291,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     def pinyinMatch: Unit = {
       //pinyin query
-      val pinyinResult = clinet.matchQuery(graphIndexName, graphTypName, 0, 1, pinyinField, keyword)
+      val pinyinResult = client.matchQuery(graphIndexName, graphTypName, 0, 1, pinyinField, keyword)
       if (pinyinResult != null && pinyinResult.length > 0) {
         val doc = pinyinResult.head
         val docScore = doc.get(scoreField).toString.toFloat
@@ -283,7 +310,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
 
     // term query
-    val mustResult = clinet.boolMustQuery(graphIndexName, graphTypName, 0, 1, keywordStringField, keyword)
+    val mustResult = client.boolMustQuery(graphIndexName, graphTypName, 0, 1, keywordStringField, "\"" + keyword + "\"")
     if (mustResult != null && mustResult.length > 0) {
       targetKeyword = mustResult.head.get(keywordField).toString
       logInfo(s"${keyword} have been matched accurately  targetKeyword: $targetKeyword")
@@ -347,6 +374,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           }
         } catch {
           case e: Exception =>
+            result = null
         }
         return result
       } else {
@@ -374,14 +402,21 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   }
 
+
+  def cacheReuqestNlp(query: String): AnyRef = {
+    ESSearchPageCache.cacheRequestNlpByQuery(query, {
+      requestNlp(query)
+    })
+  }
+
+
   /**
     * request nlp graph with targetKeyword
     *
-    * @param originQuery just for update state
     * @param query
     * @return
     */
-  private def requestNlp(sessionId: String, originQuery: String, query: String): AnyRef = {
+  private def requestNlp(query: String): AnyRef = {
     val url: String = s"${graphUrl}${URLEncoder.encode(query, "UTF-8")}"
     var httpResp: CloseableHttpResponse = null
     try {
@@ -403,7 +438,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   private def wrapRequestNlp(sessionId: String, originQuery: String, query: String): QueryData = {
-    new QueryData(originQuery, query, requestNlp(sessionId, originQuery, query))
+    new QueryData(originQuery, query, cacheReuqestNlp(query))
   }
 
 
@@ -411,7 +446,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     null
   }
 
-  private def updateState(sessionId: String, query: String, currentDate: Int, finishState: Int) = {
+  def updateState(sessionId: String, query: String, currentDate: Int, finishState: Int) = {
     if (sessionId != null)
       conf.waiter.post(UpdateState(sessionId + query, new ProcessState(currentDate, finishState)))
     else
@@ -461,7 +496,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   def delAllData(): Boolean = {
-    clinet.delAllData(graphIndexName, graphTypName)
+    client.delAllData(graphIndexName, graphTypName)
   }
 
 
@@ -486,13 +521,28 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testCleanRedisByNamespace
     //testDeleteAllMongoData()
     //testDelAllData
-
+    testBoolMustQuery
+    testMatchQuery
     //testCount
-    testMatchAllQueryWithCount
+    //testMatchAllQueryWithCount
+  }
+
+
+  def testMatchQuery() = {
+    val keyword = "中国"
+    val result = client.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword)
+    println(result)
+  }
+
+  def testBoolMustQuery() = {
+    //val keyword = "\""+"国旅联合"+"\""
+    val keyword = "中国"
+    val result = client.boolMustQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword)
+    println(result)
   }
 
   def testMatchAllQueryWithCount() = {
-    val result = BizeEsInterface.matchAllQueryWithCount(0,20)
+    val result = BizeEsInterface.matchAllQueryWithCount(0, 20)
     println(result)
   }
 
