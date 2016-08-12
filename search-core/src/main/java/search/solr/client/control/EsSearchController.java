@@ -119,11 +119,26 @@ public class EsSearchController {
 
 
     @RequestMapping(value = "/search/all", method = {RequestMethod.POST, RequestMethod.GET})
-    public NiNi matchAllQueryWithCount(@RequestParam(value="from",required=false, defaultValue="0") Integer from, @RequestParam(value="to",required=false, defaultValue="10") Integer to) {
+    public NiNi matchAllQueryWithCount(@RequestParam(value = "from", required = false, defaultValue = "0") Integer from, @RequestParam(value = "to", required = false, defaultValue = "10") Integer to) {
         NiNi result = BizeEsInterface.wrapMatchAllQueryWithCount(from, to);
         return result;
 
     }
+
+    @RequestMapping(value = "/index/dump", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi wrapDumpIndexToDisk() {
+        NiNi result = BizeEsInterface.wrapDumpIndexToDisk();
+        return result;
+
+    }
+
+    @RequestMapping(value = "/search/warm", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi wrapWarmCache() {
+        NiNi result = BizeEsInterface.wrapWarmCache();
+        return result;
+
+    }
+
 
     public static String getSessionId() {
         RequestAttributes ra = RequestContextHolder.getRequestAttributes();

@@ -32,6 +32,9 @@ private[search] trait EsConfiguration extends Configuration {
 
   lazy val cleanNameSpace = Try(esConfig.getString("clean.namespace")).getOrElse("graph_state")
 
+  lazy val dumpIndexPath = Try(esConfig.getString("index.dumpPath")).getOrElse("D:/es_graph_index")
+
   lazy val fetchUrl = Try(esConfig.getString("api.url.crawler")).getOrElse("http://192.168.100.20:5000/?kw=")
   lazy val graphUrl = Try(esConfig.getString("api.url.graph")).getOrElse("http://192.168.250.207:9000/api/graph/mgra?c=")
+  lazy val warmUrl = Try(esConfig.getString("api.url.warmUrl")).getOrElse("http://54.222.222.172:8999/es/search/keywords/?keyword=")
 }

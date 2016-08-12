@@ -303,8 +303,10 @@ private[search] object EsClient extends EsConfiguration with Logging {
 
     import scala.collection.JavaConversions._
     try {
-      val request: BulkRequest = Requests.bulkRequest
+      var cnt = 0
+      var request: BulkRequest = Requests.bulkRequest
       for (doc <- docs) {
+        cnt += 1
         var id = doc.get("id")
         if (id == null) {
           id = doc.get("_id")
@@ -313,14 +315,14 @@ private[search] object EsClient extends EsConfiguration with Logging {
         doc.remove("_id")
         if (id == null) request.add(Requests.indexRequest(indexName).`type`(typeName).source(doc))
         else request.add(Requests.indexRequest(indexName).`type`(typeName).id(id.toString.trim).source(doc))
+        if (cnt % 3000 == 0) {
+          bulkPostDocumentSubmit(client, request)
+          request = Requests.bulkRequest
+          Thread.sleep(1000)
+        }
       }
       //val response: ActionFuture[BulkResponse] = client.bulk(request)
-      val response = client.bulk(request).actionGet()
-      if (response.hasFailures) {
-        logError(s"build index failed with bulk [${response.buildFailureMessage()}]")
-        return false
-      }
-      logInfo(s"build index,size:[${docs.size()}],costPeriod:[${response.getTookInMillis} ms]")
+      bulkPostDocumentSubmit(client, request)
       return true
     } catch {
       case e: Exception => logError("bulk post document failed!", e)
@@ -328,6 +330,22 @@ private[search] object EsClient extends EsConfiguration with Logging {
     }
 
   }
+
+  def bulkPostDocumentSubmit(client: Client, request: BulkRequest): Boolean = {
+    try {
+      val response = client.bulk(request).actionGet()
+      if (response.hasFailures) {
+        logError(s"build index failed with bulk [${response.buildFailureMessage()}]")
+        return false
+      }
+      logInfo(s"build index succsefully,costPeriod:[${response.getTookInMillis} ms]")
+      true
+    } catch {
+      case e: Exception =>
+        false
+    }
+  }
+
 
   /**
     * update index by document id

@@ -1,9 +1,11 @@
 package search.common.entity.bizesinterface;
 
+import java.io.Serializable;
+
 /**
  * Created by soledede.weng on 2016/8/11.
  */
-public class QueryEntityWithCnt {
+public class QueryEntityWithCnt implements Serializable{
 
     private Integer from;
     private Integer to;

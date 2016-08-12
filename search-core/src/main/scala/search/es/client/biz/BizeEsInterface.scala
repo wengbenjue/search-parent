@@ -1,10 +1,10 @@
 package search.es.client.biz
 
-import java.io.IOException
+import java.io.{FileInputStream, FileOutputStream, IOException}
 import java.net.{URLEncoder, URI}
 import java.util
 
-import com.alibaba.fastjson.{JSONObject, JSON}
+import com.alibaba.fastjson.{JSONArray, JSONObject, JSON}
 import org.ansj.splitWord.analysis.ToAnalysis
 import org.apache.http.HttpEntity
 import org.apache.http.client.methods.CloseableHttpResponse
@@ -16,10 +16,12 @@ import search.common.entity.bizesinterface.{QueryEntityWithCnt, IndexObjEntity, 
 import search.common.entity.state.ProcessState
 import search.common.http.HttpClientUtil
 import search.common.listener.graph.{Request, UpdateState}
+import search.common.serializer.JavaSerializer
 import search.common.util.{FinshedStatus, Util, KnowledgeGraphStatus, Logging}
 import search.es.client.EsClient
 import search.es.client.util.EsClientConf
 import search.common.entity.searchinterface.NiNi
+import search.solr.client.{SolrClientConf, SolrClient}
 import scala.collection.JavaConversions._
 
 /**
@@ -30,6 +32,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   var client: EsClient = _
 
   val keywordField = "keyword"
+  val relevantKwsField_kw = "relevant_kws.relevant_kws_kw"
   val keywordStringField = "keyword_string"
   val pinyinField = "pinyin"
   val scoreField = "score"
@@ -259,7 +262,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         val matchKeyWord = doc.get(keywordField).toString
         if (rlvKWScore >= matchRelevantKWThreshold) {
           targetKeyword = matchKeyWord
-          logInfo(s"${keyword} have been matched by relevantKw,relevant score:${rlvKWScore}} targetKeyword: $targetKeyword")
+          logInfo(s"${keyword} have been matched by relevantKw fuzzyly,relevant score:${rlvKWScore}} targetKeyword: $targetKeyword")
         } else {
           //pinyin match
           pinyinMatch
@@ -309,14 +312,35 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       }
     }
 
-    // term query
-    val mustResult = client.boolMustQuery(graphIndexName, graphTypName, 0, 1, keywordStringField, "\"" + keyword + "\"")
-    if (mustResult != null && mustResult.length > 0) {
-      targetKeyword = mustResult.head.get(keywordField).toString
-      logInfo(s"${keyword} have been matched accurately  targetKeyword: $targetKeyword")
-    } else {
-      relevantTargetKeyWordByRelevantKw
+    def termFuzzyQueryByRelevantKw() = {
+      val matchQueryResult = client.termQuery(graphIndexName, graphTypName, 0, 1, relevantKwsField_kw, keyword.toLowerCase())
+      if (matchQueryResult != null && matchQueryResult.length > 0) {
+        val doc = matchQueryResult.head
+        val rlvKWScore = doc.get(scoreField).toString.toFloat
+        val matchKeyWord = doc.get(keywordField).toString
+        targetKeyword = matchKeyWord
+        logInfo(s"${keyword} have been matched  accurately by relevantKw_kw,relevant score:${rlvKWScore}} targetKeyword: $targetKeyword")
+      } else {
+        relevantTargetKeyWordByRelevantKw
+      }
     }
+
+    def termAccurateQuery() = {
+      val mustResult = client.boolMustQuery(graphIndexName, graphTypName, 0, 1, keywordStringField, keyword)
+      if (mustResult != null && mustResult.length > 0) {
+        targetKeyword = mustResult.head.get(keywordField).toString
+        logInfo(s"${keyword} have been matched  accurately  targetKeyword: $targetKeyword")
+      } else {
+        termFuzzyQueryByRelevantKw
+      }
+    }
+
+
+    // term query
+    termAccurateQuery()
+
+
+
 
 
 
@@ -417,22 +441,31 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @return
     */
   private def requestNlp(query: String): AnyRef = {
-    val url: String = s"${graphUrl}${URLEncoder.encode(query, "UTF-8")}"
-    var httpResp: CloseableHttpResponse = null
-    try {
-      httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null)
-      val entity: HttpEntity = httpResp.getEntity
-      val sResponse: String = EntityUtils.toString(entity)
-      JSON.parseObject(sResponse)
-    }
-    catch {
-      case e: IOException => {
-        logError("request graph nlp failed!", e)
+    requestHttp(query, graphUrl)
+  }
+
+  def requestHttp(query: String, httpUrl: String, reqType: String = "get"): AnyRef = {
+    reqType match {
+      case "get" =>
+        val url: String = s"${httpUrl}${URLEncoder.encode(query, "UTF-8")}"
+        var httpResp: CloseableHttpResponse = null
+        try {
+          httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null)
+          val entity: HttpEntity = httpResp.getEntity
+          val sResponse: String = EntityUtils.toString(entity)
+          JSON.parseObject(sResponse)
+        }
+        catch {
+          case e: IOException => {
+            logError("request graph nlp failed!", e)
+            null
+          }
+        } finally {
+          if (httpResp != null)
+            HttpClientUtils.closeQuietly(httpResp)
+        }
+      case _ =>
         null
-      }
-    } finally {
-      if (httpResp != null)
-        HttpClientUtils.closeQuietly(httpResp)
     }
   }
 
@@ -511,6 +544,70 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     delAllData()
   }
 
+  def wrapDumpIndexToDisk(): NiNi = {
+    Util.caculateCostTime {
+      dumpIndexToDisk()
+    }
+  }
+
+  def wrapWarmCache(): NiNi = {
+    Util.caculateCostTime {
+      warmCache()
+    }
+  }
+
+  def warmCache(): String = {
+
+    var cnt = 0
+    val obj = BizeEsInterface.matchAllQueryWithCount(0, BizeEsInterface.count().toInt)
+    val result = JSON.toJSON(obj.getResult).asInstanceOf[JSONArray]
+    var keyWord: String = null
+    result.foreach { obj =>
+      var rvkw: java.util.Collection[String] = null
+      val obj1 = obj.asInstanceOf[JSONObject]
+      keyWord = obj1.getString("keyword")
+      if (keyWord != null && !keyWord.equalsIgnoreCase("")) {
+        reqestForCache(keyWord)
+        cnt += 1
+      }
+      if (obj1.containsKey("relevant_kws")) {
+        val list = obj1.getJSONArray("relevant_kws").toList
+        val sttList = list.map(_.toString)
+        rvkw = sttList
+      }
+      if (rvkw != null && keyWord.size > 0) {
+        rvkw.filter(x => x != null && !x.equalsIgnoreCase("")).foreach { x =>
+          reqestForCache(x)
+          cnt += 1
+        }
+      }
+      Thread.sleep(20)
+    }
+    s"warm successfully,total keywords:${cnt}"
+  }
+
+  def reqestForCache(keyword: String) = {
+    //val url = "http://54.222.222.172:8999/es/search/keywords/?keyword="
+    for (i <- 1 to 3) {
+      requestHttp(keyword, warmUrl)
+    }
+    logInfo(s"keyword: ${keyword} warmed!")
+  }
+
+  def dumpIndexToDisk(): String = {
+    val cnt = BizeEsInterface.count().toInt
+    val result = BizeEsInterface.matchAllQueryWithCount(0, cnt)
+    val fOut = new FileOutputStream(dumpIndexPath)
+    val ser = JavaSerializer(new SolrClientConf()).newInstance()
+    val outputStrem = ser.serializeStream(fOut)
+    outputStrem.writeObject(result)
+    outputStrem.flush()
+    outputStrem.close()
+    val resultString = s"dump index to dis successful,size:${cnt},local path:${dumpIndexPath}"
+    println(resultString)
+    resultString
+  }
+
 
   def main(args: Array[String]) {
     //testTotalIndexRun
@@ -521,29 +618,47 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testCleanRedisByNamespace
     //testDeleteAllMongoData()
     //testDelAllData
-    testBoolMustQuery
-    testMatchQuery
+    //testBoolMustQuery
+    //testMatchQuery
     //testCount
     //testMatchAllQueryWithCount
+    testWarmCache()
   }
 
 
+  def testWarmCache() = {
+    BizeEsInterface.warmCache()
+  }
+
   def testMatchQuery() = {
-    val keyword = "中国"
-    val result = client.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword)
+    val keyword = "aabc"
+    val result = client.matchQuery(graphIndexName, graphTypName, 0, 10, relevantKwsField_kw, keyword)
     println(result)
   }
 
   def testBoolMustQuery() = {
     //val keyword = "\""+"国旅联合"+"\""
-    val keyword = "中国"
-    val result = client.boolMustQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword)
+    val keyword = "aabc chain"
+    val result = client.boolMustQuery(graphIndexName, graphTypName, 0, 10, relevantKwsField_kw, keyword)
     println(result)
   }
 
   def testMatchAllQueryWithCount() = {
-    val result = BizeEsInterface.matchAllQueryWithCount(0, 20)
+    val result = BizeEsInterface.matchAllQueryWithCount(0, 1828)
     println(result)
+    val fOut = new FileOutputStream("D:/java/es_index")
+    val ser = JavaSerializer(new SolrClientConf()).newInstance()
+    val outputStrem = ser.serializeStream(fOut)
+    outputStrem.writeObject(result)
+    outputStrem.flush()
+    outputStrem.close()
+
+    val fIput = new FileInputStream("D:/java/es_index");
+    val inputStream = ser.deserializeStream(fIput)
+    val obj = inputStream.readObject[QueryEntityWithCnt]()
+    inputStream.close()
+    println(obj)
+
   }
 
   private def testCount() = {
