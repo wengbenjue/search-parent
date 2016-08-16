@@ -8,12 +8,12 @@ import search.common.config.{RedisConfiguration, SolrConfiguration}
 /**
   * Created by soledede on 2015/12/18.
   */
-object RedisClient extends SolrConfiguration with RedisConfiguration {
+object RedisClient   extends SolrConfiguration with RedisConfiguration {
   var redisClient: RedisCommands = _
   implicit var akkaSystem: ActorSystem = _
   if (useSolr) {
     akkaSystem = akka.actor.ActorSystem()
-    redisClient = redis.RedisClient(port = redisPort, host = redisHost)
+    //redisClient = redis.RedisClient(port = redisPort, host = redisHost)
   }
 
 
@@ -30,8 +30,8 @@ object RedisClient extends SolrConfiguration with RedisConfiguration {
   }
 
   def close() = {
-    if (redisClient != null)
-      redisClient.shutdown()
+    /*if (redisClient != null)
+      redisClient.shutdown()*/
     if (akkaSystem != null)
       akkaSystem.shutdown()
   }

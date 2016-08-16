@@ -3,6 +3,7 @@ package search.common.storage
 import java.util.Calendar
 
 import com.alibaba.fastjson.JSON
+import com.aug3.storage.redisclient.cache.CacheCluster
 import search.common.config.RedisConfiguration
 import search.common.redis.RedisClient
 import search.common.util.Logging
@@ -61,6 +62,7 @@ private[search] class RedisStorage private extends Storage with Logging with Red
     val client = RedisClient("default")
     try {
       val result = client.get(key).asInstanceOf[T]
+      client.expire(key, expireTime)
       result
     } catch {
       case e: Exception =>
@@ -90,7 +92,20 @@ object RedisStorage {
   }
 
   def main(args: Array[String]) {
-    testDelKeys
+    //testDelKeys
+    testGetRedisPool
+  }
+
+  def testGetRedisPool() = {
+    var cnt = 0
+    val storage =  RedisStorage()
+    for(i <- 0 to 1000000*2){
+      println(storage.getBykey[String]("cache:otc:visit_history_12374"))
+      cnt += 1
+      println(cnt)
+    }
+
+
   }
 
   def testDelKeys(): Unit = {

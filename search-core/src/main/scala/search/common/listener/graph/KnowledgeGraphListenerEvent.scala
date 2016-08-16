@@ -9,4 +9,6 @@ sealed trait KnowledgeGraphListenerEvent
 
 case class UpdateState(query: String,processState: ProcessState) extends KnowledgeGraphListenerEvent
 
-case class Request(query: String,needSearch: Int) extends KnowledgeGraphListenerEvent
+case class Request(query: String,needSearch: Int,showLevel: Integer) extends KnowledgeGraphListenerEvent
+
+case class WarmCache() extends KnowledgeGraphListenerEvent

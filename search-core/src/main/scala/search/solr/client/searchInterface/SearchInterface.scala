@@ -184,20 +184,21 @@ object SearchInterface extends Logging with SolrConfiguration {
   }
 
 
-  def recordSearchLog(keyWords: java.lang.String, req: HttpServletRequest,sessionId: String): Unit = {
+  def recordSearchLog(keyWords: java.lang.String, req: HttpServletRequest, sessionId: String): Unit = {
     val ip: String = req.getRemoteHost
     val cookies = req.getCookies
-    var cookiesString = cookies.mkString("-")
+    var cookiesString = cookies.map(c => c.getName + ":" + c.getValue).mkString("-")
     if (cookiesString.equals("")) cookiesString = "-"
     val userAgent: String = req.getHeader("User-Agent")
     val userId: String = "-"
-    recordSearchLog(keyWords, "-", ip, userAgent, "-", cookiesString, userId,sessionId)
+    recordSearchLog(keyWords, "-", ip, userAgent, "-", cookiesString, userId, sessionId)
   }
 
 
   def recordSearchLog(keyWords: java.lang.String, appKey: java.lang.String, clientIp: java.lang.String, userAgent: java.lang.String, sourceType: java.lang.String, cookies: java.lang.String, userId: java.lang.String): Unit = {
-    recordSearchLog(keyWords, appKey, clientIp, userAgent, sourceType, cookies, userId,null)
+    recordSearchLog(keyWords, appKey, clientIp, userAgent, sourceType, cookies, userId, null)
   }
+
   /**
     *
     * search keywords log record
@@ -212,7 +213,7 @@ object SearchInterface extends Logging with SolrConfiguration {
     * @param userId
     *
     */
-  def recordSearchLog(keyWords: java.lang.String, appKey: java.lang.String, clientIp: java.lang.String, userAgent: java.lang.String, sourceType: java.lang.String, cookies: java.lang.String, userId: java.lang.String,sessionId: String): Unit = {
+  def recordSearchLog(keyWords: java.lang.String, appKey: java.lang.String, clientIp: java.lang.String, userAgent: java.lang.String, sourceType: java.lang.String, cookies: java.lang.String, userId: java.lang.String, sessionId: String): Unit = {
     val currentTime = System.currentTimeMillis()
     logInfo(s"record search log:keyWords:$keyWords-appKey:$appKey-clientIp:$clientIp-userAgent:$userAgent-sourceType:$sourceType-cookies:-$cookies-userId:$userId-currentTime:$currentTime")
     val map = new util.HashMap[String, Object]()

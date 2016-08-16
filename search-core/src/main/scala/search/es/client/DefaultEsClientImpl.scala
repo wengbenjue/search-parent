@@ -4,11 +4,13 @@ import java.util.concurrent.TimeUnit
 
 import com.mongodb.{BasicDBObject, DBObject, DBCursor}
 import org.elasticsearch.client.Client
+import search.common.cache.impl.LocalCache
 import search.common.config.{RedisConfiguration, EsConfiguration}
 import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.util.{Util, Logging}
 import search.es.client.util.EsClientConf
 import scala.collection.JavaConversions._
+import scala.collection.JavaConverters.asJavaListConverter
 
 
 /**
@@ -106,7 +108,9 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       if (rvKw != null && rvKw.size() > 0)
         dbObject.append("relevant_kws", rvKw)
       dbObject.append("updateDate", currentTime)
-      list.add(dbObject)
+
+
+
 
       val newDoc = new java.util.HashMap[String, Object]()
       newDoc.put("_id", indexId)
@@ -114,6 +118,37 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       if (rvKw != null && rvKw.size() > 0)
         newDoc.put("relevant_kws", rvKw)
       newDoc.put("updateDate", java.lang.Long.valueOf(currentTime))
+
+
+      //base stock
+      if (LocalCache.baseStockCache.contains(keyword)) {
+        val baseStock = LocalCache.baseStockCache(keyword)
+        val company = baseStock.getCompany
+        val comEn = baseStock.getComEn
+        val comSim = baseStock.getComSim
+        val comCode = baseStock.getComCode
+        dbObject.append("s_com", company)
+        dbObject.append("s_en", comEn)
+        dbObject.append("s_zh", comSim)
+        dbObject.append("stock_code", comCode)
+
+        newDoc.put("s_com", company)
+        newDoc.put("s_en", comEn)
+        newDoc.put("s_zh", comSim)
+        newDoc.put("stock_code", comCode)
+
+      }
+
+      //word2vec
+      val similarityWords: java.util.Collection[String] = conf.similarityCaculate.word2Vec(keyword)
+
+      if (similarityWords != null && similarityWords.size > 0) {
+        newDoc.put("word2vec", similarityWords)
+      }
+
+      list.add(dbObject)
+
+
       docs.add(newDoc)
 
       if (rvKw != null && rvKw.size() > 0) {
@@ -172,7 +207,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
 
   override def addDocuments(indexName: String, typeName: String, docs: java.util.List[java.util.Map[String, Object]]): Boolean = {
-      EsClient.bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
+    EsClient.bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
   }
 
   override def deleteIndex(indexName: String): Boolean = {
@@ -182,6 +217,11 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
   override def delAllData(indexName: String, typeName: String): Boolean = {
     EsClient.delAllData(EsClient.getClientFromPool(), indexName, typeName)
+  }
+
+
+  override def multiMatchQuery(indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]] = {
+    EsClient.multiMatchQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, keyWords, fields: _*)
   }
 
   override def matchQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {

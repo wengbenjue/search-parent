@@ -72,6 +72,8 @@ private[search] trait EsClient extends EsConfiguration {
 
   def delAllData(indexName: String, typeName: String): Boolean
 
+  def multiMatchQuery(indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]]
+
   def boolMustQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]]
 
 }
@@ -315,7 +317,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
         doc.remove("_id")
         if (id == null) request.add(Requests.indexRequest(indexName).`type`(typeName).source(doc))
         else request.add(Requests.indexRequest(indexName).`type`(typeName).id(id.toString.trim).source(doc))
-        if (cnt % 3000 == 0) {
+        if ( cnt>3000 && cnt % 3000 == 0) {
           bulkPostDocumentSubmit(client, request)
           request = Requests.bulkRequest
           Thread.sleep(1000)

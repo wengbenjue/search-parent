@@ -1,6 +1,7 @@
 package search.solr.client.control;
 
 
+import org.springframework.boot.autoconfigure.integration.IntegrationAutoConfiguration;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -13,6 +14,7 @@ import search.common.entity.searchinterface.parameter.*;
 import search.solr.client.searchInterface.SearchInterface;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.Collection;
 
 
@@ -31,7 +33,7 @@ public class EsSearchController {
             nini.setMsg("keywords is null!");
             return nini;
         } else
-            return BizeEsInterface.searchTopKeyWord(null, keywords);
+            return BizeEsInterface.searchTopKeyWord(request(), null, keywords);
     }
 
     //search and filter by keywords
@@ -82,14 +84,16 @@ public class EsSearchController {
 
     @RequestMapping(value = "/search/state", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi showStateByQuery(final KnowledgeGraphParameter knowledgeGraphParameter) {
+
         String keywords = knowledgeGraphParameter.getKeyword();
+        Integer showLevel = knowledgeGraphParameter.getL();
         if (keywords == null) {
             NiNi nini = new NiNi();
             nini.setCode(-1);
             nini.setMsg("keywords is null!");
             return nini;
         } else {
-            NiNi result = BizeEsInterface.wrapShowStateAndGetByQuery(keywords, knowledgeGraphParameter.getNeedSearch());
+            NiNi result = BizeEsInterface.wrapShowStateAndGetByQuery(request(), keywords, showLevel, knowledgeGraphParameter.getNeedSearch());
             SearchInterface.recordSearchLog(keywords, request(), getSessionId());
             return result;
         }
@@ -136,7 +140,12 @@ public class EsSearchController {
     public NiNi wrapWarmCache() {
         NiNi result = BizeEsInterface.wrapWarmCache();
         return result;
+    }
 
+    @RequestMapping(value = "/search/cache/load", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi loadCache() {
+        NiNi result = BizeEsInterface.warpLoadCache();
+        return result;
     }
 
 
@@ -153,4 +162,12 @@ public class EsSearchController {
         HttpServletRequest request = sra.getRequest();
         return request;
     }
+
+    public static HttpServletResponse response() {
+        RequestAttributes ra = RequestContextHolder.getRequestAttributes();
+        ServletRequestAttributes sra = (ServletRequestAttributes) ra;
+        HttpServletResponse response = sra.getResponse();
+        return response;
+    }
+
 }

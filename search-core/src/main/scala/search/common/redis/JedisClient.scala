@@ -1,8 +1,6 @@
 package search.common.redis
 
 import org.apache.commons.lang3.StringUtils
-import redis.clients.jedis.{JedisPool, JedisPoolConfig, Jedis}
-import redis.clients.jedis.Jedis
 import search.common.config.{SolrConfiguration, Configuration}
 
 /**
@@ -12,30 +10,30 @@ private[search] object JedisClient extends SolrConfiguration {
 
   val lockPool = new Object()
 
-  var pool: JedisPool = null
+  //var pool: JedisPool = null
 
-  var jSInRedis: Jedis = null
+  //var jSInRedis: Jedis = null
 
-  def createJredis(): Jedis = {
+  /*def createJredis(): Jedis = {
     if (this.jSInRedis == null)
       this.jSInRedis = new Jedis(redisHost, redisPort)
     jSInRedis
-  }
+  }*/
 
-  def createJredis(host: String, port: Int): Jedis = {
+ /* def createJredis(host: String, port: Int): Jedis = {
     val jedis = new Jedis(host, port)
     jedis
-  }
+  }*/
 
-  def createJredis(host: String, port: Int, password: String): Jedis = {
+  /*def createJredis(host: String, port: Int, password: String): Jedis = {
     val jedis = new Jedis(host, port)
     if (!StringUtils.isNotBlank(password))
       jedis.auth(password)
     jedis
-  }
+  }*/
 
 
-  def createJedisPool(): JedisPool = {
+  /*def createJedisPool(): JedisPool = {
     //collection pool config
     val config = new JedisPoolConfig()
     //setup maxmum collection number
@@ -45,24 +43,24 @@ private[search] object JedisClient extends SolrConfiguration {
     config.setMaxIdle(10)
     val jedis = new JedisPool(config, redisHost, redisPort)
     jedis
-  }
+  }*/
 
 
-  def poolInit() = {
+ /* def poolInit() = {
     if (this.pool == null) {
       this.lockPool.synchronized {
         this.pool = createJedisPool()
       }
     }
-  }
+  }*/
 
-  def getRedisFromPool(): Jedis = {
+  /*def getRedisFromPool(): Jedis = {
     if (this.pool == null)
       this.poolInit()
     this.pool.getResource
-  }
+  }*/
 
-  def returnRedis(redis: Jedis) = {
+  /*def returnRedis(redis: Jedis) = {
     this.pool.returnResource(redis)
-  }
+  }*/
 }

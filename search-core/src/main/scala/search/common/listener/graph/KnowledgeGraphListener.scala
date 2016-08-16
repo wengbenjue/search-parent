@@ -7,4 +7,6 @@ trait KnowledgeGraphListener {
   def onUpdateState(state: UpdateState)
 
   def onNewRequest(request: Request)
+
+  def onWarmCache()
 }

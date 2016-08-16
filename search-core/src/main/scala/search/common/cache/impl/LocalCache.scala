@@ -5,8 +5,10 @@ import java.util.concurrent.TimeUnit
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import search.common.cache.KVCache
 import search.common.config.RedisConfiguration
+import search.common.entity.bizesinterface.BaseStock
 import search.common.entity.state.ProcessState
 
+import scala.collection.mutable
 import scala.reflect.ClassTag
 
 /**
@@ -19,12 +21,23 @@ private[search] class LocalCache extends KVCache {
 
   override def put[T: ClassTag](key: String, value: T, seconds: Int): Unit = {
     stateCacheManager.put(key, value.asInstanceOf[ProcessState])
-
+    try {
+     // stateCacheManager.refresh(key)
+    } catch {
+      case e: Exception =>
+    }
   }
 
 
   override def getObj[T: ClassTag](key: String): T = {
-    stateCacheManager.getIfPresent(key).asInstanceOf[T]
+
+    val result = stateCacheManager.getIfPresent(key).asInstanceOf[T]
+    try {
+     // stateCacheManager.refresh(key)
+    } catch {
+      case e: Exception =>
+    }
+    result
   }
 
   override def cleanAll(): Boolean = {
@@ -48,4 +61,8 @@ object LocalCache extends RedisConfiguration {
     }
 
   val stateCacheManager = CacheBuilder.newBuilder().expireAfterWrite(expireTime, TimeUnit.MINUTES).build(stateCacheLoader)
+
+
+  final val baseStockCache = new mutable.HashMap[String, BaseStock]()
+
 }

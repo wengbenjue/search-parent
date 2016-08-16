@@ -1,6 +1,7 @@
 package search.solr.client.control
 
 import java.io.{FileInputStream, IOException}
+import java.net.URLEncoder
 import java.util
 
 import com.alibaba.fastjson.{JSONObject, JSONArray, JSON}
@@ -12,6 +13,7 @@ import search.common.entity.bizesinterface.{QueryEntityWithCnt, IndexObjEntity}
 import search.common.entity.searchinterface.parameter.IndexKeywordsParameter
 import search.common.http.HttpClientUtil
 import search.common.serializer.JavaSerializer
+import search.es.client.biz.BizeEsInterface._
 import search.solr.client.SolrClientConf
 import scala.collection.JavaConversions._
 
@@ -27,7 +29,45 @@ object EsSearchHttpClientTest {
     //indexByKeywords
     testIndexByKeywordsWithRw
     //getIndexDataFromSerObj()
+    //testSearchFluid
 
+  }
+
+  def testSearchFluid() = {
+    val url = "http://localhost:8999/es/search/state/?keyword=清洁能源"
+    for (i <- 0 until 10000)
+      {
+        requestHttp("金融科技", url, null)
+        println(s"request $i")
+      }
+
+  }
+
+  def requestHttp(query: String, httpUrl: String, showLevel: Integer, reqType: String = "get"): AnyRef = {
+    reqType match {
+      case "get" =>
+        var url: String = s"${httpUrl}${URLEncoder.encode(query, "UTF-8")}"
+        if (showLevel != null) url = url + s"&l=$showLevel"
+        var httpResp: CloseableHttpResponse = null
+        try {
+          httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null)
+          val entity: HttpEntity = httpResp.getEntity
+          val sResponse: String = EntityUtils.toString(entity)
+          println(sResponse)
+          //JSON.parseObject(sResponse)
+          null
+        }
+        catch {
+          case e: IOException => {
+            null
+          }
+        } finally {
+          if (httpResp != null)
+            HttpClientUtils.closeQuietly(httpResp)
+        }
+      case _ =>
+        null
+    }
   }
 
   def getIndexDataFromFile(): java.util.List[IndexObjEntity] = {
@@ -54,12 +94,12 @@ object EsSearchHttpClientTest {
   def getIndexDataBySet(): java.util.List[IndexObjEntity] = {
     val keywords: java.util.List[IndexObjEntity] = new java.util.ArrayList[IndexObjEntity]
     var list: java.util.List[String] = new java.util.ArrayList[String]()
-    var kvN = "test1"
+    var kvN = "百度"
     list.add("a")
     list.add("abc")
     keywords.add(new IndexObjEntity(kvN, list))
 
-    kvN = "test22"
+    /*kvN = "test22"
     list = new java.util.ArrayList[String]()
     list.add("aabc")
     keywords.add(new IndexObjEntity(kvN, list))
@@ -67,7 +107,7 @@ object EsSearchHttpClientTest {
     kvN = "test34"
     list = new java.util.ArrayList[String]()
     list.add("aabc chain")
-    keywords.add(new IndexObjEntity(kvN, list))
+    keywords.add(new IndexObjEntity(kvN, list))*/
 
     keywords
   }
@@ -81,7 +121,9 @@ object EsSearchHttpClientTest {
     inputStream.close()
     val result = JSON.toJSON(obj.getResult).asInstanceOf[JSONArray]
     var keyWord: String = null
+    var cnt = 0
     result.foreach { obj =>
+      cnt += 1
       var rvkw: java.util.Collection[String] = null
       val obj1 = obj.asInstanceOf[JSONObject]
       keyWord = obj1.getString("keyword")
@@ -90,7 +132,9 @@ object EsSearchHttpClientTest {
         val sttList = list.map(_.toString)
         rvkw = sttList
       }
+      //if (cnt < 100)
       keywords.add(new IndexObjEntity(keyWord, rvkw))
+
     }
     keywords
   }
@@ -99,7 +143,7 @@ object EsSearchHttpClientTest {
     //val url: String = "http://localhost:8999/es/index/rws"
     val url: String = "http://54.222.222.172:8999/es/index/rws"
     val keywords = getIndexDataFromSerObj
-    //val keywords = getIndexDataBySet
+    // val keywords = getIndexDataBySet
     val headers: java.util.Map[String, String] = new java.util.HashMap[String, String]
     headers.put("Content-Type", "application/json")
     val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", keywords, headers)

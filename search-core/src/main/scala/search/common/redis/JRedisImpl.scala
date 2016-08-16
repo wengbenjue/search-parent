@@ -14,13 +14,14 @@ import scala.reflect.ClassTag
   */
 private[search] class JRedisImpl extends Redis with Logging {
  // val jedis = JedisClient.getRedisFromPool()
-  val jedis = JedisClient.createJredis()
+  //val jedis = JedisClient.createJredis()
+  //val jedis = JedisClient.createJredis()
 
   override def put[T: ClassTag](key: String, value: T, seconds: Int): Unit = {
     try {
       val objSerializeByte = Serializer("java", new SolrClientConf()).newInstance().serializeArray[T](value)
       val k = JavaUtils.toJavaByte(key.getBytes)
-      jedis.set(k, JavaUtils.toJavaByte(objSerializeByte),"NX".getBytes,"EX".getBytes,seconds.toLong)
+     // jedis.set(k, JavaUtils.toJavaByte(objSerializeByte),"NX".getBytes,"EX".getBytes,seconds.toLong)
       //val l = jedis.expire(k, seconds)
     } catch {
       case e: Exception => logError("save object to redids faield!", e)
@@ -29,9 +30,11 @@ private[search] class JRedisImpl extends Redis with Logging {
 
   override def get[T: ClassTag](key: String): T = {
     try {
-      val obj = jedis.get(key.getBytes)
+      val obj: String =null
+     // val obj = jedis.get(key.getBytes)
       if (obj != null)
-        Serializer("java", new SolrClientConf()).newInstance().deserialize[T](obj)
+        null.asInstanceOf[T]
+       // Serializer("java", new SolrClientConf()).newInstance().deserialize[T](obj)
       else null.asInstanceOf[T]
     } catch {
       case e: Exception => logError(s"get $key faield", e)

@@ -17,8 +17,8 @@ private[search] object ESSearchPageCache extends RedisConfiguration {
   val keyPreffix = s"$nameSpace:"
 
 
-  def cacheRequestNlpByQuery(query: String, block: => AnyRef): AnyRef = {
-    val cache = getRequestNlpByQueryCache(query)
+  def cacheRequestNlpByQuery(query: String, showLevel:Integer,block: => AnyRef): AnyRef = {
+    val cache = getRequestNlpByQueryCache(query,showLevel)
     if (cache != null) {
       //BizeEsInterface.updateState(null, query, KnowledgeGraphStatus.NLP_PROCESS, FinshedStatus.FINISHED)
       cache
@@ -26,29 +26,31 @@ private[search] object ESSearchPageCache extends RedisConfiguration {
     else {
       val result = block
       if (result != null)
-        putRequestNlpByQueryCache(query, result)
+        putRequestNlpByQueryCache(query,showLevel, result)
       result
     }
   }
 
-  private def getRequestNlpByQueryCache(query: String): AnyRef = {
-    val stringBuilder = requestNlpGetByQueryCache(query)
+  private def getRequestNlpByQueryCache(query: String,showLevel:Integer): AnyRef = {
+    val stringBuilder = requestNlpGetByQueryCache(query,showLevel)
     if (stringBuilder != null && !stringBuilder.isEmpty)
       cache.getObj[AnyRef](stringBuilder.toString())
     else null
   }
 
-  private def putRequestNlpByQueryCache(query: String, result: AnyRef): Unit = {
-    val stringBuilder = requestNlpGetByQueryCache(query)
+  private def putRequestNlpByQueryCache(query: String, showLevel:Integer,result: AnyRef): Unit = {
+    val stringBuilder = requestNlpGetByQueryCache(query,showLevel)
     if (stringBuilder != null && !stringBuilder.isEmpty && result != null)
       cache.put(stringBuilder.toString.trim, result, cacheTime)
   }
 
-  private def requestNlpGetByQueryCache(query: String): StringBuilder = {
+  private def requestNlpGetByQueryCache(query: String,showLevel:Integer): StringBuilder = {
     val stringBuilder = new StringBuilder
     stringBuilder.append("requestNlpGetByQueryCache").append(separator)
     if (query != null && !query.trim.equalsIgnoreCase(""))
       stringBuilder.append(query.trim).append(separator)
+    if (showLevel != null && !showLevel.toString.trim.equalsIgnoreCase(""))
+      stringBuilder.append(showLevel.toString.trim).append(separator)
     stringBuilder
   }
 
@@ -59,8 +61,8 @@ private[search] object ESSearchPageCache extends RedisConfiguration {
     * @param block
     * @return
     */
-  def cacheShowStateAndGetByQuery(query: String, block: => AnyRef): AnyRef = {
-    val cache = getShowStateAndGetByQueryCache(query)
+  def cacheShowStateAndGetByQuery(query: String,showLevel:Integer, block: => AnyRef): AnyRef = {
+    val cache = getShowStateAndGetByQueryCache(query,showLevel)
     if (cache != null) {
       //BizeEsInterface.updateState(null, query, KnowledgeGraphStatus.FETCH_PROCESS, FinshedStatus.FINISHED)
       cache
@@ -68,20 +70,20 @@ private[search] object ESSearchPageCache extends RedisConfiguration {
     else {
       val result = block
       if (result != null)
-        putShowStateAndGetByQueryCache(query, result)
+        putShowStateAndGetByQueryCache(query,showLevel, result)
       result
     }
   }
 
-  private def getShowStateAndGetByQueryCache(query: String): AnyRef = {
-    val stringBuilder = showStateAndGetByQueryCache(query)
+  private def getShowStateAndGetByQueryCache(query: String,showLevel:Integer): AnyRef = {
+    val stringBuilder = showStateAndGetByQueryCache(query,showLevel)
     if (stringBuilder != null && !stringBuilder.isEmpty)
       cache.getObj[AnyRef](stringBuilder.toString())
     else null
   }
 
-  private def putShowStateAndGetByQueryCache(query: String, result: AnyRef): Unit = {
-    val stringBuilder = showStateAndGetByQueryCache(query)
+  private def putShowStateAndGetByQueryCache(query: String,showLevel:Integer, result: AnyRef): Unit = {
+    val stringBuilder = showStateAndGetByQueryCache(query,showLevel)
     if (stringBuilder != null && !stringBuilder.isEmpty && result != null){
       val key = stringBuilder.toString.trim
       cache.put(key, result, cacheTime)
@@ -89,11 +91,13 @@ private[search] object ESSearchPageCache extends RedisConfiguration {
 
   }
 
-  private def showStateAndGetByQueryCache(query: String): StringBuilder = {
+  private def showStateAndGetByQueryCache(query: String,showLevel:Integer): StringBuilder = {
     val stringBuilder = new StringBuilder
     stringBuilder.append("showStateAndGetByQueryCache").append(separator)
     if (query != null && !query.trim.equalsIgnoreCase(""))
       stringBuilder.append(query.trim).append(separator)
+    if (showLevel != null && !showLevel.toString.trim.equalsIgnoreCase(""))
+      stringBuilder.append(showLevel.toString.trim).append(separator)
     stringBuilder
   }
 }

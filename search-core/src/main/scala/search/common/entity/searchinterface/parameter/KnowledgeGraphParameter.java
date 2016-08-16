@@ -6,6 +6,7 @@ package search.common.entity.searchinterface.parameter;
 public class KnowledgeGraphParameter {
     private String keyword;
     private Integer needSearch = 1;
+    private Integer l;
 
     public String getKeyword() {
         return keyword;
@@ -21,5 +22,13 @@ public class KnowledgeGraphParameter {
 
     public void setNeedSearch(Integer needSearch) {
         this.needSearch = needSearch;
+    }
+
+    public Integer getL() {
+        return l;
+    }
+
+    public void setL(Integer l) {
+        this.l = l;
     }
 }

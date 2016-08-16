@@ -15,7 +15,6 @@ private[search] trait Configuration {
   val config = ConfigFactory.load()
 
 
-
   /**
     * log4j
     */
@@ -45,11 +44,9 @@ private[search] trait Configuration {
   lazy val cacheTime = Try(config.getInt("cache.time")).getOrElse(5)
 
 
-
   //redis
   lazy val redisHost = Try(config.getString("redis.host")).getOrElse("localhost")
   lazy val redisPort = Try(config.getInt("redis.port")).getOrElse(6379)
-
 
 
   //monitoru host
@@ -77,4 +74,12 @@ private[search] trait Configuration {
   lazy val word2VecNewsfinalPath = Try(config.getString("word2vec.path.newsfinal")).getOrElse(null)
 
   lazy val topN = Try(config.getInt("word2vec.topN")).getOrElse(5)
+  /**
+    * bloom filter
+    */
+  lazy val expectedElements: Long = Try(config.getLong("bloomfilter.expectedElements")).getOrElse(10000)
+
+  lazy val falsePositiveRate: Double = Try(config.getDouble("bloomfilter.falsePositiveRate")).getOrElse(0.1)
+
+  lazy val fluidLimit = Try(config.getInt("fluid.limit")).getOrElse(2000)
 }

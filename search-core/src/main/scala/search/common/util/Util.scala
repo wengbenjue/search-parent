@@ -5,9 +5,11 @@ import java.net.{Inet4Address, NetworkInterface, InetAddress}
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.util
-import java.util.concurrent.{ThreadFactory, Executors, ThreadPoolExecutor}
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.{TimeUnit, ThreadFactory, Executors, ThreadPoolExecutor}
 import java.util.regex.{Matcher, Pattern}
 
+import com.google.common.cache.{CacheLoader, CacheBuilder, LoadingCache}
 import com.google.common.net.InetAddresses
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import org.apache.commons.lang3.SystemUtils
@@ -180,6 +182,28 @@ private[search] object Util extends Logging {
 
   def getFormattedClassName(obj: AnyRef): String = {
     obj.getClass.getSimpleName.replace("$", "")
+  }
+
+
+  val counter: LoadingCache[String, AtomicLong] =
+    CacheBuilder.newBuilder()
+      .expireAfterWrite(2, TimeUnit.SECONDS)
+      .build(new CacheLoader[String, AtomicLong]() {
+        override def load(key: String): AtomicLong = {
+          new AtomicLong(0)
+        }
+      })
+
+  //limit the request count for single user
+  def fluidControl(block: => AnyRef, key: String = null): AnyRef = {
+    var cacheKey = System.currentTimeMillis() / 1000 + ""
+    if (key != null)
+      cacheKey = key + "_" + cacheKey
+    if (counter.get(cacheKey).incrementAndGet() > fluidLimit) {
+      "I'm sorry for this message,you should request slowly!"
+    } else {
+      block
+    }
   }
 
 

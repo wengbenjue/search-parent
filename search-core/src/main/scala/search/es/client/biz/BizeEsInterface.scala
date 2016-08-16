@@ -3,19 +3,22 @@ package search.es.client.biz
 import java.io.{FileInputStream, FileOutputStream, IOException}
 import java.net.{URLEncoder, URI}
 import java.util
+import javax.servlet.http.HttpServletRequest
 
 import com.alibaba.fastjson.{JSONArray, JSONObject, JSON}
+import com.mongodb.BasicDBObject
 import org.ansj.splitWord.analysis.ToAnalysis
 import org.apache.http.HttpEntity
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.utils.{URIUtils, URLEncodedUtils, HttpClientUtils}
 import org.apache.http.util.EntityUtils
+import search.common.cache.impl.LocalCache
 import search.common.cache.pagecache.ESSearchPageCache
 import search.common.config.EsConfiguration
-import search.common.entity.bizesinterface.{QueryEntityWithCnt, IndexObjEntity, QueryData, Result}
+import search.common.entity.bizesinterface._
 import search.common.entity.state.ProcessState
 import search.common.http.HttpClientUtil
-import search.common.listener.graph.{Request, UpdateState}
+import search.common.listener.graph.{WarmCache, Request, UpdateState}
 import search.common.serializer.JavaSerializer
 import search.common.util.{FinshedStatus, Util, KnowledgeGraphStatus, Logging}
 import search.es.client.EsClient
@@ -31,12 +34,38 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   var conf: EsClientConf = _
   var client: EsClient = _
 
+
+  val keywordFieldWithBoost = "keyword^15"
+  val relevantKwsField_kwWithBoost = "relevant_kws.relevant_kws_kw^4"
+  //"relevant match"
+  val keywordStringFieldWithBoost = "keyword_string^20"
+  //"accurate match"
+  val pinyinFieldWithBoost = "pinyin^0.003"
+  val scoreFieldWithBoost = "score"
+  val relevantKwsFieldWithBoost = "relevant_kws^19" //"vr->虚拟现实"
+
+  val companyFieldWithBoost = "s_com"
+  val comSimFieldWithBoost = "s_zh"
+  val comStockCodeFieldWithBoost = "stock_code^70"
+  val companyEnFieldWithBoost = "s_en"
+
+  val word2vecWithBoost = "word2vec^0.001"
+  val word2vecRwWithBoost = "word2vec.word2vec_rw^0.0001"
+
+
   val keywordField = "keyword"
   val relevantKwsField_kw = "relevant_kws.relevant_kws_kw"
+  //"relevant match"
   val keywordStringField = "keyword_string"
+  //"accurate match"
   val pinyinField = "pinyin"
   val scoreField = "score"
-  val relevantKwsField = "relevant_kws"
+  val relevantKwsField = "relevant_kws" //"vr->虚拟现实"
+
+  val companyField = "s_com"
+  val comSimField = "s_zh"
+  val comStockCodeField = "stock_code"
+  val companyEnField = "s_en"
 
   init()
 
@@ -44,6 +73,58 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     this.conf = new EsClientConf()
     this.conf.init()
     this.client = conf.esClient
+
+    loadCache
+    addBloomFilter
+  }
+
+  def warpLoadCache(): NiNi = {
+    Util.caculateCostTime {
+      loadCache()
+    }
+  }
+
+  def loadCache(): String = {
+    val stocks = conf.mongoDataManager.findBaseStock()
+    if (stocks != null && stocks.size() > 0) {
+      stocks.foreach { dbobj =>
+        var comSim: String = null
+        var company: String = null
+        var comEn: String = null
+
+        val nameObj = dbobj.get("name").asInstanceOf[BasicDBObject]
+        if (nameObj != null) {
+          comSim = if (nameObj.get("szh") != null) nameObj.get("szh").toString else null
+        }
+
+        val orgObj = dbobj.get("org").asInstanceOf[BasicDBObject]
+        if (orgObj != null) {
+          company = if (orgObj.get("szh") != null) orgObj.get("szh").toString else null
+          comEn = if (orgObj.get("en") != null) orgObj.get("en").toString else null
+        }
+        val comCode: String = if (dbobj.get("code") != null) dbobj.get("code").toString else null
+        if (comSim != null && comCode != null) {
+          LocalCache.baseStockCache(comSim) = new BaseStock(comSim, company, comEn, comCode)
+        }
+
+      }
+      logInfo("base stock cached in local cache")
+    }
+    "base stock cached in local cache"
+  }
+
+  def addBloomFilter() = {
+    val obj = BizeEsInterface.matchAllQueryWithCount(0, BizeEsInterface.count().toInt)
+    if (obj != null && obj.getResult != null) {
+      val result = JSON.toJSON(obj.getResult).asInstanceOf[JSONArray]
+      result.foreach { obj =>
+        val obj1 = obj.asInstanceOf[JSONObject]
+        val keyWord = obj1.getString("keyword")
+        if (keyWord != null && !keyWord.equalsIgnoreCase("")) {
+          conf.bloomFilter.add(keyWord)
+        }
+      }
+    }
   }
 
   def totalIndexRun(indexName: String, typeName: String) = {
@@ -51,9 +132,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     Thread.currentThread().suspend()
   }
 
-  def searchTopKeyWord(sessionId: String, keyword: String): NiNi = {
+  def searchTopKeyWord(req: HttpServletRequest,sessionId: String, keyword: String): NiNi = {
     Util.caculateCostTime {
-      cacheQueryBestKeyWord(keyword, 1)
+      Util.fluidControl({
+        cacheQueryBestKeyWord(keyword, null, 1)
+      }, req.getRemoteHost)
+
     }
   }
 
@@ -71,9 +155,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
-  def wrapShowStateAndGetByQuery(query: String, needSearch: Int): NiNi = {
+  def wrapShowStateAndGetByQuery(req: HttpServletRequest, query: String, showLevel: Integer, needSearch: Int): NiNi = {
     Util.caculateCostTime {
-      showStateAndGetByQuery(query, needSearch)
+      Util.fluidControl({
+        showStateAndGetByQuery(query, showLevel, needSearch)
+      }, req.getRemoteHost)
+
     }
   }
 
@@ -89,31 +176,42 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param query
     * @return
     */
-  def showStateAndGetByQuery(query: String, needSearch: Int): Result = {
+  def showStateAndGetByQuery(query: String, showLevel: Integer, needSearch: Int): Result = {
     val state = conf.stateCache.getObj[ProcessState](query)
     if (state != null) {
       val imutableState = state.clone()
       val currentState = imutableState.getCurrentState
-      if (currentState == 0) triggerQuery(query, needSearch)
+      if (currentState == 0) triggerQuery(query, showLevel, needSearch)
       else {
         val isFinished = imutableState.getFinished
         if (isFinished == FinshedStatus.UNFINISHED) {
           new Result(imutableState)
         } else {
-          val result = new Result(imutableState, cacheQueryBestKeyWord(query, needSearch))
+          val result = new Result(imutableState, cacheQueryBestKeyWord(query, showLevel, needSearch))
           result
         }
       }
 
     } else {
-      triggerQuery(query, needSearch)
+      //triggerQuery(query, needSearch)
+      synTriggerQuery(query, showLevel, needSearch)
     }
 
   }
 
-  def triggerQuery(query: String, needSearch: Int): Result = {
+  def synTriggerQuery(query: String, showLevel: Integer, needSearch: Int): Result = {
+    var resultObj = new Result(new ProcessState(0, 0))
+    val result = cacheQueryBestKeyWord(query, showLevel, needSearch)
+    val state = conf.stateCache.getObj[ProcessState](query)
+    if (state != null) {
+      resultObj = new Result(conf.stateCache.getObj[ProcessState](query), result)
+    }
+    resultObj
+  }
+
+  def triggerQuery(query: String, showLevel: Integer, needSearch: Int): Result = {
     val state = new ProcessState(0, 0)
-    conf.waiter.post(Request(query, needSearch))
+    conf.waiter.post(Request(query, showLevel, needSearch))
     new Result(state)
   }
 
@@ -124,19 +222,21 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     */
   def indexData(sessionId: String, originQuery: String, keywords: java.util.Collection[String]): Boolean = {
     val resutlt = client.incrementIndex(graphIndexName, graphTypName, keywords)
+    addBloomFilter()
     cleanRedisByNamespace(cleanNameSpace)
     resutlt
   }
 
   def indexDataWithRw(keywords: java.util.Collection[IndexObjEntity]): Boolean = {
     val result = client.incrementIndexWithRw(graphIndexName, graphTypName, keywords)
+    addBloomFilter()
     cleanRedisByNamespace(cleanNameSpace)
     result
   }
 
-  def cacheQueryBestKeyWord(query: String, needSearch: Int): AnyRef = {
-    ESSearchPageCache.cacheShowStateAndGetByQuery(query, {
-      queryBestKeyWord(null, query, false, needSearch)
+  def cacheQueryBestKeyWord(query: String, showLevel: Integer, needSearch: Int): AnyRef = {
+    ESSearchPageCache.cacheShowStateAndGetByQuery(query, showLevel, {
+      queryBestKeyWord(null, query, showLevel, false, needSearch)
     })
   }
 
@@ -181,8 +281,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param reSearch
     * @return
     */
-  def queryBestKeyWord(sessionId: String, keyword: String, reSearch: Boolean = false, needSearch: Int): AnyRef = {
-
+  def queryBestKeyWord(sessionId: String, keyword: String, showLevel: Integer, reSearch: Boolean = false, needSearch: Int): AnyRef = {
 
     if (keyword == null || keyword.trim.equalsIgnoreCase("")) {
       logError("keyword can't be null")
@@ -195,43 +294,59 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     if (needSearch != 1) {
 
-      val result = wrapRequestNlp(sessionId, keyword, keyword)
+      val result = wrapRequestNlp(sessionId, showLevel, keyword, keyword)
       updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
       return result
     }
 
 
-    var result = wrapRequestNlp(sessionId, keyword, keyword)
-    try {
-      val nlpObj = result.getData
-      if (nlpObj != null && nlpObj.isInstanceOf[JSONObject]) {
-        val nlpJsonObj = nlpObj.asInstanceOf[JSONObject]
-        val dataType = nlpJsonObj.getString("type")
-        if (dataType.trim.equalsIgnoreCase("ERROR")) {
-          result = null
+    if (conf.bloomFilter.mightContain(keyword)) {
+      var result = wrapRequestNlp(sessionId, showLevel, keyword, keyword)
+      try {
+        val nlpObj = result.getData
+        if (nlpObj != null && nlpObj.isInstanceOf[JSONObject]) {
+          val nlpJsonObj = nlpObj.asInstanceOf[JSONObject]
+          val dataType = nlpJsonObj.getString("type")
+          if (dataType.trim.equalsIgnoreCase("ERROR")) {
+            result = null
+          }
         }
+      } catch {
+        case e: Exception =>
+          result = null
       }
-    } catch {
-      case e: Exception =>
-        result = null
-    }
 
-    if (result != null) {
-      updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
-      return result
+      if (result != null) {
+        updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
+        return result
+      }
     }
 
 
     var targetKeyword: String = null
 
+    def totalRelevantTargetKeyWord(): Unit = {
+      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(), keywordStringFieldWithBoost, relevantKwsField_kwWithBoost, pinyinFieldWithBoost, keywordFieldWithBoost, companyFieldWithBoost, companyEnFieldWithBoost, comStockCodeFieldWithBoost, word2vecWithBoost, word2vecRwWithBoost)
+      if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
+        val doc = matchQueryResult1.head
+        val matchScore = doc.get(scoreField).toString.toFloat
+        val matchKeyWord = doc.get(keywordField).toString
+        targetKeyword = matchKeyWord
+        logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore}  targetKeyword: $targetKeyword")
+      } else {
+        //word2VectorProcess(keyword)
+      }
+    }
+
 
     def relevantTargetKeyWord(score: java.lang.Float, keyWord: String): Unit = {
-      val matchQueryResult1 = client.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword)
+      //val matchQueryResult1 = client.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword)
+      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword, keywordField, companyField, companyEnField, comStockCodeField, keywordField)
       if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
         val doc = matchQueryResult1.head
         val matchScore = doc.get(scoreField).toString.toFloat
         if (matchScore > matchScoreThreshold) {
-          if (score != null && matchScore < score) {
+          if (score != null && matchScore < score / 1000) {
             targetKeyword = keyWord
             logInfo(s"${keyword} have been matched according pinyin and relevant,relevant score:${matchScore} pinyin score:${score}  targetKeyword: $targetKeyword")
           } else {
@@ -272,6 +387,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       }
 
     }
+
 
 
 
@@ -321,7 +437,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         targetKeyword = matchKeyWord
         logInfo(s"${keyword} have been matched  accurately by relevantKw_kw,relevant score:${rlvKWScore}} targetKeyword: $targetKeyword")
       } else {
-        relevantTargetKeyWordByRelevantKw
+        //relevantTargetKeyWordByRelevantKw
+        totalRelevantTargetKeyWord
       }
     }
 
@@ -337,8 +454,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
     // term query
-    termAccurateQuery()
-
+    // termAccurateQuery()
+    //totalRelevantTargetKeyWord()
+    termFuzzyQueryByRelevantKw()
 
 
 
@@ -370,7 +488,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           //fetch request nlp
           //TODO
           //requery
-          return queryBestKeyWord(sessionId, keyword, true, 1)
+          return queryBestKeyWord(sessionId, keyword, showLevel, true, 1)
         }
       }
     } else if (targetKeyword == null && reSearch) {
@@ -381,7 +499,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       if (targetKeyword != null) {
         //request nlp
         //found keyword
-        var result = wrapRequestNlp(sessionId, keyword, targetKeyword)
+        var result = wrapRequestNlp(sessionId, showLevel, keyword, targetKeyword)
         if (!reSearch)
           updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
         else {
@@ -416,6 +534,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       val sets = conf.storage.keys(s"$namespace:*")
       sets.foreach(conf.storage.del(_))
       logInfo(s"clean ${namespace} from redis successfully!")
+      BizeEsInterface.warmCache()
       s"clean ${namespace} from redis successfully"
     } catch {
       case e: Exception =>
@@ -427,9 +546,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
-  def cacheReuqestNlp(query: String): AnyRef = {
-    ESSearchPageCache.cacheRequestNlpByQuery(query, {
-      requestNlp(query)
+  def cacheReuqestNlp(query: String, showLevel: Integer): AnyRef = {
+    ESSearchPageCache.cacheRequestNlpByQuery(query, showLevel, {
+      requestNlp(query, showLevel)
     })
   }
 
@@ -440,14 +559,15 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param query
     * @return
     */
-  private def requestNlp(query: String): AnyRef = {
-    requestHttp(query, graphUrl)
+  private def requestNlp(query: String, showLevel: Integer): AnyRef = {
+    requestHttp(query, graphUrl, showLevel)
   }
 
-  def requestHttp(query: String, httpUrl: String, reqType: String = "get"): AnyRef = {
+  def requestHttp(query: String, httpUrl: String, showLevel: Integer, reqType: String = "get"): AnyRef = {
     reqType match {
       case "get" =>
-        val url: String = s"${httpUrl}${URLEncoder.encode(query, "UTF-8")}"
+        var url: String = s"${httpUrl}${URLEncoder.encode(query, "UTF-8")}"
+        if (showLevel != null) url = url + s"&l=$showLevel"
         var httpResp: CloseableHttpResponse = null
         try {
           httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null)
@@ -470,8 +590,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
-  private def wrapRequestNlp(sessionId: String, originQuery: String, query: String): QueryData = {
-    new QueryData(originQuery, query, cacheReuqestNlp(query))
+  private def wrapRequestNlp(sessionId: String, showLevel: Integer, originQuery: String, query: String): QueryData = {
+    new QueryData(originQuery, query, cacheReuqestNlp(query, showLevel))
   }
 
 
@@ -556,7 +676,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
   }
 
-  def warmCache(): String = {
+  def warm(): Unit = {
 
     var cnt = 0
     val obj = BizeEsInterface.matchAllQueryWithCount(0, BizeEsInterface.count().toInt)
@@ -581,16 +701,35 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           cnt += 1
         }
       }
-      Thread.sleep(20)
+      if (obj1.containsKey("stock_code")) {
+        val stockCode = obj1.getString("stock_code")
+        if (stockCode != null) {
+          val companyCode = stockCode.split("_")
+          reqestForCache(companyCode(0))
+          reqestForCache(stockCode)
+        }
+
+      }
+      Thread.sleep(1000)
     }
-    s"warm successfully,total keywords:${cnt}"
+    logInfo(s"warm successfully,total keywords:${cnt}")
+  }
+
+  def warmCache(): String = {
+    val thread = new Thread() {
+      override def run(): Unit = {
+        warm
+      }
+    }
+    thread.start()
+    //conf.waiter.post(WarmCache())
+    "we will warm cache in background"
   }
 
   def reqestForCache(keyword: String) = {
+    BizeEsInterface.queryBestKeyWord(null, keyword, null, false, 1)
     //val url = "http://54.222.222.172:8999/es/search/keywords/?keyword="
-    for (i <- 1 to 3) {
-      requestHttp(keyword, warmUrl)
-    }
+    //requestHttp(keyword, warmUrl)
     logInfo(s"keyword: ${keyword} warmed!")
   }
 
@@ -622,12 +761,30 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testMatchQuery
     //testCount
     //testMatchAllQueryWithCount
-    testWarmCache()
+    //testWarmCache()
+    //testMultiMatchForNgram
+
+    testBloomFilter
+
+  }
+
+
+  def testBloomFilter() = {
+    conf.bloomFilter.add("soledede")
+    conf.bloomFilter.add("a")
+    conf.bloomFilter.add("b")
+    println(conf.bloomFilter.mightContain("soledede"))
+  }
+
+
+  def testMultiMatchForNgram() = {
+    val result = client.multiMatchQuery(graphIndexName, graphTypName, 0, 10, "6_SZ_EQ", "keyword", "stock_code", "s_zh")
+    println(result)
   }
 
 
   def testWarmCache() = {
-    BizeEsInterface.warmCache()
+    BizeEsInterface.warm()
   }
 
   def testMatchQuery() = {
@@ -683,7 +840,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   private def testQueryBestKeyWord() = {
-    val result = BizeEsInterface.queryBestKeyWord(null, "百度", false, 1)
+    val result = BizeEsInterface.queryBestKeyWord(null, "百度", null, false, 1)
     println(result)
   }
 
@@ -695,7 +852,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   private def testShowStateByQuery() = {
     val query = "百度凤凰"
-    val result = BizeEsInterface.showStateAndGetByQuery(query, 1)
+    val result = BizeEsInterface.showStateAndGetByQuery(query, null, 1)
     println(result)
   }
 

@@ -1,11 +1,13 @@
 package search.es.client.util
 
+import search.common.bloomfilter.mutable.BloomFilter
 import search.common.cache.KVCache
 import search.common.cache.impl.{RedisClientCache, RedisCache, LocalCache}
 import search.common.config.EsConfiguration
 import search.common.listener.ListenerWaiter
 import search.common.listener.graph.{KnowledgeGraphListenerWaiter, KnowledgeGraphListenerImpl, KnowledgeGraphListenerWaiterManager}
 import search.common.storage.Storage
+import search.common.util.Constants
 import search.common.word2vec.Word2VEC
 import search.es.client.similarity.{DefaultSimilarityCaculateImpl, SimilarityCaculate}
 import search.es.client.{DefaultEsClientImpl, EsClient}
@@ -30,6 +32,7 @@ private[search] class EsClientConf(loadDefaults: Boolean) extends Cloneable with
   var storage: Storage = _
   var stateCache: KVCache = _
   var esPageCache: KVCache = _
+  var bloomFilter: BloomFilter[String] = _
 
 
   def init() = {
@@ -43,6 +46,7 @@ private[search] class EsClientConf(loadDefaults: Boolean) extends Cloneable with
     this.storage = Storage("redis")
     this.stateCache = new LocalCache()
     this.esPageCache = new RedisClientCache(this)
+    this.bloomFilter = BloomFilter[String](Constants.GRAPH_KEYWORDS_BLOOMFILTER_KEY, expectedElements, falsePositiveRate)
   }
 
 

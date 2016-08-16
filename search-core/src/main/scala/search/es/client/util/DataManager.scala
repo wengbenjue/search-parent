@@ -13,7 +13,7 @@ import scala.io.Source
 /**
   * Created by soledede.weng on 2016/7/27.
   */
-private[search] class DataManager(conf: EsClientConf) extends MongoBase{
+private[search] class DataManager(conf: EsClientConf) extends MongoBase {
 
 
   override def getCollection: DBCollection = {
@@ -24,6 +24,11 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase{
   def getLogCollection: DBCollection = {
     getCollection(MongoTableConstants.NEWS_SEARCH_LOGS)
   }
+
+  def getStockCollection: DBCollection = {
+    getCollection(MongoTableConstants.ADA_BASE_STOCK)
+  }
+
 
   def deleteAllData() = {
     try {
@@ -61,6 +66,22 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase{
 
     println(s"All successfully insert to mongo,total number:$cnt")
   }
+
+  def findBaseStock(): java.util.List[DBObject] = {
+    val projection = new BasicDBObject()
+    projection.put("code", Integer.valueOf(1))
+    projection.put("name.en", Integer.valueOf(1))
+    projection.put("name.szh", Integer.valueOf(1))
+    projection.put("org.en", Integer.valueOf(1))
+    projection.put("org.szh", Integer.valueOf(1))
+    val query = new BasicDBObject()
+    // query.put("name.szh", new BasicDBObject("$ne", null));
+    val dbCurson = getStockCollection.find(query, projection)
+    if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
+    val result = dbCurson.toArray
+    result
+  }
+
 
   def queryALl() = {
     val cur = getCollection().find()
@@ -106,8 +127,15 @@ private[search] object DataManager {
 
 
   def main(args: Array[String]) {
-    testLoadGraphNodeDataToMongo
+    //testLoadGraphNodeDataToMongo
     //testQueryOneByKeyWord
+    testFindBaseStock
+  }
+
+  def testFindBaseStock() = {
+    val dm = new DataManager(new EsClientConf())
+    val result = dm.findBaseStock()
+    println(result)
   }
 
   def testLoadGraphNodeDataToMongo() = {
