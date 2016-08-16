@@ -680,38 +680,42 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     var cnt = 0
     val obj = BizeEsInterface.matchAllQueryWithCount(0, BizeEsInterface.count().toInt)
-    val result = JSON.toJSON(obj.getResult).asInstanceOf[JSONArray]
-    var keyWord: String = null
-    result.foreach { obj =>
-      var rvkw: java.util.Collection[String] = null
-      val obj1 = obj.asInstanceOf[JSONObject]
-      keyWord = obj1.getString("keyword")
-      if (keyWord != null && !keyWord.equalsIgnoreCase("")) {
-        reqestForCache(keyWord)
-        cnt += 1
-      }
-      if (obj1.containsKey("relevant_kws")) {
-        val list = obj1.getJSONArray("relevant_kws").toList
-        val sttList = list.map(_.toString)
-        rvkw = sttList
-      }
-      if (rvkw != null && keyWord.size > 0) {
-        rvkw.filter(x => x != null && !x.equalsIgnoreCase("")).foreach { x =>
-          reqestForCache(x)
-          cnt += 1
-        }
-      }
-      if (obj1.containsKey("stock_code")) {
-        val stockCode = obj1.getString("stock_code")
-        if (stockCode != null) {
-          val companyCode = stockCode.split("_")
-          reqestForCache(companyCode(0))
-          reqestForCache(stockCode)
-        }
+   if(obj!=null){
+     val result = JSON.toJSON(obj.getResult).asInstanceOf[JSONArray]
+     var keyWord: String = null
+     if(result!=null){
+       result.foreach { obj =>
+         var rvkw: java.util.Collection[String] = null
+         val obj1 = obj.asInstanceOf[JSONObject]
+         keyWord = obj1.getString("keyword")
+         if (keyWord != null && !keyWord.equalsIgnoreCase("")) {
+           reqestForCache(keyWord)
+           cnt += 1
+         }
+         if (obj1.containsKey("relevant_kws")) {
+           val list = obj1.getJSONArray("relevant_kws").toList
+           val sttList = list.map(_.toString)
+           rvkw = sttList
+         }
+         if (rvkw != null && keyWord.size > 0) {
+           rvkw.filter(x => x != null && !x.equalsIgnoreCase("")).foreach { x =>
+             reqestForCache(x)
+             cnt += 1
+           }
+         }
+         if (obj1.containsKey("stock_code")) {
+           val stockCode = obj1.getString("stock_code")
+           if (stockCode != null) {
+             val companyCode = stockCode.split("_")
+             reqestForCache(companyCode(0))
+             reqestForCache(stockCode)
+           }
 
-      }
-      Thread.sleep(1000)
-    }
+         }
+         Thread.sleep(1000)
+       }
+     }
+   }
     logInfo(s"warm successfully,total keywords:${cnt}")
   }
 
