@@ -39,20 +39,30 @@ private[search] class RedisStorage private extends Storage with Logging with Red
 
 
   override def del(keys: String*): Boolean = {
+    val client = RedisClient("default")
     try {
-      val client = RedisClient("close")
+        //val client = RedisClient("close")
       client.del(keys: _*)
       true
     } catch {
       case e: Exception =>
         false
+    }finally {
+      client.close()
     }
   }
 
 
   override def keys(keyPreffix: String): Set[String] = {
-    val client = RedisClient("close")
-    client.keys(keyPreffix).toSet
+    val client = RedisClient("default")
+    try {
+      client.keys(keyPreffix).toSet
+    } catch {
+      case e: Exception =>
+        null
+    }finally {
+      client.close()
+    }
   }
 
 

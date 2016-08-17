@@ -14,6 +14,10 @@ public class IndexObjEntity {
     public IndexObjEntity() {
     }
 
+    public IndexObjEntity(String keyword) {
+        this.keyword = keyword;
+    }
+
     public IndexObjEntity(String keyword, String rvkw) {
         this.keyword = keyword;
         List<String> list = new ArrayList<>();

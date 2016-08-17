@@ -121,10 +121,12 @@ object EsSearchHttpClientTest {
   def getIndexDataBySet(): java.util.List[IndexObjEntity] = {
     val keywords: java.util.List[IndexObjEntity] = new java.util.ArrayList[IndexObjEntity]
     var list: java.util.List[String] = new java.util.ArrayList[String]()
-    var kvN = "百度"
+    var kvN = "巴安水务"
+    keywords.add(new IndexObjEntity(kvN))
+
     list.add("a")
     list.add("abc")
-    keywords.add(new IndexObjEntity(kvN, list))
+    //keywords.add(new IndexObjEntity(kvN, list))
 
     /*kvN = "test22"
     list = new java.util.ArrayList[String]()
@@ -170,7 +172,7 @@ object EsSearchHttpClientTest {
     //val url: String = "http://localhost:8999/es/index/rws"
     val url: String = "http://54.222.222.172:8999/es/index/rws"
     val keywords = getIndexDataFromSerObj
-    // val keywords = getIndexDataBySet
+   // val keywords = getIndexDataBySet
     val headers: java.util.Map[String, String] = new java.util.HashMap[String, String]
     headers.put("Content-Type", "application/json")
     val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", keywords, headers)

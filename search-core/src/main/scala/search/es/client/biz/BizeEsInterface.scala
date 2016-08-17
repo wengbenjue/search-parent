@@ -19,6 +19,7 @@ import search.common.entity.bizesinterface._
 import search.common.entity.state.ProcessState
 import search.common.http.HttpClientUtil
 import search.common.listener.graph.{WarmCache, Request, UpdateState}
+import search.common.redis.RedisClient
 import search.common.serializer.JavaSerializer
 import search.common.util.{FinshedStatus, Util, KnowledgeGraphStatus, Logging}
 import search.es.client.EsClient
@@ -67,7 +68,6 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val comStockCodeField = "stock_code"
   val companyEnField = "s_en"
 
-  init()
 
   def init() = {
     this.conf = new EsClientConf()
@@ -77,7 +77,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     loadCache
     addBloomFilter
 
-    cleanRedisByNamespace("graph_state")
+    cleanRedisByNamespace(cleanNameSpace)
   }
 
 
@@ -229,14 +229,14 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   def indexData(sessionId: String, originQuery: String, keywords: java.util.Collection[String]): Boolean = {
     val resutlt = client.incrementIndex(graphIndexName, graphTypName, keywords)
     addBloomFilter()
-    cleanRedisByNamespace(cleanNameSpace)
+    cleanRedisByNamespace(null)
     resutlt
   }
 
   def indexDataWithRw(keywords: java.util.Collection[IndexObjEntity]): Boolean = {
     val result = client.incrementIndexWithRw(graphIndexName, graphTypName, keywords)
     addBloomFilter()
-    cleanRedisByNamespace(cleanNameSpace)
+    cleanRedisByNamespace(null)
     result
   }
 
@@ -535,28 +535,27 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   def cleanRedisByNamespace(namespace: String): String = {
-    try {
-
-      /* try {
-         val sets = conf.storage.keys(s"$namespace:*")
-         sets.foreach { k =>
-           if (!conf.storage.del(k))
-             conf.storage.del(k)
-         }
-       } catch {
-         case e: Exception =>
-       }
-       logInfo(s"clean ${namespace} from redis successfully!")*/
-
+    if (namespace != null && namespace.trim.equalsIgnoreCase(cleanNameSpace)) {
+      val client = RedisClient("default")
+      try {
+        val sets = conf.storage.keys(s"$namespace:*")
+        sets.foreach { k =>
+          client.del(k)
+        }
+      } catch {
+        case e: Exception =>
+          val result = s"need clean ${namespace} from redis again"
+          logInfo(result, e)
+          result
+      } finally {
+        client.close()
+      }
       conf.stateCache.cleanAll()
-      BizeEsInterface.warmCache()
+      logInfo(s"clean ${namespace} from redis successfully!")
       s"clean ${namespace} from redis successfully"
-    } catch {
-      case e: Exception =>
-        val result = s"need clean ${namespace} from redis again"
-        logInfo(result)
-        result
     }
+
+    BizeEsInterface.warmCache()
 
   }
 
@@ -727,7 +726,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
             }
 
           }
-          Thread.sleep(1000)
+          //Thread.sleep(1000)
         }
       }
     }
@@ -746,7 +745,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   def reqestForCache(keyword: String) = {
-    BizeEsInterface.queryBestKeyWord(null, keyword, null, false, 1)
+    //BizeEsInterface.queryBestKeyWord(null, keyword, null, false, 1)
+    BizeEsInterface.cacheQueryBestKeyWord(keyword, null, 1)
     //val url = "http://54.222.222.172:8999/es/search/keywords/?keyword="
     //requestHttp(keyword, warmUrl)
     logInfo(s"keyword: ${keyword} warmed!")
@@ -773,7 +773,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testRealTimeCrawler
     //testShowStateByQuery
     //testDecrementIndex
-    //testCleanRedisByNamespace
+    testCleanRedisByNamespace
     //testDeleteAllMongoData()
     //testDelAllData
     //testBoolMustQuery
@@ -783,7 +783,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testWarmCache()
     //testMultiMatchForNgram
 
-    testBloomFilter
+    //testBloomFilter
 
   }
 
