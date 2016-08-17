@@ -14,7 +14,7 @@ private[search] trait Storage {
 
   def setStringByKey(key: String,value: String,seconds: Int=60*1000): String
 
-  def del(keys: String*)
+  def del(keys: String*): Boolean
 
   def keys(keyPreffix: String):Set[String]
 

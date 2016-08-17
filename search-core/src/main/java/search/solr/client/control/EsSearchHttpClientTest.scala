@@ -30,16 +30,43 @@ object EsSearchHttpClientTest {
     testIndexByKeywordsWithRw
     //getIndexDataFromSerObj()
     //testSearchFluid
+    //testShowStateRedisCache()
 
   }
 
-  def testSearchFluid() = {
-    val url = "http://localhost:8999/es/search/state/?keyword=清洁能源"
-    for (i <- 0 until 10000)
-      {
-        requestHttp("金融科技", url, null)
-        println(s"request $i")
+  def testShowStateRedisCache() = {
+    val url = "http://localhost:8999/es/search/state/?keyword="
+    val list = List("金融科技", "联创电子", "金融科技d", "金融科技dw", "金融科技1", "联创电子2", "金融科技d3", "金融科技d4w",
+      "利亚德", "利亚德1", "利亚德2", "利亚德3", "利亚德4", "利亚德15", "利亚德22", "利亚德33",
+      "三环集团", "三环集团1", "三环集团2", "三环集团3", "三环集团4", "三环集团15", "三环集团22", "三环集团33")
+
+    for(j <- 0 until 1000){
+      list.foreach { q =>
+        for (i <- 0 until 100) {
+          val thread = new Thread(new RequestTestRedis(q, url))
+          thread.start()
+        }
       }
+
+    }
+
+
+
+  }
+
+  class RequestTestRedis(query: String, url: String) extends Runnable {
+    override def run(): Unit = {
+      requestHttp(query, url, null)
+      println(s"request $query")
+    }
+  }
+
+  def testSearchFluid() = {
+    val url = "http://localhost:8999/es/search/state/?keyword="
+    for (i <- 0 until 10000) {
+      requestHttp("金融科技", url, null)
+      println(s"request $i")
+    }
 
   }
 
@@ -53,7 +80,7 @@ object EsSearchHttpClientTest {
           httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null)
           val entity: HttpEntity = httpResp.getEntity
           val sResponse: String = EntityUtils.toString(entity)
-          println(sResponse)
+          //println(sResponse)
           //JSON.parseObject(sResponse)
           null
         }

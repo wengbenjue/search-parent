@@ -76,7 +76,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     loadCache
     addBloomFilter
+
+    cleanRedisByNamespace("graph_state")
   }
+
 
   def warpLoadCache(): NiNi = {
     Util.caculateCostTime {
@@ -132,7 +135,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     Thread.currentThread().suspend()
   }
 
-  def searchTopKeyWord(req: HttpServletRequest,sessionId: String, keyword: String): NiNi = {
+  def searchTopKeyWord(req: HttpServletRequest, sessionId: String, keyword: String): NiNi = {
     Util.caculateCostTime {
       Util.fluidControl({
         cacheQueryBestKeyWord(keyword, null, 1)
@@ -201,9 +204,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   def synTriggerQuery(query: String, showLevel: Integer, needSearch: Int): Result = {
     var resultObj = new Result(new ProcessState(0, 0))
-    val result = cacheQueryBestKeyWord(query, showLevel, needSearch)
+    var result = cacheQueryBestKeyWord(query, showLevel, needSearch)
     val state = conf.stateCache.getObj[ProcessState](query)
     if (state != null) {
+      resultObj = new Result(conf.stateCache.getObj[ProcessState](query), result)
+    } else if (state == null && result != null) {
+      result = queryBestKeyWord(null, query, showLevel, false, needSearch)
       resultObj = new Result(conf.stateCache.getObj[ProcessState](query), result)
     }
     resultObj
@@ -530,10 +536,19 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   def cleanRedisByNamespace(namespace: String): String = {
     try {
+
+      /* try {
+         val sets = conf.storage.keys(s"$namespace:*")
+         sets.foreach { k =>
+           if (!conf.storage.del(k))
+             conf.storage.del(k)
+         }
+       } catch {
+         case e: Exception =>
+       }
+       logInfo(s"clean ${namespace} from redis successfully!")*/
+
       conf.stateCache.cleanAll()
-      val sets = conf.storage.keys(s"$namespace:*")
-      sets.foreach(conf.storage.del(_))
-      logInfo(s"clean ${namespace} from redis successfully!")
       BizeEsInterface.warmCache()
       s"clean ${namespace} from redis successfully"
     } catch {
@@ -680,42 +695,42 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     var cnt = 0
     val obj = BizeEsInterface.matchAllQueryWithCount(0, BizeEsInterface.count().toInt)
-   if(obj!=null){
-     val result = JSON.toJSON(obj.getResult).asInstanceOf[JSONArray]
-     var keyWord: String = null
-     if(result!=null){
-       result.foreach { obj =>
-         var rvkw: java.util.Collection[String] = null
-         val obj1 = obj.asInstanceOf[JSONObject]
-         keyWord = obj1.getString("keyword")
-         if (keyWord != null && !keyWord.equalsIgnoreCase("")) {
-           reqestForCache(keyWord)
-           cnt += 1
-         }
-         if (obj1.containsKey("relevant_kws")) {
-           val list = obj1.getJSONArray("relevant_kws").toList
-           val sttList = list.map(_.toString)
-           rvkw = sttList
-         }
-         if (rvkw != null && keyWord.size > 0) {
-           rvkw.filter(x => x != null && !x.equalsIgnoreCase("")).foreach { x =>
-             reqestForCache(x)
-             cnt += 1
-           }
-         }
-         if (obj1.containsKey("stock_code")) {
-           val stockCode = obj1.getString("stock_code")
-           if (stockCode != null) {
-             val companyCode = stockCode.split("_")
-             reqestForCache(companyCode(0))
-             reqestForCache(stockCode)
-           }
+    if (obj != null) {
+      val result = JSON.toJSON(obj.getResult).asInstanceOf[JSONArray]
+      var keyWord: String = null
+      if (result != null) {
+        result.foreach { obj =>
+          var rvkw: java.util.Collection[String] = null
+          val obj1 = obj.asInstanceOf[JSONObject]
+          keyWord = obj1.getString("keyword")
+          if (keyWord != null && !keyWord.equalsIgnoreCase("")) {
+            reqestForCache(keyWord)
+            cnt += 1
+          }
+          if (obj1.containsKey("relevant_kws")) {
+            val list = obj1.getJSONArray("relevant_kws").toList
+            val sttList = list.map(_.toString)
+            rvkw = sttList
+          }
+          if (rvkw != null && keyWord.size > 0) {
+            rvkw.filter(x => x != null && !x.equalsIgnoreCase("")).foreach { x =>
+              reqestForCache(x)
+              cnt += 1
+            }
+          }
+          if (obj1.containsKey("stock_code")) {
+            val stockCode = obj1.getString("stock_code")
+            if (stockCode != null) {
+              val companyCode = stockCode.split("_")
+              reqestForCache(companyCode(0))
+              reqestForCache(stockCode)
+            }
 
-         }
-         Thread.sleep(1000)
-       }
-     }
-   }
+          }
+          Thread.sleep(1000)
+        }
+      }
+    }
     logInfo(s"warm successfully,total keywords:${cnt}")
   }
 

@@ -38,9 +38,15 @@ private[search] class RedisStorage private extends Storage with Logging with Red
   }
 
 
-  override def del(keys: String*): Unit = {
-    val client = RedisClient("close")
-    client.del(keys: _*)
+  override def del(keys: String*): Boolean = {
+    try {
+      val client = RedisClient("close")
+      client.del(keys: _*)
+      true
+    } catch {
+      case e: Exception =>
+        false
+    }
   }
 
 
