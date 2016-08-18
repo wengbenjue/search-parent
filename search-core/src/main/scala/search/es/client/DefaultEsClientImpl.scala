@@ -127,15 +127,23 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
         val comEn = baseStock.getComEn
         val comSim = baseStock.getComSim
         val comCode = baseStock.getComCode
-        dbObject.append("s_com", company)
-        dbObject.append("s_en", comEn)
-        dbObject.append("s_zh", comSim)
-        dbObject.append("stock_code", comCode)
+        if (company != null)
+          dbObject.append("s_com", company)
+        if (comEn != null)
+          dbObject.append("s_en", comEn)
+        if (comSim != null)
+          dbObject.append("s_zh", comSim)
+        if (comCode != null)
+          dbObject.append("stock_code", comCode)
 
-        newDoc.put("s_com", company)
-        newDoc.put("s_en", comEn)
-        newDoc.put("s_zh", comSim)
-        newDoc.put("stock_code", comCode)
+        if (company != null)
+          newDoc.put("s_com", company)
+        if (comEn != null)
+          newDoc.put("s_en", comEn)
+        if (comSim != null)
+          newDoc.put("s_zh", comSim)
+        if (comCode != null)
+          newDoc.put("stock_code", comCode)
 
       }
 

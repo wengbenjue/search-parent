@@ -83,8 +83,28 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   def warpLoadCache(): NiNi = {
     Util.caculateCostTime {
-      loadCache()
+      //loadCache()
+      loadCacheFromCom
     }
+  }
+
+  def loadCacheFromCom(): String = {
+    val stocks = conf.mongoDataManager.findCompanyCode()
+    if (stocks != null && stocks.size() > 0) {
+      stocks.foreach { dbobj =>
+        var comSim: String = null
+
+        comSim = if (dbobj.get("w") != null) dbobj.get("w").toString else null
+
+        val comCode: String = if (dbobj.get("code") != null) dbobj.get("code").toString else null
+        if (comSim != null && comCode != null) {
+          LocalCache.baseStockCache(comSim) = new BaseStock(comSim, comCode)
+        }
+
+      }
+      logInfo("comoany stock cached in local cache")
+    }
+    "comoany stock cached in local cache"
   }
 
   def loadCache(): String = {
@@ -548,7 +568,6 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           }
         }
         conf.stateCache.cleanAll()
-        BizeEsInterface.warmCache()
         logInfo(s"clean ${namespace} from redis successfully!")
         s"clean ${namespace} from redis successfully"
       } catch {

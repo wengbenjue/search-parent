@@ -12,6 +12,11 @@ public class BaseStock {
     public BaseStock() {
     }
 
+    public BaseStock(String comSim, String comCode) {
+        this.comSim = comSim;
+        this.comCode = comCode;
+    }
+
     public BaseStock(String comSim, String company, String comEn, String comCode) {
         this.comSim = comSim;
         this.company = company;
