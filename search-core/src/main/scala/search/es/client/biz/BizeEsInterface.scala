@@ -594,9 +594,13 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         var httpResp: CloseableHttpResponse = null
         try {
           httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null)
-          val entity: HttpEntity = httpResp.getEntity
-          val sResponse: String = EntityUtils.toString(entity)
-          JSON.parseObject(sResponse)
+          if (httpResp != null) {
+            val entity: HttpEntity = httpResp.getEntity
+            if (entity != null) {
+              val sResponse: String = EntityUtils.toString(entity)
+              JSON.parseObject(sResponse)
+            } else null
+          } else null
         }
         catch {
           case e: IOException => {
@@ -700,7 +704,6 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   def warm(): Unit = {
-
     var cnt = 0
     val obj = BizeEsInterface.matchAllQueryWithCount(0, BizeEsInterface.count().toInt)
     if (obj != null) {
@@ -740,17 +743,30 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       }
     }
     logInfo(s"warm successfully,total keywords:${cnt}")
+    thread = null
   }
 
+  var thread: Thread = _
+
+  val lock = new Object
+
   def warmCache(): String = {
-    val thread = new Thread() {
+
+    if (thread == null) thread = new Thread() {
       override def run(): Unit = {
         warm
       }
     }
-    thread.start()
-    //conf.waiter.post(WarmCache())
-    "we will warm cache in background"
+    lock.synchronized {
+      if (thread != null && !thread.isAlive) {
+        thread.start()
+        //conf.waiter.post(WarmCache())
+        "we will warm cache in background"
+      } else {
+        "warming..."
+      }
+    }
+
   }
 
   def reqestForCache(keyword: String) = {
@@ -782,14 +798,14 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testRealTimeCrawler
     //testShowStateByQuery
     //testDecrementIndex
-    testCleanRedisByNamespace
+    //testCleanRedisByNamespace
     //testDeleteAllMongoData()
     //testDelAllData
     //testBoolMustQuery
     //testMatchQuery
     //testCount
     //testMatchAllQueryWithCount
-    //testWarmCache()
+    testWarmCache()
     //testMultiMatchForNgram
 
     //testBloomFilter
@@ -812,7 +828,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   def testWarmCache() = {
-    BizeEsInterface.warm()
+    for (i <- 0 until 10) {
+      BizeEsInterface.warmCache()
+      Thread.sleep(1000)
+    }
+
   }
 
   def testMatchQuery() = {

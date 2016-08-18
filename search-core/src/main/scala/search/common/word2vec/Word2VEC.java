@@ -255,7 +255,7 @@ public class Word2VEC {
 
     public static void main(String[] args) throws IOException {
         Word2VEC word2VEC = new Word2VEC();
-        int REL_NEWS_SIZE = 20;
+        int REL_NEWS_SIZE = 3;
         word2VEC.setTopNSize(REL_NEWS_SIZE);
         // InputStream in = Util.getContextClassLoader().getResourceAsStream("model/newsfinal11.bin");
         //InputStream in = Util.getContextClassLoader().getResourceAsStream("model/hotnews_2016.bin");
@@ -264,5 +264,11 @@ public class Word2VEC {
         word2VEC.loadModel("D:/workspace/search/word2vec/hotnews_2016.bin");
         Set<WordEntry> persononVectory = word2VEC.distance("智慧医疗");
         System.out.println(persononVectory);
+       long startTime = System.currentTimeMillis();
+        Set<WordEntry> persononVectory1 = word2VEC.distance("百度");
+        long endTime = System.currentTimeMillis();
+        System.out.println("cost:"+(endTime-startTime));
+        System.out.println(persononVectory1);
+
     }
 }

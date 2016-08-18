@@ -172,7 +172,7 @@ object EsSearchHttpClientTest {
     //val url: String = "http://localhost:8999/es/index/rws"
     val url: String = "http://54.222.222.172:8999/es/index/rws"
     val keywords = getIndexDataFromSerObj
-   // val keywords = getIndexDataBySet
+    //val keywords = getIndexDataBySet
     val headers: java.util.Map[String, String] = new java.util.HashMap[String, String]
     headers.put("Content-Type", "application/json")
     val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", keywords, headers)
