@@ -229,14 +229,14 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   def indexData(sessionId: String, originQuery: String, keywords: java.util.Collection[String]): Boolean = {
     val resutlt = client.incrementIndex(graphIndexName, graphTypName, keywords)
     addBloomFilter()
-    cleanRedisByNamespace(null)
+    cleanRedisByNamespace(cleanNameSpace)
     resutlt
   }
 
   def indexDataWithRw(keywords: java.util.Collection[IndexObjEntity]): Boolean = {
     val result = client.incrementIndexWithRw(graphIndexName, graphTypName, keywords)
     addBloomFilter()
-    cleanRedisByNamespace(null)
+    cleanRedisByNamespace(cleanNameSpace)
     result
   }
 
@@ -540,23 +540,32 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       try {
         val sets = conf.storage.keys(s"$namespace:*")
         sets.foreach { k =>
-          client.del(k)
+          try {
+            client.del(k)
+          } catch {
+            case e: Exception =>
+              client.del(k)
+          }
         }
+        conf.stateCache.cleanAll()
+        BizeEsInterface.warmCache()
+        logInfo(s"clean ${namespace} from redis successfully!")
+        s"clean ${namespace} from redis successfully"
       } catch {
         case e: Exception =>
-          val result = s"need clean ${namespace} from redis again"
+          var result = s"need clean ${namespace} from redis again"
           logInfo(result, e)
+          result = cleanRedisByNamespace(cleanNameSpace)
           result
       } finally {
         client.close()
       }
+    } else {
       conf.stateCache.cleanAll()
-      logInfo(s"clean ${namespace} from redis successfully!")
-      s"clean ${namespace} from redis successfully"
+      BizeEsInterface.warmCache()
+      logInfo(s"clean ${namespace}, just local  cache successfully!")
+      s"clean ${namespace} , just local  cache successfully"
     }
-
-    BizeEsInterface.warmCache()
-
   }
 
 
