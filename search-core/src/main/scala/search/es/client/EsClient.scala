@@ -76,6 +76,9 @@ private[search] trait EsClient extends EsConfiguration {
 
   def boolMustQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]]
 
+  def indexGraphNlp(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity]): Boolean
+
+
 }
 
 private[search] object EsClient extends EsConfiguration with Logging {
@@ -754,5 +757,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
     }
     return kvList
   }
+
+
 
 }

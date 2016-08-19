@@ -1,5 +1,6 @@
 package search.common.listener.graph
 
+
 /**
   * Created by soledede.weng on 2016/7/28.
   */
@@ -9,4 +10,6 @@ trait KnowledgeGraphListener {
   def onNewRequest(request: Request)
 
   def onWarmCache()
+
+  def onIndexGraphNlp(indexGraphNlp: IndexGraphNlp)
 }

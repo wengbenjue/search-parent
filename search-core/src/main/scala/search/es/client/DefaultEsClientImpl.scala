@@ -1,5 +1,6 @@
 package search.es.client
 
+import java.util
 import java.util.concurrent.TimeUnit
 
 import com.mongodb.{BasicDBObject, DBObject, DBCursor}
@@ -7,6 +8,7 @@ import org.elasticsearch.client.Client
 import search.common.cache.impl.LocalCache
 import search.common.config.{RedisConfiguration, EsConfiguration}
 import search.common.entity.bizesinterface.IndexObjEntity
+import search.common.listener.graph.IndexGraphNlp
 import search.common.util.{Util, Logging}
 import search.es.client.util.EsClientConf
 import scala.collection.JavaConversions._
@@ -83,16 +85,26 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
   override def incrementIndexWithRw(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity]): Boolean = {
+
+    if (data == null || data.size() == 0) {
+      logError("data for index is null")
+      return false
+    }
+    if (data.size() > 10) {
+      conf.waiter.post(IndexGraphNlp(indexName, typeName, data))
+      return true
+    }
+    else
+      indexGraphNlp(indexName, typeName, data)
+  }
+
+
+  def indexGraphNlp(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity]): Boolean = {
     val docs = new java.util.ArrayList[java.util.Map[String, Object]]
     var list = new java.util.ArrayList[BasicDBObject]()
     var cnt = conf.mongoDataManager.count()
     var logType = "added"
     var indexId = cnt
-    if (data == null || data.size() == 0) {
-      logError("data for index is null")
-      return false
-    }
-    if (data.size() > 10) return true
     data.foreach { k =>
       val keyword = k.getKeyword
       val rvKw = k.getRvkw
@@ -179,7 +191,6 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     } else if (docs.size() > 1) {
       addDocuments(indexName, typeName, docs)
     } else false
-
   }
 
 

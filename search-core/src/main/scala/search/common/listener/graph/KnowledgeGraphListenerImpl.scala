@@ -18,10 +18,14 @@ class KnowledgeGraphListenerImpl(conf: EsClientConf) extends KnowledgeGraphListe
 
   override def onNewRequest(request: Request): Unit = {
     //BizeEsInterface.cacheQueryBestKeyWord(request.query,request.needSearch)
-    BizeEsInterface.queryBestKeyWord(null, request.query,request.showLevel, false, request.needSearch)
+    BizeEsInterface.queryBestKeyWord(null, request.query, request.showLevel, false, request.needSearch)
   }
 
   override def onWarmCache(): Unit = {
     BizeEsInterface.warm()
+  }
+
+  override def onIndexGraphNlp(indexGraphNlp: IndexGraphNlp): Unit = {
+    conf.esClient.indexGraphNlp(indexGraphNlp.indexName, indexGraphNlp.typeName, indexGraphNlp.data)
   }
 }

@@ -27,7 +27,9 @@ trait KnowledgeGraphListenerWaiter extends ListenerWaiter[KnowledgeGraphListener
       case request: Request =>
         listener.onNewRequest(request)
       case warmCache: WarmCache =>
-      listener.onWarmCache()
+        listener.onWarmCache()
+      case indexGraphNlp: IndexGraphNlp =>
+        listener.onIndexGraphNlp(indexGraphNlp)
       case _ =>
     }
   }
