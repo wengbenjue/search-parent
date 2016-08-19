@@ -6,7 +6,7 @@ import java.util
 import javax.servlet.http.HttpServletRequest
 
 import com.alibaba.fastjson.{JSONArray, JSONObject, JSON}
-import com.mongodb.BasicDBObject
+import com.mongodb.{BasicDBList, BasicDBObject}
 import org.ansj.splitWord.analysis.ToAnalysis
 import org.apache.http.HttpEntity
 import org.apache.http.client.methods.CloseableHttpResponse
@@ -77,8 +77,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //loadCache
     loadCacheFromCom
     addBloomFilter
-
     cleanRedisByNamespace(cleanNameSpace)
+    indexCatOfKeywords
   }
 
 
@@ -148,6 +148,115 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           conf.bloomFilter.add(keyWord)
         }
       }
+    }
+  }
+
+
+  def indexCatOfKeywords() = {
+    val dm = conf.mongoDataManager
+
+    indexTopicConp
+
+    indexEvent
+
+    indexIndustry
+
+    indexCompany
+
+    //add stock block/concept to index  graph.topic_conp
+    def indexTopicConp() = {
+      val datas = new java.util.ArrayList[IndexObjEntity]()
+      val topicConps = dm.findGrapnTopicConp()
+      if (topicConps != null && topicConps.size() > 0) {
+        topicConps.map { m =>
+          val k: String = if (m.get("w") != null) m.get("w").toString else null
+          var codes: BasicDBList = null
+          if (m.get("code") != null) codes = m.get("code").asInstanceOf[BasicDBList]
+
+          if (k != null) {
+            datas.add(new IndexObjEntity(k, codes.map(_.toString)))
+          }
+        }
+        if (datas.size() > 0)
+          client.incrementIndexNlpCat(datas)
+      }
+      logInfo(s"topic company index successfully,total number:${datas.size()}")
+    }
+
+    //add stock event to index
+    def indexEvent() = {
+      var sets = new java.util.HashSet[String]()
+      val datas = new java.util.ArrayList[IndexObjEntity]()
+      val events = dm.findEvent()
+      if (events != null && events.size() > 0) {
+        events.map { m =>
+          val k: String = if (m.get("szh") != null) m.get("szh").toString else null
+          if (k != null) {
+            sets.add(k)
+
+          }
+        }
+        if (sets.size() > 0) {
+          sets.foreach(s => datas.add(new IndexObjEntity(s)))
+          sets = null
+        }
+        if (datas.size() > 0)
+          client.incrementIndexNlpCat(datas)
+      }
+      logInfo(s"event index successfully,total number:${datas.size()}")
+    }
+
+
+    //add stock industry  to index
+    def indexIndustry() = {
+      val industry2Product = new java.util.HashMap[String, java.util.Collection[String]]()
+      val datas = new java.util.ArrayList[IndexObjEntity]()
+      val products = dm.findIndustry()
+      if (products != null && products.size() > 0) {
+        products.map { m =>
+          val c: String = if (m.get("c") != null) m.get("c").toString else null
+          val w: String = if (m.get("w") != null) m.get("w").toString else null
+          if (c != null) {
+            if (!industry2Product.contains(c)) {
+              val products = new java.util.ArrayList[String]()
+              if (w != null)
+                products.add(w)
+              industry2Product.put(c, products)
+            } else {
+              if (w != null) {
+                industry2Product.get(c).add(w)
+              }
+            }
+          }
+        }
+        industry2Product.foreach { cp =>
+          datas.add(new IndexObjEntity(cp._1, cp._2))
+        }
+        if (datas.size() > 0)
+          client.incrementIndexNlpCat(datas)
+      }
+      logInfo(s"industry index successfully,total number:${datas.size()}")
+    }
+
+
+
+    //add company to index
+    def indexCompany() = {
+      val datas = new java.util.ArrayList[IndexObjEntity]()
+      val stocks = dm.findCompanyCode()
+      if (stocks != null && stocks.size() > 0) {
+        stocks.foreach { dbobj =>
+          var comSim: String = null
+          comSim = if (dbobj.get("w") != null) dbobj.get("w").toString else null
+          val comCode: String = if (dbobj.get("code") != null) dbobj.get("code").toString else null
+          if (comSim != null) {
+            datas.add(new IndexObjEntity(comSim, comCode))
+          }
+        }
+      }
+      if (datas.size() > 0)
+        client.incrementIndexNlpCat(datas)
+      logInfo(s"company index successfully,total number:${datas.size()}")
     }
   }
 
@@ -825,13 +934,19 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testMatchQuery
     //testCount
     //testMatchAllQueryWithCount
-    testWarmCache()
+    //testWarmCache()
     //testMultiMatchForNgram
 
     //testBloomFilter
 
+    testIndexCatOfKeywords
+
   }
 
+
+  def testIndexCatOfKeywords = {
+    indexCatOfKeywords
+  }
 
   def testBloomFilter() = {
     conf.bloomFilter.add("soledede")

@@ -20,14 +20,18 @@ public class IndexObjEntity {
 
     public IndexObjEntity(String keyword, String rvkw) {
         this.keyword = keyword;
-        List<String> list = new ArrayList<>();
-        list.add(rvkw);
-        this.rvkw = list;
+        if(rvkw!=null){
+            List<String> list = new ArrayList<>();
+            list.add(rvkw);
+            this.rvkw = list;
+        }
     }
 
     public IndexObjEntity(String keyword, Collection<String> rvkw) {
         this.keyword = keyword;
-        this.rvkw = rvkw;
+        if (rvkw != null && rvkw.size() == 0) this.rvkw = null;
+        else this.rvkw = rvkw;
+
     }
 
     public String getKeyword() {

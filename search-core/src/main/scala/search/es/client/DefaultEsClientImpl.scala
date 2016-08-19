@@ -74,6 +74,10 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   override def bulkIndexRun(indexName: String, typeName: String, startDate: Long, endDate: Long): Unit = ???
 
 
+  override def incrementIndexNlpCat(data: java.util.Collection[IndexObjEntity]): Boolean = {
+    incrementIndexWithRw(graphIndexName, catTypName, data, catTypName)
+  }
+
   override def incrementIndexOne(indexName: String, typeName: String, data: String): Boolean = {
     val dataList = new java.util.ArrayList[String]()
     dataList.add(data)
@@ -84,32 +88,35 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     incrementIndexWithRw(indexName, typeName, data.map(new IndexObjEntity(_, null.asInstanceOf[java.util.List[String]])))
   }
 
-  override def incrementIndexWithRw(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity]): Boolean = {
+  override def incrementIndexWithRw(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity], typeChoose: String = graphTypName): Boolean = {
 
     if (data == null || data.size() == 0) {
       logError("data for index is null")
       return false
     }
     if (data.size() > 10) {
-      conf.waiter.post(IndexGraphNlp(indexName, typeName, data))
+      conf.waiter.post(IndexGraphNlp(indexName, typeName, data, typeChoose))
       return true
     }
     else
-      indexGraphNlp(indexName, typeName, data)
+      indexGraphNlp(indexName, typeName, data, typeChoose)
   }
 
 
-  def indexGraphNlp(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity]): Boolean = {
+  override def indexGraphNlp(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity], typeChoose: String): Boolean = {
     val docs = new java.util.ArrayList[java.util.Map[String, Object]]
     var list = new java.util.ArrayList[BasicDBObject]()
-    var cnt = conf.mongoDataManager.count()
+    var dm = conf.mongoDataManager
+    if (typeName.trim.equalsIgnoreCase(catTypName)) dm = conf.catNlpDataManager
+
+    var cnt = dm.count()
     var logType = "added"
     var indexId = cnt
     data.foreach { k =>
       val keyword = k.getKeyword
       val rvKw = k.getRvkw
       //val doc = conf.mongoDataManager.queryOneByKeyWord(keyword)
-      val doc = conf.mongoDataManager.findAndRemove(keyword)
+      val doc = dm.findAndRemove(keyword)
       if (doc == null) {
         cnt += 1
         indexId = cnt
@@ -137,32 +144,35 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       newDoc.put("updateDate", java.lang.Long.valueOf(currentTime))
 
 
-      //base stock
-      if (LocalCache.baseStockCache.contains(keyword)) {
-        val baseStock = LocalCache.baseStockCache(keyword)
-        val company = baseStock.getCompany
-        val comEn = baseStock.getComEn
-        val comSim = baseStock.getComSim
-        val comCode = baseStock.getComCode
-        if (company != null)
-          dbObject.append("s_com", company)
-        if (comEn != null)
-          dbObject.append("s_en", comEn)
-        if (comSim != null)
-          dbObject.append("s_zh", comSim)
-        if (comCode != null)
-          dbObject.append("stock_code", comCode)
+      if (typeChoose.equalsIgnoreCase(catTypName)) {
+        //base stock
+        if (LocalCache.baseStockCache.contains(keyword)) {
+          val baseStock = LocalCache.baseStockCache(keyword)
+          val company = baseStock.getCompany
+          val comEn = baseStock.getComEn
+          val comSim = baseStock.getComSim
+          val comCode = baseStock.getComCode
+          if (company != null)
+            dbObject.append("s_com", company)
+          if (comEn != null)
+            dbObject.append("s_en", comEn)
+          if (comSim != null)
+            dbObject.append("s_zh", comSim)
+          if (comCode != null)
+            dbObject.append("stock_code", comCode)
 
-        if (company != null)
-          newDoc.put("s_com", company)
-        if (comEn != null)
-          newDoc.put("s_en", comEn)
-        if (comSim != null)
-          newDoc.put("s_zh", comSim)
-        if (comCode != null)
-          newDoc.put("stock_code", comCode)
+          if (company != null)
+            newDoc.put("s_com", company)
+          if (comEn != null)
+            newDoc.put("s_en", comEn)
+          if (comSim != null)
+            newDoc.put("s_zh", comSim)
+          if (comCode != null)
+            newDoc.put("stock_code", comCode)
 
+        }
       }
+
 
       //word2vec
       val similarityWords: java.util.Collection[String] = conf.similarityCaculate.word2Vec(keyword)
@@ -184,7 +194,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
     }
 
-    if (list.size() > 0) conf.mongoDataManager.insert(list)
+    if (list.size() > 0) dm.insert(list)
 
     if (docs.size() == 1) {
       addDocument(indexName, typeName, docs.head)

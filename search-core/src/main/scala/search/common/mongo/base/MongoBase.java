@@ -87,10 +87,10 @@ public abstract class MongoBase {
      * @param collectionName ie:base_stock  or ada.base_stock or MongoCollections.COLL_BASE_SHARE_VARY
      * @return
      */
-    protected DBCollection getCollection(String collectionName) {
+    public DBCollection getCollection(String collectionName) {
         return MongoAdaptor.getCollection(collectionName);
     }
-    protected abstract DBCollection getCollection();
+    public abstract DBCollection getCollection();
 
     /**
      * 构造一个可复用的查询语句，$in查询
@@ -210,16 +210,19 @@ public abstract class MongoBase {
         return new BasicDBObject().append("$in", Arrays.asList(new String[]{"", "null", null}));
     }
 
+
+
+
     public Integer count() {
-        return count(null);
+        DBCollection collection = getCollection();
+        return count(null,collection);
     }
 
     /**
      * @param query
      * @return
      */
-    public Integer count( DBObject query) {
-        DBCollection collection = getCollection();
+    public Integer count( DBObject query,DBCollection collection) {
         Integer cnt = null;
         if (query == null) cnt = collection.find().count();
         else cnt = collection.find(query).count();

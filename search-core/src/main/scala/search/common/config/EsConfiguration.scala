@@ -30,6 +30,8 @@ private[search] trait EsConfiguration extends Configuration {
   lazy val graphIndexName = Try(esConfig.getString("graph.indexName")).getOrElse("nlp")
   lazy val graphTypName = Try(esConfig.getString("graph.typName")).getOrElse("graph")
 
+  lazy val catTypName = Try(esConfig.getString("graph.catTypeName")).getOrElse("cat")
+
   lazy val cleanNameSpace = Try(esConfig.getString("clean.namespace")).getOrElse("graph_state")
 
   lazy val dumpIndexPath = Try(esConfig.getString("index.dumpPath")).getOrElse("D:/es_graph_index")

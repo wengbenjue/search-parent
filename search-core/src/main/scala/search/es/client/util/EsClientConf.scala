@@ -26,6 +26,7 @@ private[search] class EsClientConf(loadDefaults: Boolean) extends Cloneable with
 
   var esClient: EsClient = _
   var mongoDataManager: DataManager = _
+  var catNlpDataManager: CatNlpDataManager = _
   var word2VEC: Word2VEC = _
   var similarityCaculate: SimilarityCaculate = _
   var waiter: KnowledgeGraphListenerWaiter = _
@@ -39,6 +40,7 @@ private[search] class EsClientConf(loadDefaults: Boolean) extends Cloneable with
     EsClient.initClientPool()
     this.esClient = new DefaultEsClientImpl(this)
     this.mongoDataManager = new DataManager(this)
+    this.catNlpDataManager = new CatNlpDataManager(this)
     this.similarityCaculate = new DefaultSimilarityCaculateImpl()
     this.waiter = new KnowledgeGraphListenerWaiterManager()
     this.waiter.listeners.add(new KnowledgeGraphListenerImpl(this))

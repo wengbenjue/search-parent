@@ -26,6 +26,6 @@ class KnowledgeGraphListenerImpl(conf: EsClientConf) extends KnowledgeGraphListe
   }
 
   override def onIndexGraphNlp(indexGraphNlp: IndexGraphNlp): Unit = {
-    conf.esClient.indexGraphNlp(indexGraphNlp.indexName, indexGraphNlp.typeName, indexGraphNlp.data)
+    conf.esClient.indexGraphNlp(indexGraphNlp.indexName, indexGraphNlp.typeName, indexGraphNlp.data,indexGraphNlp.typeChoose)
   }
 }

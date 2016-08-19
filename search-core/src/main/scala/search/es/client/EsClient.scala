@@ -52,9 +52,11 @@ private[search] trait EsClient extends EsConfiguration {
 
   def incrementIndexOne(indexName: String, typeName: String, data: String): Boolean
 
+  def incrementIndexNlpCat(data: java.util.Collection[IndexObjEntity]): Boolean
+
   def incrementIndex(indexName: String, typeName: String, data: java.util.Collection[String]): Boolean
 
-  def incrementIndexWithRw(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity]): Boolean
+  def incrementIndexWithRw(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity], typeChoose: String = graphTypName): Boolean
 
   def decrementIndex(indexName: String, typeName: String, data: java.util.Collection[String]): Boolean
 
@@ -76,7 +78,7 @@ private[search] trait EsClient extends EsConfiguration {
 
   def boolMustQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]]
 
-  def indexGraphNlp(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity]): Boolean
+  def indexGraphNlp(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity],typeChoose: String): Boolean
 
 
 }

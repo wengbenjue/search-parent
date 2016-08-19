@@ -33,6 +33,25 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     getCollection(MongoTableConstants.GRAPH_COMPANY_DIC)
   }
 
+  //graph.topic_conp
+  def getGraphTopicConpCollection: DBCollection = {
+    getCollection(MongoTableConstants.GRAPH_TOPIC_CONP)
+  }
+
+  //news.dict_news_rule
+  def getDictNewsRuleCollection:DBCollection = {
+    getCollection(MongoTableConstants.NEWS_DICT_NEWS_RULE)
+  }
+
+  //news.sens_industry
+  def getSensIndustryCollection:DBCollection = {
+    getCollection(MongoTableConstants.NEWS_SENS_INDUSTRY)
+  }
+
+
+
+
+
 
 
 
@@ -99,6 +118,41 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     val result = dbCurson.toArray
     result
   }
+
+
+  def findGrapnTopicConp(): java.util.List[DBObject] = {
+    val projection = new BasicDBObject()
+    projection.put("code", Integer.valueOf(1))
+    projection.put("w", Integer.valueOf(1))
+    val query = new BasicDBObject()
+    val dbCurson = getGraphTopicConpCollection.find(query, projection)
+    if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
+    val result = dbCurson.toArray
+    result
+  }
+
+  def findEvent(): java.util.List[DBObject] = {
+    val projection = new BasicDBObject()
+    projection.put("szh", Integer.valueOf(1))
+    val query = new BasicDBObject()
+    val dbCurson = getDictNewsRuleCollection.find(query, projection)
+    if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
+    val result = dbCurson.toArray
+    result
+  }
+
+
+  def findIndustry(): java.util.List[DBObject] = {
+    val projection = new BasicDBObject()
+    projection.put("c", Integer.valueOf(1))
+    projection.put("w", Integer.valueOf(1))
+    val query = new BasicDBObject()
+    val dbCurson = getSensIndustryCollection.find(query, projection)
+    if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
+    val result = dbCurson.toArray
+    result
+  }
+
 
 
   def queryALl() = {

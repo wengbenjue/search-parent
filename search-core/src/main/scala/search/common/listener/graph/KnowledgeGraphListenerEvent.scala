@@ -14,5 +14,5 @@ case class Request(query: String,needSearch: Int,showLevel: Integer) extends Kno
 
 case class WarmCache() extends KnowledgeGraphListenerEvent
 
-case class IndexGraphNlp(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity]) extends KnowledgeGraphListenerEvent
+case class IndexGraphNlp(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity],typeChoose: String) extends KnowledgeGraphListenerEvent
 
