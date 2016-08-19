@@ -169,8 +169,8 @@ object EsSearchHttpClientTest {
   }
 
   def testIndexByKeywordsWithRw {
-    val url: String = "http://localhost:8999/es/index/rws"
-   // val url: String = "http://54.222.222.172:8999/es/index/rws"
+    //val url: String = "http://localhost:8999/es/index/rws"
+    val url: String = "http://54.222.222.172:8999/es/index/rws"
     val keywords = getIndexDataFromSerObj
     //val keywords = getIndexDataBySet
     val headers: java.util.Map[String, String] = new java.util.HashMap[String, String]

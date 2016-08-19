@@ -88,6 +88,11 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     var cnt = conf.mongoDataManager.count()
     var logType = "added"
     var indexId = cnt
+    if (data == null || data.size() == 0) {
+      logError("data for index is null")
+      return false
+    }
+    if (data.size() > 10) return true
     data.foreach { k =>
       val keyword = k.getKeyword
       val rvKw = k.getRvkw
