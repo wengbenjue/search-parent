@@ -11,4 +11,6 @@ public class MongoTableConstants extends Constants{
     public static final String NEWS_SEARCH_LOGS = "news.search_logs";
 
     public static final String ADA_BASE_STOCK = "ada.base_stock";
+
+    public static final String GRAPH_COMPANY_DIC = "graph.company_dic";
 }

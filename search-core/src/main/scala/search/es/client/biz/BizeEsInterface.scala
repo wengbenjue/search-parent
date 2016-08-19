@@ -74,7 +74,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     this.conf.init()
     this.client = conf.esClient
 
-    loadCache
+    //loadCache
+    loadCacheFromCom
     addBloomFilter
 
     cleanRedisByNamespace(cleanNameSpace)

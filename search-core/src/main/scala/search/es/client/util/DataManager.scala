@@ -29,6 +29,13 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     getCollection(MongoTableConstants.ADA_BASE_STOCK)
   }
 
+  def getCompanyCollection: DBCollection = {
+    getCollection(MongoTableConstants.GRAPH_COMPANY_DIC)
+  }
+
+
+
+
 
   def deleteAllData() = {
     try {
@@ -87,7 +94,7 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     projection.put("code", Integer.valueOf(1))
     projection.put("w", Integer.valueOf(1))
     val query = new BasicDBObject()
-    val dbCurson = getStockCollection.find(query, projection)
+    val dbCurson = getCompanyCollection.find(query, projection)
     if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
     val result = dbCurson.toArray
     result
