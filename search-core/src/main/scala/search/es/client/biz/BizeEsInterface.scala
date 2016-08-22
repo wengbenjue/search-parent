@@ -51,7 +51,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val companyEnFieldWithBoost = "s_en"
 
   val word2vecWithBoost = "word2vec^3"
-  val word2vecRwWithBoost = "word2vec.word2vec_rw^3"
+  val word2vecRwWithBoost = "word2vec.word2vec_rw^6"
 
 
   val keywordField = "keyword"
@@ -493,6 +493,23 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           val matchKeyWord = doc.get(keywordField).toString
           targetKeyword = matchKeyWord
           logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore}  targetKeyword: $targetKeyword")
+        } else {
+          word2VecFromIndex
+        }
+      } else {
+        word2VecFromIndex
+      }
+    }
+
+    def word2VecFromIndex(): Unit = {
+      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(),word2vecWithBoost, word2vecRwWithBoost)
+      if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
+        val doc = matchQueryResult1.head
+        val matchScore = doc.get(scoreField).toString.toFloat
+        if (matchScore >= word2vecMatchRelevantKWThreshold) {
+          val matchKeyWord = doc.get(keywordField).toString
+          targetKeyword = matchKeyWord
+          logInfo(s"${keyword} have been matched according word2vec,relevant score:${matchScore}  targetKeyword: $targetKeyword")
         } else {
           //word2VectorProcess(keyword)
         }

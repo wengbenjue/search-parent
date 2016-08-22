@@ -19,6 +19,8 @@ private[search] trait EsConfiguration extends Configuration {
   lazy val matchScoreThreshold = Try(esConfig.getDouble("match.matchScoreThreshold")).getOrElse(23.0)
   lazy val matchRelevantKWThreshold = Try(esConfig.getDouble("match.matchRelevantKWThreshold")).getOrElse(30.0)
   lazy val mulitiMatchRelevantKWThreshold = Try(esConfig.getDouble("match.mulitiMatchRelevantKWThreshold")).getOrElse(10.0)
+  lazy val word2vecMatchRelevantKWThreshold = Try(esConfig.getDouble("match.word2vecMatchRelevantKWThreshold")).getOrElse(1.0)
+
 
   lazy val esClients = Try(esConfig.getInt("es.clients")).getOrElse(3)
 
