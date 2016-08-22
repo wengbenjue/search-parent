@@ -46,7 +46,7 @@ private[search] class EsClientConf(loadDefaults: Boolean) extends Cloneable with
     this.waiter.listeners.add(new KnowledgeGraphListenerImpl(this))
     this.waiter.start()
     this.storage = Storage("redis")
-    this.stateCache = new LocalCache()
+    this.stateCache =  new RedisClientCache(this)//new LocalCache()
     this.esPageCache = new RedisClientCache(this)
     this.bloomFilter = BloomFilter[String](Constants.GRAPH_KEYWORDS_BLOOMFILTER_KEY, expectedElements, falsePositiveRate)
   }

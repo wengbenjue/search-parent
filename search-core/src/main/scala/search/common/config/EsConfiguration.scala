@@ -35,6 +35,9 @@ private[search] trait EsConfiguration extends Configuration {
 
   lazy val cleanNameSpace = Try(esConfig.getString("clean.namespace")).getOrElse("graph_state")
 
+  lazy val STATE_PREFFIX = Try(esConfig.getString("state.preffix")).getOrElse("state_preffix_")
+
+
   lazy val dumpIndexPath = Try(esConfig.getString("index.dumpPath")).getOrElse("D:/es_graph_index")
 
   lazy val fetchUrl = Try(esConfig.getString("api.url.crawler")).getOrElse("http://192.168.100.20:5000/?kw=")

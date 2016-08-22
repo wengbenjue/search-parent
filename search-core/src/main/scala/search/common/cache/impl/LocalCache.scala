@@ -40,7 +40,7 @@ private[search] class LocalCache extends KVCache {
     result
   }
 
-  override def cleanAll(): Boolean = {
+  override def cleanAll(preffix:String = null): Boolean = {
     try {
       stateCacheManager.invalidateAll()
       true

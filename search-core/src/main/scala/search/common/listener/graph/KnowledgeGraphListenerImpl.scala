@@ -2,6 +2,7 @@ package search.common.listener.graph
 
 import com.alibaba.fastjson.JSON
 import search.common.config.RedisConfiguration
+import search.common.entity.state.ProcessState
 import search.es.client.biz.BizeEsInterface
 import search.es.client.util.EsClientConf
 
@@ -13,7 +14,7 @@ class KnowledgeGraphListenerImpl(conf: EsClientConf) extends KnowledgeGraphListe
   override def onUpdateState(updateState: UpdateState): Unit = {
     val processState = updateState.processState
     //val processStateString = JSON.toJSONString(processState, false)
-    conf.stateCache.put(updateState.query, processState, expireTime)
+    conf.stateCache.put[ProcessState](updateState.query, processState, expireTime)
   }
 
   override def onNewRequest(request: Request): Unit = {
@@ -26,6 +27,6 @@ class KnowledgeGraphListenerImpl(conf: EsClientConf) extends KnowledgeGraphListe
   }
 
   override def onIndexGraphNlp(indexGraphNlp: IndexGraphNlp): Unit = {
-    conf.esClient.indexGraphNlp(indexGraphNlp.indexName, indexGraphNlp.typeName, indexGraphNlp.data,indexGraphNlp.typeChoose)
+    conf.esClient.indexGraphNlp(indexGraphNlp.indexName, indexGraphNlp.typeName, indexGraphNlp.data, indexGraphNlp.typeChoose)
   }
 }

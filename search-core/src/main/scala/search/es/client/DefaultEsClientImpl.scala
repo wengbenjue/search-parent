@@ -95,7 +95,12 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       return false
     }
     if (data.size() > 10) {
-      conf.waiter.post(IndexGraphNlp(indexName, typeName, data, typeChoose))
+      new Thread {
+        override def run(): Unit = {
+          indexGraphNlp(indexName, typeName, data, typeChoose)
+        }
+      }.start()
+      //conf.waiter.post(IndexGraphNlp(indexName, typeName, data, typeChoose))
       return true
     }
     else

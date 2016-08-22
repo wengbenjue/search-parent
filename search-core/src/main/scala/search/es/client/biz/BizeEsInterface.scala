@@ -69,11 +69,28 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val companyEnField = "s_en"
 
 
+
+
   def init() = {
     this.conf = new EsClientConf()
     this.conf.init()
     this.client = conf.esClient
+    loadStart
+  }
 
+  def loadStart() = {
+    loadThread.start()
+  }
+
+
+  val loadThread = new Thread {
+    override def run(): Unit = {
+      load
+    }
+  }
+  loadThread.setDaemon(true)
+
+  def load() = {
     //loadCache
     loadCacheFromCom
     addBloomFilter
@@ -310,11 +327,14 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @return
     */
   def showStateAndGetByQuery(query: String, showLevel: Integer, needSearch: Int): Result = {
-    val state = conf.stateCache.getObj[ProcessState](query)
+    val state = conf.stateCache.getObj[ProcessState](STATE_PREFFIX+query)
     if (state != null) {
       val imutableState = state.clone()
       val currentState = imutableState.getCurrentState
-      if (currentState == 0) triggerQuery(query, showLevel, needSearch)
+      if (currentState == 0) {
+       // triggerQuery(query, showLevel, needSearch)
+        synTriggerQuery(query, showLevel, needSearch)
+      }
       else {
         val isFinished = imutableState.getFinished
         if (isFinished == FinshedStatus.UNFINISHED) {
@@ -335,12 +355,14 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   def synTriggerQuery(query: String, showLevel: Integer, needSearch: Int): Result = {
     var resultObj = new Result(new ProcessState(0, 1))
     var result = cacheQueryBestKeyWord(query, showLevel, needSearch)
-    val state = conf.stateCache.getObj[ProcessState](query)
+    val state = conf.stateCache.getObj[ProcessState](STATE_PREFFIX+query)
     if (state != null) {
-      resultObj = new Result(conf.stateCache.getObj[ProcessState](query), result)
+      resultObj = new Result(conf.stateCache.getObj[ProcessState](STATE_PREFFIX+query), result)
     } else if (state == null && result != null) {
       result = queryBestKeyWord(null, query, showLevel, false, needSearch)
-      resultObj = new Result(conf.stateCache.getObj[ProcessState](query), result)
+      var newState = conf.stateCache.getObj[ProcessState](STATE_PREFFIX+query)
+      if (newState == null) newState = new ProcessState(0, 0)
+      resultObj = new Result(newState, result)
     }
     resultObj
   }
@@ -761,10 +783,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   def updateState(sessionId: String, query: String, currentDate: Int, finishState: Int) = {
+    val newQuery = STATE_PREFFIX + query
+
     if (sessionId != null)
-      conf.waiter.post(UpdateState(sessionId + query, new ProcessState(currentDate, finishState)))
+      conf.waiter.post(UpdateState(sessionId + newQuery, new ProcessState(currentDate, finishState)))
     else
-      conf.waiter.post(UpdateState(query, new ProcessState(currentDate, finishState)))
+      conf.waiter.post(UpdateState(newQuery, new ProcessState(currentDate, finishState)))
   }
 
   private def splitWords(keyWord: String): Set[String] = {
