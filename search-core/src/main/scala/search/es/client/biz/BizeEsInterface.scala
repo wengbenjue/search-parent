@@ -41,17 +41,17 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   //"relevant match"
   val keywordStringFieldWithBoost = "keyword_string^20"
   //"accurate match"
-  val pinyinFieldWithBoost = "pinyin^0.003"
+  val pinyinFieldWithBoost = "pinyin^0.009"
   val scoreFieldWithBoost = "score"
   val relevantKwsFieldWithBoost = "relevant_kws^19" //"vr->虚拟现实"
 
   val companyFieldWithBoost = "s_com"
   val comSimFieldWithBoost = "s_zh"
-  val comStockCodeFieldWithBoost = "stock_code^70"
+  val comStockCodeFieldWithBoost = "stock_code^15"
   val companyEnFieldWithBoost = "s_en"
 
-  val word2vecWithBoost = "word2vec^0.001"
-  val word2vecRwWithBoost = "word2vec.word2vec_rw^0.0001"
+  val word2vecWithBoost = "word2vec^3"
+  val word2vecRwWithBoost = "word2vec.word2vec_rw^3"
 
 
   val keywordField = "keyword"
@@ -333,7 +333,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   def synTriggerQuery(query: String, showLevel: Integer, needSearch: Int): Result = {
-    var resultObj = new Result(new ProcessState(0, 0))
+    var resultObj = new Result(new ProcessState(0, 1))
     var result = cacheQueryBestKeyWord(query, showLevel, needSearch)
     val state = conf.stateCache.getObj[ProcessState](query)
     if (state != null) {
@@ -462,13 +462,18 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     var targetKeyword: String = null
 
     def totalRelevantTargetKeyWord(): Unit = {
-      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(), keywordStringFieldWithBoost, relevantKwsField_kwWithBoost, pinyinFieldWithBoost, keywordFieldWithBoost, companyFieldWithBoost, companyEnFieldWithBoost, comStockCodeFieldWithBoost, word2vecWithBoost, word2vecRwWithBoost)
+      //pinyinFieldWithBoost,  companyFieldWithBoost, companyEnFieldWithBoost,
+      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(), keywordStringFieldWithBoost, relevantKwsField_kwWithBoost, keywordFieldWithBoost, comStockCodeFieldWithBoost, word2vecWithBoost, word2vecRwWithBoost)
       if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
         val doc = matchQueryResult1.head
         val matchScore = doc.get(scoreField).toString.toFloat
-        val matchKeyWord = doc.get(keywordField).toString
-        targetKeyword = matchKeyWord
-        logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore}  targetKeyword: $targetKeyword")
+        if (matchScore >= mulitiMatchRelevantKWThreshold) {
+          val matchKeyWord = doc.get(keywordField).toString
+          targetKeyword = matchKeyWord
+          logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore}  targetKeyword: $targetKeyword")
+        } else {
+          //word2VectorProcess(keyword)
+        }
       } else {
         //word2VectorProcess(keyword)
       }

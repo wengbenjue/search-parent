@@ -78,7 +78,7 @@ private[search] trait EsClient extends EsConfiguration {
 
   def boolMustQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]]
 
-  def indexGraphNlp(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity],typeChoose: String): Boolean
+  def indexGraphNlp(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity], typeChoose: String): Boolean
 
 
 }
@@ -322,7 +322,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
         doc.remove("_id")
         if (id == null) request.add(Requests.indexRequest(indexName).`type`(typeName).source(doc))
         else request.add(Requests.indexRequest(indexName).`type`(typeName).id(id.toString.trim).source(doc))
-        if ( cnt>3000 && cnt % 3000 == 0) {
+        if (cnt > 3000 && cnt % 3000 == 0) {
           bulkPostDocumentSubmit(client, request)
           request = Requests.bulkRequest
           Thread.sleep(1000)
@@ -501,7 +501,13 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @return
     */
   def multiMatchQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]] = {
-    queryAsMap(client, indexName, typeName, from, to, QueryBuilders.multiMatchQuery(keyWords, fields: _*))
+    queryAsMap(client, indexName, typeName, from, to,
+      QueryBuilders.multiMatchQuery(keyWords, fields: _*)
+        //.operator(MatchQueryBuilder.Operator.AND)
+        .tieBreaker(0.3f)
+        .minimumShouldMatch("75%")
+        .`type`(MultiMatchQueryBuilder.Type.BEST_FIELDS)
+    )
   }
 
   /**
@@ -759,7 +765,6 @@ private[search] object EsClient extends EsConfiguration with Logging {
     }
     return kvList
   }
-
 
 
 }
