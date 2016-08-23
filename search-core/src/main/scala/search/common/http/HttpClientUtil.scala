@@ -138,15 +138,16 @@ object HttpClientUtil {
     }
 
     var entity: StringEntity = null
+    val mapper = new ObjectMapper()
+    var jStirng: String = null
+    if (paremeters != null && !paremeters.isEmpty) {
+      jStirng = mapper.writeValueAsString(paremeters)
+    } else if (obj != null) {
+      jStirng = mapper.writeValueAsString(obj)
+    }
+    println("string json:" + jStirng)
+
     if (isJson) {
-      val mapper = new ObjectMapper()
-      var jStirng: String = null
-      if (paremeters != null && !paremeters.isEmpty) {
-        jStirng = mapper.writeValueAsString(paremeters)
-      } else if (obj != null) {
-        jStirng = mapper.writeValueAsString(obj)
-      }
-      println("string json:" + jStirng)
       if (jStirng != null)
         entity = new StringEntity(jStirng, "utf-8")
     } else {

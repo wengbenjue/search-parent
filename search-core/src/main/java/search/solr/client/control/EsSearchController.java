@@ -16,6 +16,7 @@ import search.solr.client.searchInterface.SearchInterface;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Collection;
+import java.util.Set;
 
 
 @RestController
@@ -103,6 +104,12 @@ public class EsSearchController {
     @RequestMapping(value = "/search/clean/cacheredis", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi cleanRedisByNamespace(final String namespace) {
         return BizeEsInterface.wrapCleanRedisByNamespace(namespace);
+    }
+
+
+    @RequestMapping(value = "/search/nlp_cache/clean", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi cleanQueryByGraphKeys(@RequestParam("nodes") Set<String> nodes) {
+        return BizeEsInterface.wrapCleanQueryByGraphKeys(nodes);
     }
 
 

@@ -27,12 +27,36 @@ object EsSearchHttpClientTest {
 
   def main(args: Array[String]) {
     //indexByKeywords
-    testIndexByKeywordsWithRw
+    //testIndexByKeywordsWithRw
     //getIndexDataFromSerObj()
     //testSearchFluid
     //testShowStateRedisCache()
-
+    testCleanBySet
   }
+
+
+  def testCleanBySet() = {
+    val url: String = "http://54.222.222.172:8999/es/search/nlp_cache/clean"
+    //val url: String = "http://localhost:8999/es/search/nlp_cache/clean"
+    val keywords: java.util.Map[String, java.util.Set[String]] = new java.util.HashMap[String, java.util.Set[String]]()
+    val nodes = new java.util.HashSet[String]()
+    nodes.add("大洋电机")
+    keywords.put("nodes", nodes)
+    val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", keywords, null)
+    try {
+      val entity: HttpEntity = httpResp.getEntity
+      val sResponse: String = EntityUtils.toString(entity)
+      System.out.println(sResponse)
+    }
+    catch {
+      case e: IOException => {
+        e.printStackTrace
+      }
+    } finally {
+      HttpClientUtils.closeQuietly(httpResp)
+    }
+  }
+
 
   def testShowStateRedisCache() = {
     val url = "http://localhost:8999/es/search/state/?keyword="
@@ -40,7 +64,7 @@ object EsSearchHttpClientTest {
       "利亚德", "利亚德1", "利亚德2", "利亚德3", "利亚德4", "利亚德15", "利亚德22", "利亚德33",
       "三环集团", "三环集团1", "三环集团2", "三环集团3", "三环集团4", "三环集团15", "三环集团22", "三环集团33")
 
-    for(j <- 0 until 1000){
+    for (j <- 0 until 1000) {
       list.foreach { q =>
         for (i <- 0 until 100) {
           val thread = new Thread(new RequestTestRedis(q, url))
@@ -49,7 +73,6 @@ object EsSearchHttpClientTest {
       }
 
     }
-
 
 
   }
