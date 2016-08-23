@@ -27,6 +27,7 @@ import search.es.client.util.EsClientConf
 import search.common.entity.searchinterface.NiNi
 import search.solr.client.{SolrClientConf, SolrClient}
 import scala.collection.JavaConversions._
+import scala.collection.{JavaConversions, JavaConverters}
 
 /**
   * Created by soledede.weng on 2016/7/28.
@@ -96,6 +97,24 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     indexCatOfKeywords
   }
 
+
+  def wrapViewCache(key: String): NiNi = {
+    Util.caculateCostTime {
+      veiwCache(key)
+    }
+  }
+
+  def veiwCache(key: String): Object = {
+    if (key == null || key.equalsIgnoreCase("-1")) {
+      val set = LocalCache.baseStockCache.keySet
+      (set.size, JavaConversions.setAsJavaSet(set))
+    } else {
+      if (LocalCache.baseStockCache.contains(key.trim)) {
+        val stock = LocalCache.baseStockCache(key.trim)
+        stock
+      } else null
+    }
+  }
 
   def warpLoadCache(): NiNi = {
     Util.caculateCostTime {
@@ -917,6 +936,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   def cleanAllFromMongoAndIndex(): Boolean = {
     deleteAllMongoData()
+    for (i <- 0 until 4)
+      delAllData()
     delAllData()
   }
 

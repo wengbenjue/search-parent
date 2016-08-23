@@ -27,11 +27,11 @@ object EsSearchHttpClientTest {
 
   def main(args: Array[String]) {
     //indexByKeywords
-    //testIndexByKeywordsWithRw
+    submitIndexDataRwInterval
     //getIndexDataFromSerObj()
     //testSearchFluid
     //testShowStateRedisCache()
-    testCleanBySet
+    // testCleanBySet
   }
 
 
@@ -164,6 +164,23 @@ object EsSearchHttpClientTest {
     keywords
   }
 
+  def submitIndexDataRwInterval() = {
+    val kvs = getIndexDataFromSerObj()
+    var cnt = 0
+    val url: String = "http://54.222.222.172:8999/es/index/rws"
+    var keywords = new java.util.ArrayList[IndexObjEntity]()
+    kvs.foreach { obj =>
+      if (cnt == 5) {
+        cnt = 0
+        testIndexByKeywordsWithRw(url, keywords)
+        keywords = new java.util.ArrayList[IndexObjEntity]()
+      }
+      keywords.add(obj)
+      cnt += 1
+    }
+    if (keywords.size() > 0) testIndexByKeywordsWithRw(url, keywords)
+  }
+
   def getIndexDataFromSerObj(): java.util.List[IndexObjEntity] = {
     val ser = JavaSerializer(new SolrClientConf()).newInstance()
     val keywords: java.util.List[IndexObjEntity] = new java.util.ArrayList[IndexObjEntity]
@@ -191,11 +208,17 @@ object EsSearchHttpClientTest {
     keywords
   }
 
-  def testIndexByKeywordsWithRw {
+
+  def wrapTestIndexByKeywordsWithRw(url: String, keywords: String): Unit = {
     //val url: String = "http://localhost:8999/es/index/rws"
     val url: String = "http://54.222.222.172:8999/es/index/rws"
     val keywords = getIndexDataFromSerObj
     //val keywords = getIndexDataBySet
+    testIndexByKeywordsWithRw(url, keywords)
+
+  }
+
+  def testIndexByKeywordsWithRw(url: String, keywords: java.util.List[IndexObjEntity]) {
     val headers: java.util.Map[String, String] = new java.util.HashMap[String, String]
     headers.put("Content-Type", "application/json")
     val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", keywords, headers)

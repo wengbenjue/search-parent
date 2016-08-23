@@ -149,10 +149,10 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       newDoc.put("updateDate", java.lang.Long.valueOf(currentTime))
 
 
-      if (typeChoose.equalsIgnoreCase(catTypName)) {
+      if (!typeChoose.equalsIgnoreCase(catTypName)) {
         //base stock
-        if (LocalCache.baseStockCache.contains(keyword)) {
-          val baseStock = LocalCache.baseStockCache(keyword)
+        if (LocalCache.baseStockCache.contains(keyword.trim)) {
+          val baseStock = LocalCache.baseStockCache(keyword.trim)
           val company = baseStock.getCompany
           val comEn = baseStock.getComEn
           val comSim = baseStock.getComSim

@@ -156,6 +156,13 @@ public class EsSearchController {
     }
 
 
+    @RequestMapping(value = "/search/cache/view", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi viewCache(@RequestParam(value = "key", required = false, defaultValue = "-1") String key) {
+        NiNi result = BizeEsInterface.wrapViewCache(key);
+        return result;
+    }
+
+
     public static String getSessionId() {
         RequestAttributes ra = RequestContextHolder.getRequestAttributes();
         ServletRequestAttributes sra = (ServletRequestAttributes) ra;
