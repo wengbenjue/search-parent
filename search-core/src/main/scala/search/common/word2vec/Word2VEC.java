@@ -265,7 +265,7 @@ public class Word2VEC {
         Set<WordEntry> persononVectory = word2VEC.distance("智能家居");
         System.out.println(persononVectory);
        long startTime = System.currentTimeMillis();
-        Set<WordEntry> persononVectory1 = word2VEC.distance("智能城市");
+        Set<WordEntry> persononVectory1 = word2VEC.distance("谢霆锋");
         long endTime = System.currentTimeMillis();
         System.out.println("cost:"+(endTime-startTime));
         System.out.println(persononVectory1);

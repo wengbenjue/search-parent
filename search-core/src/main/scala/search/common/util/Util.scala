@@ -83,6 +83,15 @@ private[search] object Util extends Logging {
   }
 
 
+  def isNumeric(str: String): Boolean = {
+    for (i <- 0 until str.length()) {
+      val chr = str.charAt(i)
+      if (chr < 48 || chr > 57)
+        return false
+    }
+    return true
+  }
+
   def caculateCostTime(block: => Any): NiNi = {
     val startTime = System.currentTimeMillis()
     val result = block
@@ -380,7 +389,12 @@ private[search] object Util extends Logging {
 
 object testUtil {
   def main(args: Array[String]) {
-    testTime
+   // testTime
+    testNumber
+  }
+
+  def testNumber = {
+    println(Util.isNumeric("43345s"))
   }
 
   def testTime = {

@@ -504,8 +504,8 @@ private[search] object EsClient extends EsConfiguration with Logging {
     queryAsMap(client, indexName, typeName, from, to,
       QueryBuilders.multiMatchQuery(keyWords, fields: _*)
         //.operator(MatchQueryBuilder.Operator.AND)
-        .tieBreaker(0.7f)
-        .minimumShouldMatch("85%")
+        .tieBreaker(0.4f)
+        //.minimumShouldMatch("85%")
         .`type`(MultiMatchQueryBuilder.Type.BEST_FIELDS)
     )
   }

@@ -47,7 +47,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   val companyFieldWithBoost = "s_com"
   val comSimFieldWithBoost = "s_zh"
-  val comStockCodeFieldWithBoost = "stock_code^15"
+  val comStockCodeFieldWithBoost = "stock_code^500"
   val companyEnFieldWithBoost = "s_en"
 
   val word2vecWithBoost = "word2vec^3"
@@ -67,8 +67,6 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val comSimField = "s_zh"
   val comStockCodeField = "stock_code"
   val companyEnField = "s_en"
-
-
 
 
   def init() = {
@@ -327,12 +325,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @return
     */
   def showStateAndGetByQuery(query: String, showLevel: Integer, needSearch: Int): Result = {
-    val state = conf.stateCache.getObj[ProcessState](STATE_PREFFIX+query)
+    val state = conf.stateCache.getObj[ProcessState](STATE_PREFFIX + query)
     if (state != null) {
       val imutableState = state.clone()
       val currentState = imutableState.getCurrentState
       if (currentState == 0) {
-       // triggerQuery(query, showLevel, needSearch)
+        // triggerQuery(query, showLevel, needSearch)
         synTriggerQuery(query, showLevel, needSearch)
       }
       else {
@@ -355,12 +353,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   def synTriggerQuery(query: String, showLevel: Integer, needSearch: Int): Result = {
     var resultObj = new Result(new ProcessState(0, 1))
     var result = cacheQueryBestKeyWord(query, showLevel, needSearch)
-    val state = conf.stateCache.getObj[ProcessState](STATE_PREFFIX+query)
+    val state = conf.stateCache.getObj[ProcessState](STATE_PREFFIX + query)
     if (state != null) {
-      resultObj = new Result(conf.stateCache.getObj[ProcessState](STATE_PREFFIX+query), result)
+      resultObj = new Result(conf.stateCache.getObj[ProcessState](STATE_PREFFIX + query), result)
     } else if (state == null && result != null) {
       result = queryBestKeyWord(null, query, showLevel, false, needSearch)
-      var newState = conf.stateCache.getObj[ProcessState](STATE_PREFFIX+query)
+      var newState = conf.stateCache.getObj[ProcessState](STATE_PREFFIX + query)
       if (newState == null) newState = new ProcessState(0, 0)
       resultObj = new Result(newState, result)
     }
@@ -484,8 +482,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     var targetKeyword: String = null
 
     def totalRelevantTargetKeyWord(): Unit = {
-      //pinyinFieldWithBoost,  companyFieldWithBoost, companyEnFieldWithBoost,
-      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(), keywordStringFieldWithBoost, relevantKwsField_kwWithBoost, keywordFieldWithBoost, comStockCodeFieldWithBoost, word2vecWithBoost, word2vecRwWithBoost)
+      //pinyinFieldWithBoost,  companyFieldWithBoost, companyEnFieldWithBoost, word2vecWithBoost, word2vecRwWithBoost
+      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(), keywordStringFieldWithBoost, relevantKwsField_kwWithBoost, keywordFieldWithBoost, comStockCodeFieldWithBoost)
       if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
         val doc = matchQueryResult1.head
         val matchScore = doc.get(scoreField).toString.toFloat
@@ -502,7 +500,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
 
     def word2VecFromIndex(): Unit = {
-      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(),word2vecWithBoost, word2vecRwWithBoost)
+      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(), word2vecWithBoost, word2vecRwWithBoost)
       if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
         val doc = matchQueryResult1.head
         val matchScore = doc.get(scoreField).toString.toFloat
@@ -622,6 +620,24 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       }
     }
 
+
+    def stockCodeSearch() = {
+      if (Util.isNumeric(keyword)) {
+        val matchQueryResult = client.matchQuery(graphIndexName, graphTypName, 0, 1, comStockCodeField, keyword.toLowerCase())
+        if (matchQueryResult != null && matchQueryResult.length > 0) {
+          val doc = matchQueryResult.head
+          val rlvKWScore = doc.get(scoreField).toString.toFloat
+          val matchKeyWord = doc.get(keywordField).toString
+          targetKeyword = matchKeyWord
+          logInfo(s"${keyword} have been matched  accurately by stock code,relevant score:${rlvKWScore}} targetKeyword: $targetKeyword")
+        } else {
+          termFuzzyQueryByRelevantKw
+        }
+      } else {
+        termFuzzyQueryByRelevantKw
+      }
+    }
+
     def termAccurateQuery() = {
       val mustResult = client.boolMustQuery(graphIndexName, graphTypName, 0, 1, keywordStringField, keyword)
       if (mustResult != null && mustResult.length > 0) {
@@ -636,8 +652,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     // term query
     // termAccurateQuery()
     //totalRelevantTargetKeyWord()
-    termFuzzyQueryByRelevantKw()
-
+    //termFuzzyQueryByRelevantKw()
+    stockCodeSearch
 
 
 
