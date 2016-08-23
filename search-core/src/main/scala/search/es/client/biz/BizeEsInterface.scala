@@ -41,7 +41,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   //"relevant match"
   val keywordStringFieldWithBoost = "keyword_string^20"
   //"accurate match"
-  val pinyinFieldWithBoost = "pinyin^0.009"
+  val pinyinFieldWithBoost = "pinyin^0.0009"
   val scoreFieldWithBoost = "score"
   val relevantKwsFieldWithBoost = "relevant_kws^19" //"vr->虚拟现实"
 
@@ -483,7 +483,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     def totalRelevantTargetKeyWord(): Unit = {
       //pinyinFieldWithBoost,  companyFieldWithBoost, companyEnFieldWithBoost, word2vecWithBoost, word2vecRwWithBoost
-      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(), keywordStringFieldWithBoost, relevantKwsField_kwWithBoost, keywordFieldWithBoost, comStockCodeFieldWithBoost)
+      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(), keywordStringFieldWithBoost, relevantKwsField_kwWithBoost, keywordFieldWithBoost, comStockCodeFieldWithBoost,pinyinFieldWithBoost)
       if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
         val doc = matchQueryResult1.head
         val matchScore = doc.get(scoreField).toString.toFloat
@@ -606,6 +606,28 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       }
     }
 
+    def justPinyinMatch: Unit = {
+      if (Util.isEnglish(keyword.trim.toLowerCase())) {
+        //pinyin query
+        val pinyinResult = client.matchQuery(graphIndexName, graphTypName, 0, 1, pinyinField, keyword.trim.toLowerCase())
+        if (pinyinResult != null && pinyinResult.length > 0) {
+          val doc = pinyinResult.head
+          val docScore = doc.get(scoreField).toString.toFloat
+          val docKeyword = doc.get(keywordField).toString
+          if (docScore > pinyinScoreThreshold) {
+            targetKeyword = docKeyword
+            logInfo(s"${keyword} have been matched according pinyin,pinyin score:${docScore}  targetKeyword: $targetKeyword")
+          } else {
+            termFuzzyQueryByRelevantKw
+          }
+        } else {
+          termFuzzyQueryByRelevantKw
+        }
+      }else{
+        termFuzzyQueryByRelevantKw
+      }
+    }
+
     def termFuzzyQueryByRelevantKw() = {
       val matchQueryResult = client.termQuery(graphIndexName, graphTypName, 0, 1, relevantKwsField_kw, keyword.toLowerCase())
       if (matchQueryResult != null && matchQueryResult.length > 0) {
@@ -631,10 +653,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           targetKeyword = matchKeyWord
           logInfo(s"${keyword} have been matched  accurately by stock code,relevant score:${rlvKWScore}} targetKeyword: $targetKeyword")
         } else {
-          termFuzzyQueryByRelevantKw
+          justPinyinMatch
         }
       } else {
-        termFuzzyQueryByRelevantKw
+        justPinyinMatch
       }
     }
 

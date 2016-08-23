@@ -82,6 +82,9 @@ private[search] object Util extends Logging {
     }
   }
 
+  def isEnglish(charaString: String): Boolean = {
+    charaString.matches("^[a-z|A-Z|\\s]*")
+  }
 
   def isNumeric(str: String): Boolean = {
     for (i <- 0 until str.length()) {
@@ -389,12 +392,13 @@ private[search] object Util extends Logging {
 
 object testUtil {
   def main(args: Array[String]) {
-   // testTime
+    // testTime
     testNumber
   }
 
   def testNumber = {
     println(Util.isNumeric("43345s"))
+    println("is english:"+Util.isEnglish("LiuDeHUA"))
   }
 
   def testTime = {
