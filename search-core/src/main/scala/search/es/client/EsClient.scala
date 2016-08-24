@@ -80,6 +80,12 @@ private[search] trait EsClient extends EsConfiguration {
 
   def indexGraphNlp(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity], typeChoose: String): Boolean
 
+  def prefixQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, preffix: String): Array[java.util.Map[String, Object]]
+
+
+  def wildcardQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, wildcard: String): Array[java.util.Map[String, Object]]
+
+  def fuzzyQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, fuzzy: String): Array[java.util.Map[String, Object]]
 
 }
 
@@ -503,9 +509,9 @@ private[search] object EsClient extends EsConfiguration with Logging {
   def multiMatchQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]] = {
     queryAsMap(client, indexName, typeName, from, to,
       QueryBuilders.multiMatchQuery(keyWords, fields: _*)
-        //.operator(MatchQueryBuilder.Operator.AND)
-        .tieBreaker(0.4f)
-        //.minimumShouldMatch("85%")
+        .operator(MatchQueryBuilder.Operator.AND)
+        .tieBreaker(0.3f)
+        .minimumShouldMatch("75%")
         .`type`(MultiMatchQueryBuilder.Type.BEST_FIELDS)
     )
   }
@@ -560,7 +566,8 @@ private[search] object EsClient extends EsConfiguration with Logging {
   }
 
   def fuzzyQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, field: String, fuzzy: String): Array[java.util.Map[String, Object]] = {
-    queryAsMap(client, indexName, typeName, from, to, QueryBuilders.regexpQuery(field, fuzzy))
+    queryAsMap(client, indexName, typeName, from, to, QueryBuilders.fuzzyQuery(field, fuzzy)
+      .prefixLength(6))
   }
 
   def typeQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int): Array[java.util.Map[String, Object]] = {

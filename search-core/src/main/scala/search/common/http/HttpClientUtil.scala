@@ -145,6 +145,7 @@ object HttpClientUtil {
     } else if (obj != null) {
       jStirng = mapper.writeValueAsString(obj)
     }
+    if(jStirng!=null)
     println("string json:" + jStirng)
 
     if (isJson) {

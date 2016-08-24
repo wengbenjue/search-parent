@@ -134,6 +134,7 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
   def findEvent(): java.util.List[DBObject] = {
     val projection = new BasicDBObject()
     projection.put("szh", Integer.valueOf(1))
+    projection.put("rule", Integer.valueOf(1))
     val query = new BasicDBObject()
     val dbCurson = getDictNewsRuleCollection.find(query, projection)
     if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]

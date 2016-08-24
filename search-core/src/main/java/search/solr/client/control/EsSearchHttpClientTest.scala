@@ -167,10 +167,11 @@ object EsSearchHttpClientTest {
   def submitIndexDataRwInterval() = {
     val kvs = getIndexDataFromSerObj()
     var cnt = 0
-    val url: String = "http://54.222.222.172:8999/es/index/rws"
+   // val url: String = "http://54.222.222.172:8999/es/index/rws"
+   val url: String = "http://localhost:8999/es/index/rws"
     var keywords = new java.util.ArrayList[IndexObjEntity]()
     kvs.foreach { obj =>
-      if (cnt == 5) {
+      if (cnt == 20) {
         cnt = 0
         testIndexByKeywordsWithRw(url, keywords)
         keywords = new java.util.ArrayList[IndexObjEntity]()

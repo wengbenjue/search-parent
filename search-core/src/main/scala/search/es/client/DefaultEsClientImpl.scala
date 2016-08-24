@@ -1,13 +1,14 @@
 package search.es.client
 
 import java.util
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
 import com.mongodb.{BasicDBObject, DBObject, DBCursor}
 import org.elasticsearch.client.Client
 import search.common.cache.impl.LocalCache
 import search.common.config.{RedisConfiguration, EsConfiguration}
 import search.common.entity.bizesinterface.IndexObjEntity
+import search.common.entity.help.IndexHelpEntity
 import search.common.listener.graph.IndexGraphNlp
 import search.common.util.{Util, Logging}
 import search.es.client.util.EsClientConf
@@ -32,7 +33,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
   if (consumerThreadsNum > 0) currentThreadsNum = consumerThreadsNum
   val indexRunnerThreadPool = Util.newDaemonFixedThreadPool(currentThreadsNum, "index_runner_thread_excutor")
-
+  var indexQueue: LinkedBlockingQueue[IndexHelpEntity] = new LinkedBlockingQueue[IndexHelpEntity]()
 
   override def count(indexName: String, typeName: String): Long = {
     val cnt = EsClient.count(EsClient.getClientFromPool(), indexName, typeName)._1
@@ -88,6 +89,18 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     incrementIndexWithRw(indexName, typeName, data.map(new IndexObjEntity(_, null.asInstanceOf[java.util.List[String]])))
   }
 
+  private var thread = new Thread("asyn index thread ") {
+    setDaemon(true)
+    override def run() {
+      while (true) {
+        val parameters = indexQueue.take()
+        indexGraphNlp(parameters.getIndexName, parameters.getTypeName, parameters.getData, parameters.getTypeChoose)
+      }
+    }
+  }
+  thread.start()
+
+
   override def incrementIndexWithRw(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity], typeChoose: String = graphTypName): Boolean = {
 
     if (data == null || data.size() == 0) {
@@ -95,11 +108,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       return false
     }
     if (data.size() > 10) {
-      new Thread {
-        override def run(): Unit = {
-          indexGraphNlp(indexName, typeName, data, typeChoose)
-        }
-      }.start()
+      indexQueue.offer(new IndexHelpEntity(indexName, typeName, data, typeChoose))
       //conf.waiter.post(IndexGraphNlp(indexName, typeName, data, typeChoose))
       return true
     }
@@ -163,8 +172,10 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
             dbObject.append("s_en", comEn)
           if (comSim != null)
             dbObject.append("s_zh", comSim)
-          if (comCode != null)
+          if (comCode != null){
             dbObject.append("stock_code", comCode)
+          }
+
 
           if (company != null)
             newDoc.put("s_com", company)
@@ -172,8 +183,11 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
             newDoc.put("s_en", comEn)
           if (comSim != null)
             newDoc.put("s_zh", comSim)
-          if (comCode != null)
+          if (comCode != null){
             newDoc.put("stock_code", comCode)
+            newDoc.put("stock_code_string", comCode.substring(0,comCode.indexOf("_")))
+          }
+
 
         }
       }
@@ -192,9 +206,9 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       docs.add(newDoc)
 
       if (rvKw != null && rvKw.size() > 0) {
-        logInfo(s"$logType index,keyword:$keyword -> relevant keywords:${rvKw.mkString(",")}")
+        logInfo(s"$logType index for ${indexName}:${typeName},keyword:$keyword -> relevant keywords:${rvKw.mkString(",")}")
       } else {
-        logInfo(s"$logType index,keyword:$keyword")
+        logInfo(s"$logType index for ${indexName}:${typeName},keyword:$keyword")
       }
 
     }
@@ -259,6 +273,18 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
 
+  override def fuzzyQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, fuzzy: String): Array[java.util.Map[String, Object]] = {
+    EsClient.fuzzyQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, fuzzy)
+  }
+
+  override def wildcardQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, wildcard: String): Array[java.util.Map[String, Object]] = {
+    EsClient.wildcardQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, wildcard)
+  }
+
+  override def prefixQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, preffix: String): Array[java.util.Map[String, Object]] = {
+    EsClient.prefixQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, preffix)
+  }
+
   override def multiMatchQuery(indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]] = {
     EsClient.multiMatchQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, keyWords, fields: _*)
   }
@@ -318,8 +344,14 @@ object DefaultEsClientImpl {
 
 
   def main(args: Array[String]) {
-    testAddDocuments
+    //testAddDocuments
     //testFor
+    testSubString
+  }
+
+  def testSubString = {
+    val comCode = "008989_2d"
+    println(comCode.substring(0,comCode.indexOf("_")))
   }
 
   def testFor() = {

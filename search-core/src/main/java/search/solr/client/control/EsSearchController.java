@@ -15,7 +15,9 @@ import search.solr.client.searchInterface.SearchInterface;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 
@@ -63,6 +65,21 @@ public class EsSearchController {
         } else
             return BizeEsInterface.indexByKeywords(null, originQuery, keywords);
     }
+
+    @RequestMapping(value = "/index/kw", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi indexByKeyword(final String keyword) {
+        if (keyword == null) {
+            NiNi nini = new NiNi();
+            nini.setCode(-1);
+            nini.setMsg("keywords is null!");
+            return nini;
+        } else{
+            List<IndexObjEntity> en = new ArrayList<>();
+            en.add(new IndexObjEntity(keyword));
+            return BizeEsInterface.wrapIndexByKeywords(en);
+        }
+    }
+
 
     @RequestMapping(value = "/index/rws", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi indexByKeywordsWithKw(@RequestBody final Collection<IndexObjEntity> keywords) {
@@ -159,6 +176,24 @@ public class EsSearchController {
     @RequestMapping(value = "/search/cache/view", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi viewCache(@RequestParam(value = "key", required = false, defaultValue = "-1") String key) {
         NiNi result = BizeEsInterface.wrapViewCache(key);
+        return result;
+    }
+
+    @RequestMapping(value = "/search/bloomfilter/load", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi bloomFilterLoad() {
+        NiNi result = BizeEsInterface.wrapAddBloomFilter();
+        return result;
+    }
+
+    @RequestMapping(value = "/search/index/cat/load", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi indexCatOfKeywords() {
+        NiNi result = BizeEsInterface.warpIndexCatOfKeywords();
+        return result;
+    }
+
+    @RequestMapping(value = "/search/event/rule/load", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi loadEventRegexToCache() {
+        NiNi result = BizeEsInterface.warpLoadEventRegexToCache();
         return result;
     }
 

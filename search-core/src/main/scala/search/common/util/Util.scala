@@ -67,6 +67,14 @@ private[search] object Util extends Logging {
     return o
   }
 
+
+
+  def convertDateFormat(time: java.util.Date): String = {
+    val format: String = "yyyy-MM-dd HH:mm:ss SSS"
+    val formatter = new SimpleDateFormat(format)
+    formatter.format(time)
+  }
+
   def convertDateFormat(time: Long, format: String = "yyyy-MM-dd HH:mm:ss SSS"): String = {
     val date = new java.util.Date(time)
     val formatter = new SimpleDateFormat(format)
@@ -393,7 +401,8 @@ private[search] object Util extends Logging {
 object testUtil {
   def main(args: Array[String]) {
     // testTime
-    testNumber
+    //testNumber
+    testRegex
   }
 
   def testNumber = {
@@ -405,5 +414,11 @@ object testUtil {
     //println( Util.stringTotimestamp("2016-03-07 01:41:39.000"))
     // println(Util.timestampToDate(1457477786924L))
     println(Util.timestampToDate(1457759504865L))
+  }
+
+  def testRegex() = {
+    val input = "A布局dg生态sd4"
+    val regex = "(.*?)布局(.*?)生态(.*?)"
+    println(Util.regex(input,regex))
   }
 }
