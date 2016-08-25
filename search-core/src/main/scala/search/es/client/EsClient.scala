@@ -509,10 +509,10 @@ private[search] object EsClient extends EsConfiguration with Logging {
   def multiMatchQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]] = {
     queryAsMap(client, indexName, typeName, from, to,
       QueryBuilders.multiMatchQuery(keyWords, fields: _*)
-        .operator(MatchQueryBuilder.Operator.AND)
-        .tieBreaker(0.3f)
-        .minimumShouldMatch("75%")
-        .`type`(MultiMatchQueryBuilder.Type.BEST_FIELDS)
+       // .operator(MatchQueryBuilder.Operator.AND)
+        //.tieBreaker(0.3f)
+        //.minimumShouldMatch("75%")
+        //.`type`(MultiMatchQueryBuilder.Type.BEST_FIELDS)
     )
   }
 

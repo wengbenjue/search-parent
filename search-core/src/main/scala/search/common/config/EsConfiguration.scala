@@ -11,7 +11,7 @@ private[search] trait EsConfiguration extends Configuration {
 
 
   val esConfig = ConfigFactory.load("es.conf")
-  lazy val esClusterName = Try(esConfig.getString("cluster.name")).getOrElse("es-cluster")
+  lazy val esClusterName = Try(esConfig.getString("cluster.name")).getOrElse("es-cloud")
 
   lazy val esHosts = Try(esConfig.getString("es.hosts")).getOrElse("127.0.0.1:9300")
 
@@ -21,6 +21,8 @@ private[search] trait EsConfiguration extends Configuration {
   lazy val mulitiMatchRelevantKWThreshold = Try(esConfig.getDouble("match.mulitiMatchRelevantKWThreshold")).getOrElse(10.0)
   lazy val word2vecMatchRelevantKWThreshold = Try(esConfig.getDouble("match.word2vecMatchRelevantKWThreshold")).getOrElse(1.0)
 
+//switch
+lazy val switchCrawler = Try(esConfig.getString("switch.crawler")).getOrElse("off")
 
   lazy val esClients = Try(esConfig.getInt("es.clients")).getOrElse(3)
 

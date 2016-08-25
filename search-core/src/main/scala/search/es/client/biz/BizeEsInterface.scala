@@ -3,8 +3,6 @@ package search.es.client.biz
 import java.io.{FileInputStream, FileOutputStream, IOException}
 import java.net.{URLEncoder, URI}
 import java.util
-import java.util.Date
-import java.util.concurrent.LinkedBlockingQueue
 import javax.servlet.http.HttpServletRequest
 
 import com.alibaba.fastjson.{JSONArray, JSONObject, JSON}
@@ -76,7 +74,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val companyEnField = "s_en"
 
   val timerPeriodSchedule = new CloudTimerWorker(name = "timerPeriodSchedule", interval = 1000 * 60 * 60 * 24, callback = () => loadEventRegexRule())
-  timerPeriodSchedule.startUp()
+
 
   var eventRegexRuleSets = new java.util.HashSet[String]()
 
@@ -97,11 +95,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     loadThread.start()
   }
 
+  init()
   def init() = {
     this.conf = new EsClientConf()
     this.conf.init()
     this.client = conf.esClient
-    loadEventRegexToCache
     loadStart
   }
 
@@ -112,7 +110,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     addBloomFilter
     cleanRedisByNamespace(cleanNameSpace)
     //indexCatOfKeywords
-    //loadEventRegexToCache()
+    loadEventRegexToCache()
+    timerPeriodSchedule.startUp()
   }
 
   def warpLoadEventRegexToCache(): NiNi = {
@@ -584,19 +583,22 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     var targetKeyword: String = null
 
     def totalRelevantTargetKeyWord(): Unit = {
-      //pinyinFieldWithBoost,  companyFieldWithBoost, companyEnFieldWithBoost, word2vecWithBoost, word2vecRwWithBoost, comStockCodeFieldWithBoost, pinyinFieldWithBoost,relevantKwsField_kwWithBoost,
-      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(), keywordStringFieldWithBoost, keywordFieldWithBoost)
+      //pinyinFieldWithBoost,  companyFieldWithBoost, companyEnFieldWithBoost, word2vecWithBoost, word2vecRwWithBoost, comStockCodeFieldWithBoost, pinyinFieldWithBoost,relevantKwsField_kwWithBoost,keywordStringFieldWithBoost,
+      //val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(),  keywordFieldWithBoost)
+      val matchQueryResult1 = client.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword )
       if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
         val doc = matchQueryResult1.head
         val matchScore = doc.get(scoreField).toString.toFloat
         if (matchScore >= mulitiMatchRelevantKWThreshold) {
           val matchKeyWord = doc.get(keywordField).toString
           setTargetkeyword(matchKeyWord)
-          logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore}  targetKeyword: $targetKeyword")
+          logInfo(s"${keyword} have been matched according relevant,relevant score:${matchScore}  targetKeyword: $targetKeyword ,mulitiMatchRelevantKWThreshold:${mulitiMatchRelevantKWThreshold}")
         } else {
+          logInfo(s"${keyword} have not been matched according relevant,we will try to word2vec relevant score:${matchScore}  targetKeyword: $targetKeyword,mulitiMatchRelevantKWThreshold:${mulitiMatchRelevantKWThreshold}")
           word2VecFromIndex
         }
       } else {
+        logInfo(s"${keyword} have not been matched according relevant,we will try to word2vec relevant score:${0}  targetKeyword: $targetKeyword,mulitiMatchRelevantKWThreshold:${mulitiMatchRelevantKWThreshold}")
         word2VecFromIndex
       }
     }
@@ -609,11 +611,15 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         if (matchScore >= word2vecMatchRelevantKWThreshold) {
           val matchKeyWord = doc.get(keywordField).toString
           setTargetkeyword(matchKeyWord)
-          logInfo(s"${keyword} have been matched according word2vec,relevant score:${matchScore}  targetKeyword: $targetKeyword")
+          logInfo(s"${keyword} have been matched according word2vec,relevant score:${matchScore}  targetKeyword: $targetKeyword ,word2vecMatchRelevantKWThreshold:${word2vecMatchRelevantKWThreshold}")
         } else {
+          logInfo(s"${keyword} have not been matched according word2vec,we will try to Pinyin, relevant score:${matchScore}  targetKeyword: $targetKeyword ,word2vecMatchRelevantKWThreshold:${word2vecMatchRelevantKWThreshold}")
+          justPinyinMatch
           //word2VectorProcess(keyword)
         }
       } else {
+        logInfo(s"${keyword} have not been matched according word2vec,we will try to Pinyin, relevant score:${0}  targetKeyword: $targetKeyword ,word2vecMatchRelevantKWThreshold:${word2vecMatchRelevantKWThreshold}")
+        justPinyinMatch
         //word2VectorProcess(keyword)
       }
     }
@@ -718,15 +724,18 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           val docKeyword = doc.get(keywordField).toString
           if (docScore > pinyinScoreThreshold) {
             setTargetkeyword(docKeyword)
-            logInfo(s"${keyword} have been matched according pinyin,pinyin score:${docScore}  targetKeyword: $targetKeyword")
+            logInfo(s"${keyword} have been matched according pinyin,pinyin score:${docScore}  targetKeyword: $targetKeyword,pinyinScoreThreshold:${pinyinScoreThreshold}")
           } else {
-            termFuzzyQueryByRelevantKw
+            logInfo(s"${keyword} have not been matched according pinyin, we will try to fetch ,pinyin score:${docScore}  targetKeyword: $targetKeyword,pinyinScoreThreshold:${pinyinScoreThreshold}")
+            //totalRelevantTargetKeyWord
           }
         } else {
-          termFuzzyQueryByRelevantKw
+          logInfo(s"${keyword} have not been matched according pinyin, we will try to fetch ,pinyin score:${0}  targetKeyword: $targetKeyword,pinyinScoreThreshold:${pinyinScoreThreshold}")
+          //totalRelevantTargetKeyWord
         }
       } else {
-        termFuzzyQueryByRelevantKw
+        logInfo(s"${keyword} have not been matched according pinyin, we will try to fetch ,pinyin score:${0}  targetKeyword: $targetKeyword,pinyinScoreThreshold:${pinyinScoreThreshold}")
+        //totalRelevantTargetKeyWord
       }
     }
 
@@ -761,10 +770,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           setTargetkeyword(matchKeyWord)
           logInfo(s"${keyword} have been matched  accurately by stock code string,relevant score:${rlvKWScore}} targetKeyword: $targetKeyword")
         } else {
-          justPinyinMatch
+          termFuzzyQueryByRelevantKw
+          //justPinyinMatch
         }
       } else {
-        justPinyinMatch
+        termFuzzyQueryByRelevantKw
+        // justPinyinMatch
       }
     }
 
@@ -807,10 +818,18 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     if (targetKeyword == null && !reSearch) {
       //no data, save status to redis and request to trigger crawler with fetch data asynchronous
-
-      updateState(sessionId, keyword, KnowledgeGraphStatus.NLP_PROCESS, FinshedStatus.UNFINISHED)
-      realTimeCrawler(keyword)
-      return queryBestKeyWord(sessionId, keyword, showLevel, true, needSearch = 1)
+      if (!switchCrawler.equalsIgnoreCase("off")) {
+        updateState(sessionId, keyword, KnowledgeGraphStatus.NLP_PROCESS, FinshedStatus.UNFINISHED)
+        val result = realTimeCrawler(keyword)
+        if (result == null) {
+          updateState(sessionId, keyword, KnowledgeGraphStatus.FETCH_PROCESS, FinshedStatus.FINISHED)
+          return null
+        } else
+          return queryBestKeyWord(sessionId, keyword, showLevel, true, needSearch = 1)
+      } else {
+        updateState(sessionId, keyword, KnowledgeGraphStatus.FETCH_PROCESS, FinshedStatus.FINISHED)
+        null
+      }
     } else if (targetKeyword == null && reSearch) {
       updateState(sessionId, keyword, KnowledgeGraphStatus.NLP_PROCESS, FinshedStatus.FINISHED)
       //return nodata
@@ -959,7 +978,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   private def realTimeCrawler(kw: String): String = {
-    val cat = if (isEvent(kw)) QueryCatType.EVENT else QueryCatType.CSF
+    val cat: String = if (isEvent(kw)) QueryCatType.EVENT
+    else {
+      null
+      QueryCatType.CSF
+    }
+    if (cat == null) return null
     val url: String = s"${fetchUrl}kw=${URLEncoder.encode(kw, "UTF-8")}&cat=$cat"
     logInfo(s"fetching query:${kw}")
     var httpResp: CloseableHttpResponse = null
@@ -1137,8 +1161,15 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     //testFuzzyQuery
 
-    testLoadEventRegexToCache
+    //testLoadEventRegexToCache
 
+    testqueryBestKeyWord
+
+  }
+
+  def testqueryBestKeyWord() = {
+    val result = queryBestKeyWord(null, "中国中冶", 1, true, needSearch = 1)
+    println(result)
   }
 
 
@@ -1191,8 +1222,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   def testMatchQuery() = {
-    val keyword = "aabc"
-    val result = client.matchQuery(graphIndexName, graphTypName, 0, 10, relevantKwsField_kw, keyword)
+    val keyword = "中国中冶的"
+    val result = client.matchQuery(graphIndexName, graphTypName, 0, 10, keywordField, keyword)
     println(result)
   }
 

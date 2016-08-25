@@ -7,11 +7,11 @@ import search.common.util.Constants;
  */
 public class MongoTableConstants extends Constants{
     //knowledge graph about news
-    public static final String NEWS_GRAPH_KEYWORDS = "news.graph_keywords";
-    public static final String NEWS_GRAPH_CAT_NLP = "news.graph_cat_nlp";
+    public static final String NEWS_GRAPH_KEYWORDS = "graph.graph_keywords";
+    public static final String NEWS_GRAPH_CAT_NLP = "graph.graph_cat_nlp";
 
 
-    public static final String NEWS_SEARCH_LOGS = "news.search_logs";
+    public static final String NEWS_SEARCH_LOGS = "graph.search_logs";
 
     public static final String ADA_BASE_STOCK = "ada.base_stock";
 
