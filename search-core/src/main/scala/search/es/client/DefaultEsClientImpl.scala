@@ -91,6 +91,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
   private var thread = new Thread("asyn index thread ") {
     setDaemon(true)
+
     override def run() {
       while (true) {
         val parameters = indexQueue.take()
@@ -130,7 +131,8 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       val keyword = k.getKeyword
       val rvKw = k.getRvkw
       //val doc = conf.mongoDataManager.queryOneByKeyWord(keyword)
-      val doc = dm.findAndRemove(keyword)
+      //val doc = dm.findAndRemove(keyword)
+      val doc = dm.findByKeyword(keyword)
       if (doc == null) {
         cnt += 1
         indexId = cnt
@@ -172,7 +174,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
             dbObject.append("s_en", comEn)
           if (comSim != null)
             dbObject.append("s_zh", comSim)
-          if (comCode != null){
+          if (comCode != null) {
             dbObject.append("stock_code", comCode)
           }
 
@@ -183,9 +185,9 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
             newDoc.put("s_en", comEn)
           if (comSim != null)
             newDoc.put("s_zh", comSim)
-          if (comCode != null){
+          if (comCode != null) {
             newDoc.put("stock_code", comCode)
-            newDoc.put("stock_code_string", comCode.substring(0,comCode.indexOf("_")))
+            newDoc.put("stock_code_string", comCode.substring(0, comCode.indexOf("_")))
           }
 
 
@@ -213,7 +215,10 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
     }
 
-    if (list.size() > 0) dm.insert(list)
+    if (list.size() > 0) {
+      //dm.insert(list)
+      dm.saveOrUpdate(list)
+    }
 
     if (docs.size() == 1) {
       addDocument(indexName, typeName, docs.head)
@@ -351,7 +356,7 @@ object DefaultEsClientImpl {
 
   def testSubString = {
     val comCode = "008989_2d"
-    println(comCode.substring(0,comCode.indexOf("_")))
+    println(comCode.substring(0, comCode.indexOf("_")))
   }
 
   def testFor() = {

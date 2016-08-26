@@ -39,21 +39,23 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
   }
 
   //news.dict_news_rule
-  def getDictNewsRuleCollection:DBCollection = {
+  def getDictNewsRuleCollection: DBCollection = {
     getCollection(MongoTableConstants.NEWS_DICT_NEWS_RULE)
   }
 
   //news.sens_industry
-  def getSensIndustryCollection:DBCollection = {
+  def getSensIndustryCollection: DBCollection = {
     getCollection(MongoTableConstants.NEWS_SENS_INDUSTRY)
   }
 
 
+  def getNewsEntityMultiRelCollection: DBCollection = {
+    getCollection(MongoTableConstants.NEWS_ENTITY_MULTI_REL)
+  }
 
-
-
-
-
+  def getNewsNewsKeywordDictCollection: DBCollection = {
+    getCollection(MongoTableConstants.NEWS_KEYWORD_DICT)
+  }
 
 
   def deleteAllData() = {
@@ -108,7 +110,7 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     result
   }
 
-  def findCompanyCode():java.util.List[DBObject] = {
+  def findCompanyCode(): java.util.List[DBObject] = {
     val projection = new BasicDBObject()
     projection.put("code", Integer.valueOf(1))
     projection.put("w", Integer.valueOf(1))
@@ -155,7 +157,6 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
   }
 
 
-
   def queryALl() = {
     val cur = getCollection().find()
     while (cur.hasNext) {
@@ -182,6 +183,16 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     }
   }
 
+  def saveOrUpdate(docs: java.util.List[BasicDBObject]) = {
+    try {
+      docs.foreach(getCollection.save(_))
+    } catch {
+      case e: Exception =>
+    }
+  }
+
+
+
   def findAndRemove(keyword: String): java.util.Map[_, _] = {
     try {
       val dbResult = getCollection().findAndRemove(new BasicDBObject("keyword", keyword))
@@ -193,6 +204,38 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     }
   }
 
+  def findByKeyword(keyword: String): java.util.Map[_, _] = {
+    try {
+      val dbResult = getCollection().findOne(new BasicDBObject("keyword", keyword))
+      if (dbResult == null) return null
+      else dbResult.toMap
+    } catch {
+      case e: Exception =>
+        null
+    }
+  }
+
+
+  def getDicFromNewsEntityMultiRel(): java.util.List[DBObject] = {
+    val projection = new BasicDBObject()
+    projection.put("word", Integer.valueOf(1))
+    val query = new BasicDBObject()
+    val dbCurson = getNewsEntityMultiRelCollection.find(query, projection)
+    if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
+    val result = dbCurson.toArray
+    result
+  }
+
+
+  def getDicFromNewsKeywordDict(): java.util.List[DBObject] = {
+    val projection = new BasicDBObject()
+    projection.put("word", Integer.valueOf(1))
+    val query = new BasicDBObject()
+    val dbCurson = getNewsNewsKeywordDictCollection.find(query, projection)
+    if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
+    val result = dbCurson.toArray
+    result
+  }
 
 }
 
@@ -202,7 +245,31 @@ private[search] object DataManager {
   def main(args: Array[String]) {
     //testLoadGraphNodeDataToMongo
     //testQueryOneByKeyWord
-    testFindBaseStock
+    //testFindBaseStock
+    //testFindByKeyword
+    testSaveOrUpdate
+
+  }
+
+  def testSaveOrUpdate() = {
+    val dm = new DataManager(new EsClientConf())
+    val docs = new java.util.ArrayList[BasicDBObject]()
+    var dbObject = new BasicDBObject()
+    dbObject.append("_id", 0)
+    dbObject.append("keyword", "haha")
+    docs.add(dbObject)
+    dbObject = new BasicDBObject()
+    dbObject.append("_id", 1)
+    dbObject.append("keyword", "haha1")
+    docs.add(dbObject)
+   val result = dm.saveOrUpdate(docs)
+    println(result)
+  }
+
+  def testFindByKeyword() = {
+    val dm = new DataManager(new EsClientConf())
+    val result = dm.findByKeyword("中科创达")
+    println(result)
   }
 
   def testFindBaseStock() = {

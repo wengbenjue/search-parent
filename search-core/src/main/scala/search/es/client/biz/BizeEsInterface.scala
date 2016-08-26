@@ -40,7 +40,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   var client: EsClient = _
 
 
-  val keywordFieldWithBoost = "keyword^15"
+  val keywordFieldWithBoost = "keyword"
   val relevantKwsField_kwWithBoost = "relevant_kws.relevant_kws_kw^4"
   //"relevant match"
   val keywordStringFieldWithBoost = "keyword_string^20"
@@ -584,8 +584,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     def totalRelevantTargetKeyWord(): Unit = {
       //pinyinFieldWithBoost,  companyFieldWithBoost, companyEnFieldWithBoost, word2vecWithBoost, word2vecRwWithBoost, comStockCodeFieldWithBoost, pinyinFieldWithBoost,relevantKwsField_kwWithBoost,keywordStringFieldWithBoost,
-      //val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword.toLowerCase(),  keywordFieldWithBoost)
-      val matchQueryResult1 = client.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword )
+      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword,  keywordFieldWithBoost)
+      //val matchQueryResult1 = client.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword )
       if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
         val doc = matchQueryResult1.head
         val matchScore = doc.get(scoreField).toString.toFloat

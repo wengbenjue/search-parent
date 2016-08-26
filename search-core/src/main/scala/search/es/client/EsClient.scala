@@ -491,7 +491,9 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @return
     */
   def matchQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
-    queryAsMap(client, indexName, typeName, from, to, QueryBuilders.matchQuery(field, keyWords))
+    queryAsMap(client, indexName, typeName, from, to,
+      QueryBuilders.matchQuery(field, keyWords)
+    )
   }
 
   /**
@@ -509,10 +511,11 @@ private[search] object EsClient extends EsConfiguration with Logging {
   def multiMatchQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]] = {
     queryAsMap(client, indexName, typeName, from, to,
       QueryBuilders.multiMatchQuery(keyWords, fields: _*)
-       // .operator(MatchQueryBuilder.Operator.AND)
-        //.tieBreaker(0.3f)
+       .operator(MatchQueryBuilder.Operator.OR)
+        .tieBreaker(0.2f)
+          .fuzziness("1")
         //.minimumShouldMatch("75%")
-        //.`type`(MultiMatchQueryBuilder.Type.BEST_FIELDS)
+        .`type`(MultiMatchQueryBuilder.Type.BEST_FIELDS)
     )
   }
 
