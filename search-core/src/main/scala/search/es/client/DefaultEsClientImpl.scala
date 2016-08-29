@@ -5,6 +5,7 @@ import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
 import com.mongodb.{BasicDBObject, DBObject, DBCursor}
 import org.elasticsearch.client.Client
+import org.elasticsearch.index.query.{MultiMatchQueryBuilder, MatchQueryBuilder, QueryBuilders}
 import search.common.cache.impl.LocalCache
 import search.common.config.{RedisConfiguration, EsConfiguration}
 import search.common.entity.bizesinterface.IndexObjEntity
@@ -291,7 +292,18 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
   override def multiMatchQuery(indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]] = {
+    EsClient.queryAsMap(EsClient.getClientFromPool(), indexName, typeName, from, to,
+      QueryBuilders.multiMatchQuery(keyWords, fields: _*)
+    )
+  }
+
+
+  override def matchMultiPhraseQuery(indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]] = {
     EsClient.multiMatchQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, keyWords, fields: _*)
+  }
+
+  override def matchPhraseQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
+    EsClient.matchPhraseQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, keyWords)
   }
 
   override def matchQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {

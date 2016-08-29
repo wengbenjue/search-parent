@@ -740,7 +740,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
 
     def termFuzzyQueryByRelevantKw() = {
-      val matchQueryResult = client.termQuery(graphIndexName, graphTypName, 0, 1, relevantKwsField_kw, keyword.toLowerCase())
+      //val matchQueryResult = client.matchQuery(graphIndexName, graphTypName, 0, 1, relevantKwsField_kw, keyword.toLowerCase())
+      val matchQueryResult = client.matchPhraseQuery(graphIndexName, graphTypName, 0, 1, relevantKwsField_kw, keyword.toLowerCase())
       if (matchQueryResult != null && matchQueryResult.length > 0) {
         val doc = matchQueryResult.head
         val rlvKWScore = doc.get(scoreField).toString.toFloat
@@ -1163,7 +1164,23 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     //testLoadEventRegexToCache
 
-    testqueryBestKeyWord
+    //testqueryBestKeyWord
+
+    testMatchPhraseQuery()
+
+  }
+
+  def testMatchPhraseQuery() = {
+    val keyword = "vr"
+
+    val result = client.matchPhraseQuery(graphIndexName,graphTypName,0,10,relevantKwsField_kw,keyword)
+    println(result)
+
+    val result2 = client.matchPhraseQuery(graphIndexName,graphTypName,0,10,relevantKwsField,keyword)
+    println(result2)
+
+    val result1 = client.matchQuery(graphIndexName, graphTypName, 0, 10, relevantKwsField_kw, keyword)
+    println(result1)
 
   }
 

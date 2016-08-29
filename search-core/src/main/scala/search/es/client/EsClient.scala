@@ -64,6 +64,11 @@ private[search] trait EsClient extends EsConfiguration {
 
   def addDocuments(indexName: String, typeName: String, docs: java.util.List[java.util.Map[String, Object]]): Boolean
 
+
+  def matchPhraseQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]]
+
+  def matchMultiPhraseQuery(indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]]
+
   def matchQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]]
 
   def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int): (Long, Array[java.util.Map[String, Object]])
@@ -495,6 +500,13 @@ private[search] object EsClient extends EsConfiguration with Logging {
       QueryBuilders.matchQuery(field, keyWords)
     )
   }
+
+  def matchPhraseQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
+    queryAsMap(client, indexName, typeName, from, to,
+      QueryBuilders.matchPhraseQuery(field, keyWords)
+    )
+  }
+
 
   /**
     * query by more than one field
