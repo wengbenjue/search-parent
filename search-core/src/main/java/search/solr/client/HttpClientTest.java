@@ -42,7 +42,12 @@ public class HttpClientTest {
         //index();
         // deleteIds();
         // testRecordLogs();
-        testCrawlerTrigger();
+        //testCrawlerTrigger();
+    }
+
+    public static void testSynomy(){
+
+
     }
 
     public static void testRecordLogs(){

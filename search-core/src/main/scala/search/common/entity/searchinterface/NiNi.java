@@ -13,6 +13,10 @@ public class NiNi {
     public NiNi() {
     }
 
+    public NiNi(String msg) {
+        this.msg = msg;
+    }
+
     public NiNi(Float costMillisecond, Float costSecond, Object data) {
         this.costMillisecond = costMillisecond;
         this.costSecond = costSecond;
