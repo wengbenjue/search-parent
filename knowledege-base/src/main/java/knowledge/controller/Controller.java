@@ -62,7 +62,6 @@ public abstract class Controller<T> {
     public T find(Long id) {
         T entity = getService().find(id);
         if (entity != null) {
-            System.out.println("from OGM: " + entity);
             return entity;
         }
         throw new NotFoundException();

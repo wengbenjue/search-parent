@@ -12,8 +12,7 @@ public class Keyword extends Entity {
 
     private String name;
 
-    //@Relationship(type = "synonym", direction = "UNDIRECTED")
-    @Relationship(type = "synonym")
+   @Relationship(type = "synonym", direction = "UNDIRECTED")
     private Set<Keyword> synonyms;
 
     public void addSynonyms(String synonym) {
@@ -31,6 +30,7 @@ public class Keyword extends Entity {
     }
 
     public Keyword(String name, Set<Keyword> synonyms) {
+        this();
         this.name = name;
         this.synonyms = synonyms;
     }

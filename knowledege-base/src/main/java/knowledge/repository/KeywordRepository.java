@@ -16,8 +16,8 @@ public interface KeywordRepository extends GraphRepository<Keyword> {
 
     Keyword findOneByName(String name);
 
-
-    @Query("MATCH (k:keyword)-[:synonym]->(s:keyword) WHERE k.name ={0} RETURN s LIMIT 5")
+    //@Query("MATCH (k:keyword)-[:synonym]->(s:keyword) WHERE k.name ={0} RETURN s LIMIT 5")
+    @Query("MATCH (k:keyword)-[:synonym]-(s:keyword) WHERE k.name ={0} RETURN s LIMIT 5")
     Set<Keyword> synonymyByName(String name);
 
 }

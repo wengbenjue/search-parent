@@ -22,9 +22,7 @@ public class Application extends Neo4jConfiguration {
         new SpringApplication(Application.class).run(args);
     }
 
-    /**
-     * Creates a neo4j configuration, falling back to embedded if config details not present
-     */
+
     @Bean
     public org.neo4j.ogm.config.Configuration getConfiguration() {
         org.neo4j.ogm.config.Configuration config = new org.neo4j.ogm.config.Configuration();
@@ -49,8 +47,8 @@ public class Application extends Neo4jConfiguration {
         return new ApplicationListener<BeforeSaveEvent>() {
             @Override
             public void onApplicationEvent(BeforeSaveEvent event) {
-                Object entity = event.getEntity();
-                System.out.println("Before save of: " + entity);
+                //Object entity = event.getEntity();
+                //System.out.println("Before save of: " + entity);
             }
         };
     }
@@ -60,8 +58,8 @@ public class Application extends Neo4jConfiguration {
         return new ApplicationListener<AfterSaveEvent>() {
             @Override
             public void onApplicationEvent(AfterSaveEvent event) {
-                Object entity = event.getEntity();
-                System.out.println("Before save of: " + entity);
+              //  Object entity = event.getEntity();
+              //  System.out.println("Before save of: " + entity);
             }
         };
     }
@@ -71,8 +69,8 @@ public class Application extends Neo4jConfiguration {
         return new ApplicationListener<AfterDeleteEvent>() {
             @Override
             public void onApplicationEvent(AfterDeleteEvent event) {
-                Object entity = event.getEntity();
-                System.out.println("Before save of: " + entity);
+              //  Object entity = event.getEntity();
+              //  System.out.println("Before save of: " + entity);
             }
         };
     }

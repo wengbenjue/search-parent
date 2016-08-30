@@ -4,7 +4,6 @@ import knowledge.domain.Keyword;
 import knowledge.domain.Student;
 import knowledge.service.KeywordService;
 import knowledge.service.Service;
-import knowledge.service.StudentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.QueryLookupStrategy;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,10 +26,9 @@ public class KeywordController extends Controller<Keyword> {
         return keywordService;
     }
 
-    @RequestMapping(value = "/{name}", method = RequestMethod.GET)
-    public Set<Keyword> find(@PathVariable String name, final HttpServletResponse response) {
+    @RequestMapping(value = "/k/{name}", method = RequestMethod.GET)
+    public Set<Keyword> synonym(@PathVariable String name, final HttpServletResponse response) {
         setHeaders(response);
         return keywordService.synonymyByName(name);
     }
-
 }

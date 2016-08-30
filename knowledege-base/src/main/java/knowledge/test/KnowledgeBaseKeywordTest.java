@@ -3,9 +3,7 @@ package knowledge.test;
 import knowledge.Application;
 import knowledge.domain.Keyword;
 import knowledge.domain.Student;
-import knowledge.repository.StudentRepository;
 import knowledge.service.KeywordService;
-import knowledge.service.StudentService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +24,6 @@ import java.util.function.Consumer;
 @WebAppConfiguration
 public class KnowledgeBaseKeywordTest {
 
-    @Autowired
-    private StudentService studentService;
 
     @Autowired
     private KeywordService keywordService;
@@ -42,43 +38,40 @@ public class KnowledgeBaseKeywordTest {
 
     }
 
-    @Test
-    public void getObjById() {
-        Object s = studentService.find(63L);
-        System.out.println(s);
-
-    }
 
     @Test
     public void saveSynoKeyword() {
-        Keyword kv = new Keyword("量子科技");
-        kv.addSynonyms("量子信息");
-        kv.addSynonyms("量子信息技术");
-        Object result = keywordService.createOrUpdate(kv);
-        System.out.println(result);
+        Set<Keyword> kv1Syns = new HashSet<>();
+        Keyword kv1 = new Keyword("量子科技");
+        Keyword kv2 = new Keyword("量子信息");
+        Keyword kv3 = new Keyword("量子信息技术");
+        kv1Syns.add(kv2);
+        kv1Syns.add(kv3);
+        kv1.setSynonyms(kv1Syns);
+        Object result = keywordService.createOrUpdate(kv1);
 
-        kv = new Keyword("大数据");
-        kv.addSynonyms("BigData");
-        kv.addSynonyms("Data Mining");
-        result = keywordService.createOrUpdate(kv);
+
+        Set<Keyword> kv2Syns = new HashSet<>();
+        kv2Syns.add(kv1);
+        kv2Syns.add(kv3);
+        kv2.setSynonyms(kv2Syns);
+        result = keywordService.createOrUpdate(kv2);
+
+        Set<Keyword> kv3Syns = new HashSet<>();
+        kv3Syns.add(kv1);
+        kv3Syns.add(kv2);
+        kv3.setSynonyms(kv3Syns);
+
+
+        result = keywordService.createOrUpdate(kv3);
+
         System.out.println(result);
 
     }
 
 
     @Test
-    public void saveStudents() {
-        Student s = new Student("soledede");
-        Student s1 = new Student("xiaioa");
-        Set<Student> setS = new HashSet<Student>();
-        setS.add(s1);
-        s.setFriends(setS);
-        Object obj = studentService.createOrUpdate(s);
-        System.out.println(obj);
-    }
-
-    @Test
-    public void testSynonymyById(){
+    public void testSynonymyById() {
         Keyword resultOne = keywordService.findByNameOne("量子信息");
         System.out.println(resultOne);
         Object result = keywordService.synonymyByName("量子科技");
@@ -86,7 +79,7 @@ public class KnowledgeBaseKeywordTest {
     }
 
     @Test
-    public  void delById(){
+    public void delById() {
         Iterable<Keyword> keywords = keywordService.findAll();
         keywords.forEach(new Consumer<Keyword>() {
             @Override
