@@ -1,7 +1,7 @@
 package knowledge.controller;
 
 import knowledge.domain.Keyword;
-import knowledge.domain.Student;
+import knowledge.entity.Msg;
 import knowledge.service.KeywordService;
 import knowledge.service.Service;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 import java.util.Set;
 
 @RestController
@@ -27,8 +28,18 @@ public class KeywordController extends Controller<Keyword> {
     }
 
     @RequestMapping(value = "/k/{name}", method = RequestMethod.GET)
-    public Set<Keyword> synonym(@PathVariable String name, final HttpServletResponse response) {
+    public List<Keyword> synonym(@PathVariable String name, final HttpServletResponse response) {
         setHeaders(response);
         return keywordService.synonymyByName(name);
     }
+
+    @RequestMapping(value = "/add/{kv}/{synonym}", method = RequestMethod.GET)
+    public Msg addSynonym(@PathVariable String kv, @PathVariable String synonym, final HttpServletResponse response) {
+        setHeaders(response);
+        Boolean result = keywordService.addSynonymy(kv, synonym);
+        if(result)
+        return new Msg(0,"synonym added sucessfully");
+        else return new Msg(-1,"synonym added failed");
+    }
+
 }

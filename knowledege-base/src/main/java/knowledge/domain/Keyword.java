@@ -3,7 +3,9 @@ package knowledge.domain;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 
@@ -13,14 +15,14 @@ public class Keyword extends Entity {
     private String name;
 
    @Relationship(type = "synonym", direction = "UNDIRECTED")
-    private Set<Keyword> synonyms;
+    private List<Keyword> synonyms;
 
     public void addSynonyms(String synonym) {
         this.synonyms.add(new Keyword(synonym));
     }
 
     public Keyword() {
-        synonyms =  new HashSet<>();
+        synonyms =  new ArrayList<>();
     }
 
 
@@ -29,17 +31,17 @@ public class Keyword extends Entity {
         this.name = name;
     }
 
-    public Keyword(String name, Set<Keyword> synonyms) {
+    public Keyword(String name, List<Keyword> synonyms) {
         this();
         this.name = name;
         this.synonyms = synonyms;
     }
 
-    public Set<Keyword> getSynonyms() {
+    public List<Keyword> getSynonyms() {
         return synonyms;
     }
 
-    public void setSynonyms(Set<Keyword> synonyms) {
+    public void setSynonyms(List<Keyword> synonyms) {
         this.synonyms = synonyms;
     }
 
@@ -52,6 +54,25 @@ public class Keyword extends Entity {
         this.name = name;
     }
 
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        Keyword keyword = (Keyword) o;
+
+        return name != null ? name.equals(keyword.name) : keyword.name == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (name != null ? name.hashCode() : 0);
+        return result;
+    }
 
     @Override
     public String toString() {

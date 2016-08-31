@@ -12,5 +12,7 @@ public interface KeywordService extends Service<Keyword> {
 
     Keyword findByNameOne(String name);
 
-    Set<Keyword> synonymyByName(String name);
+    List<Keyword> synonymyByName(String name);
+
+    Boolean addSynonymy(String kv,String synonym);
 }

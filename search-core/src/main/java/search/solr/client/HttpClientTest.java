@@ -47,7 +47,6 @@ public class HttpClientTest {
 
     public static void testSynomy(){
 
-
     }
 
     public static void testRecordLogs(){

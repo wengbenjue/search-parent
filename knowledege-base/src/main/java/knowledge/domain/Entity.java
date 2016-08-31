@@ -6,12 +6,12 @@ import com.voodoodyne.jackson.jsog.JSOGGenerator;
 import org.neo4j.ogm.annotation.GraphId;
 
 //@JsonIdentityInfo(generator=ObjectIdGenerators.PropertyGenerator.class, property="id")
-@JsonIdentityInfo(generator=JSOGGenerator.class)
+@JsonIdentityInfo(generator = JSOGGenerator.class)
 public abstract class Entity {
 
     @JsonProperty("id")
-   // @GraphId
-   Long id;
+    // @GraphId
+            Long id;
 
     public Long getId() {
         return id;
@@ -24,14 +24,14 @@ public abstract class Entity {
     /**
      * FIXME:
      * This is the default mechanism for providing entity identity to the OGM
-     *
+     * <p>
      * It is required because the OGM can currently accept objects with NO
      * id value set. This is a restriction that must be changed
      *
      * @param o the object to compare, either or both may not yet be persisted.
      * @return
      */
-    @Override
+    /*@Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || id == null || getClass() != o.getClass()) return false;
@@ -46,5 +46,20 @@ public abstract class Entity {
     @Override
     public int hashCode() {
         return (id == null) ? -1 : id.hashCode();
+    }*/
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Entity entity = (Entity) o;
+
+        return true;
+
+    }
+
+    @Override
+    public int hashCode() {
+        return 0;
     }
 }

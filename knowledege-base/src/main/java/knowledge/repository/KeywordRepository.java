@@ -18,6 +18,6 @@ public interface KeywordRepository extends GraphRepository<Keyword> {
 
     //@Query("MATCH (k:keyword)-[:synonym]->(s:keyword) WHERE k.name ={0} RETURN s LIMIT 5")
     @Query("MATCH (k:keyword)-[:synonym]-(s:keyword) WHERE k.name ={0} RETURN s LIMIT 5")
-    Set<Keyword> synonymyByName(String name);
+    List<Keyword> synonymyByName(String name);
 
 }
