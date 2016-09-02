@@ -1,5 +1,6 @@
 package knowledge;
 
+import knowledge.common.KnowledgeConf;
 import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
 import org.springframework.boot.SpringApplication;
@@ -17,8 +18,10 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement
 @EnableNeo4jRepositories(basePackages = "knowledge.repository")
 public class Application extends Neo4jConfiguration {
+    public static KnowledgeConf conf = new KnowledgeConf();
 
     public static void main(String[] args) {
+        conf = conf.loadPropertiesFromResource();
         new SpringApplication(Application.class).run(args);
     }
 
@@ -27,7 +30,7 @@ public class Application extends Neo4jConfiguration {
     public org.neo4j.ogm.config.Configuration getConfiguration() {
         org.neo4j.ogm.config.Configuration config = new org.neo4j.ogm.config.Configuration();
         config.driverConfiguration().setDriverClassName("org.neo4j.ogm.drivers.http.driver.HttpDriver");
-        config.driverConfiguration().setURI("http://neo4j:csf@127.0.0.1:7474");
+        config.driverConfiguration().setURI("http://" + conf.get("neo4juser") + ":" + conf.get("neo4jpasswd") + "@" + conf.get("neo4jurl"));
         return config;
     }
 
@@ -58,8 +61,8 @@ public class Application extends Neo4jConfiguration {
         return new ApplicationListener<AfterSaveEvent>() {
             @Override
             public void onApplicationEvent(AfterSaveEvent event) {
-              //  Object entity = event.getEntity();
-              //  System.out.println("Before save of: " + entity);
+                //  Object entity = event.getEntity();
+                //  System.out.println("Before save of: " + entity);
             }
         };
     }
@@ -69,8 +72,8 @@ public class Application extends Neo4jConfiguration {
         return new ApplicationListener<AfterDeleteEvent>() {
             @Override
             public void onApplicationEvent(AfterDeleteEvent event) {
-              //  Object entity = event.getEntity();
-              //  System.out.println("Before save of: " + entity);
+                //  Object entity = event.getEntity();
+                //  System.out.println("Before save of: " + entity);
             }
         };
     }

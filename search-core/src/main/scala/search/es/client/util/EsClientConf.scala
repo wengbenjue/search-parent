@@ -1,5 +1,6 @@
 package search.es.client.util
 
+import edu.stanford.nlp.pipeline.StanfordCoreNLP
 import search.common.bloomfilter.mutable.BloomFilter
 import search.common.cache.KVCache
 import search.common.cache.impl.{RedisClientCache, RedisCache, LocalCache}
@@ -34,6 +35,7 @@ private[search] class EsClientConf(loadDefaults: Boolean) extends Cloneable with
   var stateCache: KVCache = _
   var esPageCache: KVCache = _
   var bloomFilter: BloomFilter[String] = _
+  var pipeline: StanfordCoreNLP = _
 
 
   def init() = {
@@ -49,6 +51,8 @@ private[search] class EsClientConf(loadDefaults: Boolean) extends Cloneable with
     this.stateCache =  new RedisClientCache(this)//new LocalCache()
     this.esPageCache = new RedisClientCache(this)
     this.bloomFilter = BloomFilter[String](Constants.GRAPH_KEYWORDS_BLOOMFILTER_KEY, expectedElements, falsePositiveRate)
+    //add corenlp
+    pipeline = new StanfordCoreNLP("CoreNLP-chinese.properties")
   }
 
 

@@ -1,4 +1,4 @@
-package search.common.tool.ictclas.corenlp;
+package search.common.tool.corenlp;
 
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreAnnotations.NamedEntityTagAnnotation;
@@ -20,7 +20,7 @@ public class CoreNLPSegment {
 		
 		// 用一些文本来初始化一个注释。文本是构造函数的参数。
 		Annotation annotation;
-		annotation = new Annotation("习近平访问美丽的杭州，西湖湖畔边上，彩霞片片归家");
+		annotation = new Annotation("习近平访问美丽的杭州，西湖湖畔边上，彩霞片片归家，成功总统应该何如");
 
 		// 运行所有选定的代码在本文
 		pipeline.annotate(annotation);

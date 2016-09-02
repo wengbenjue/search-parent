@@ -1,7 +1,6 @@
 package knowledge.repository;
 
 import knowledge.domain.Keyword;
-import knowledge.domain.Student;
 import org.springframework.data.neo4j.annotation.Query;
 import org.springframework.data.neo4j.repository.GraphRepository;
 import org.springframework.stereotype.Repository;

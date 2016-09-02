@@ -7,6 +7,9 @@ import javax.servlet.http.HttpServletRequest
 
 import com.alibaba.fastjson.{JSONArray, JSONObject, JSON}
 import com.mongodb.{BasicDBList, BasicDBObject}
+import edu.stanford.nlp.ling.{CoreLabel, CoreAnnotations}
+import edu.stanford.nlp.pipeline.Annotation
+import edu.stanford.nlp.util.CoreMap
 import org.ansj.splitWord.analysis.ToAnalysis
 import org.apache.http.HttpEntity
 import org.apache.http.client.methods.CloseableHttpResponse
@@ -23,6 +26,7 @@ import search.common.http.HttpClientUtil
 import search.common.listener.graph.{WarmCache, Request, UpdateState}
 import search.common.redis.RedisClient
 import search.common.serializer.JavaSerializer
+import search.common.tool.corenlp.CoreNLPSegmentType
 import search.common.util._
 import search.es.client.EsClient
 import search.es.client.util.{QueryCatType, EsClientConf}
@@ -96,6 +100,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   init()
+
   def init() = {
     this.conf = new EsClientConf()
     this.conf.init()
@@ -532,19 +537,77 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     client.decrementIndex(graphIndexName, graphTypName, keywords)
   }
 
+  def requestHttpForSynonym(query: String, reqType: String = "get"): AnyRef = {
+    reqType match {
+      case "get" =>
+        var url: String = s"${synonymUrl}${URLEncoder.encode(query, "UTF-8")}"
+        var httpResp: CloseableHttpResponse = null
+        try {
+          httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null)
+          if (httpResp != null) {
+            val entity: HttpEntity = httpResp.getEntity
+            if (entity != null) {
+              val sResponse: String = EntityUtils.toString(entity)
+              val jsonArray = JSON.parseArray(sResponse)
+              jsonArray
+            } else null
+          } else null
+        }
+        catch {
+          case e: IOException => {
+            logError("request synonym failed!", e)
+            null
+          }
+        } finally {
+          if (httpResp != null)
+            HttpClientUtils.closeQuietly(httpResp)
+        }
+      case _ =>
+        null
+    }
+  }
+
   /**
     *
-    * @param keyword
+    * @param query
     * @param reSearch
     * @return
     */
-  def queryBestKeyWord(sessionId: String, keyword: String, showLevel: Integer, reSearch: Boolean = false, needSearch: Int): AnyRef = {
-
+  def queryBestKeyWord(sessionId: String, query: String, showLevel: Integer, reSearch: Boolean = false, needSearch: Int): AnyRef = {
+    var keyword = query
     if (keyword == null || keyword.trim.equalsIgnoreCase("")) {
       logError("keyword can't be null")
       return returnNoData
     }
-
+    addSynonym
+    //query rewrite
+    //add synonym
+    def addSynonym() = {
+      try {
+        val synonyms = requestHttpForSynonym(keyword)
+        if (synonyms != null) {
+          val synonymArray = synonyms.asInstanceOf[JSONArray]
+          if (synonymArray.size() == 0) {
+            val setSyns = coreNlp(keyword)
+            if (setSyns != null && setSyns.size() > 0) {
+              setSyns.foreach { kv =>
+                val oj = requestHttpForSynonym(kv)
+                if (oj != null) {
+                  val synonymArray = oj.asInstanceOf[JSONArray]
+                  keyword += queryExpandBySynonym(synonymArray)
+                }
+              }
+            }
+          } else {
+            //add synonym
+            keyword += queryExpandBySynonym(synonymArray)
+          }
+        }
+      } catch {
+        case e: Exception =>
+          log.error("synonym failed", e)
+      }
+    }
 
 
     updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.UNFINISHED)
@@ -584,7 +647,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     def totalRelevantTargetKeyWord(): Unit = {
       //pinyinFieldWithBoost,  companyFieldWithBoost, companyEnFieldWithBoost, word2vecWithBoost, word2vecRwWithBoost, comStockCodeFieldWithBoost, pinyinFieldWithBoost,relevantKwsField_kwWithBoost,keywordStringFieldWithBoost,
-      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword,  keywordFieldWithBoost)
+      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword, keywordFieldWithBoost)
       //val matchQueryResult1 = client.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword )
       if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
         val doc = matchQueryResult1.head
@@ -1043,11 +1106,52 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
   }
 
+  def coreNlp(text: String, resultType: Int = CoreNLPSegmentType.WORDCUT): util.Set[String] = {
+    val wordSet = new util.HashSet[String]()
+    val partOfSpeechSet = new util.HashSet[String]()
+    val nameEntity = new util.HashSet[String]()
+    val set = new util.HashSet[(String, String, String)]()
+    var annotation: Annotation = new Annotation(text)
+    conf.pipeline.annotate(annotation)
+    val sentences: util.List[CoreMap] = annotation.get(classOf[CoreAnnotations.SentencesAnnotation])
+    val sentence: CoreMap = sentences.get(0)
+    val tokens: util.List[CoreLabel] = sentence.get(classOf[CoreAnnotations.TokensAnnotation])
+    import scala.collection.JavaConversions._
+    for (token <- tokens) {
+      val word: String = token.getString(classOf[CoreAnnotations.TextAnnotation])
+      val pos: String = token.getString(classOf[CoreAnnotations.PartOfSpeechAnnotation])
+      val ner: String = token.getString(classOf[CoreAnnotations.NamedEntityTagAnnotation])
+      wordSet.add(word)
+      partOfSpeechSet.add(pos)
+      nameEntity.add(ner)
+      logInfo(word + "\t " + pos + "\t " + ner)
+    }
+    resultType match {
+      case CoreNLPSegmentType.WORDCUT =>
+        wordSet
+      case CoreNLPSegmentType.PART_OF_SPEECH_TAGGING =>
+        partOfSpeechSet
+      case CoreNLPSegmentType.NAMED_ENTITY_RECOGNITION =>
+        nameEntity
+    }
+  }
+
+  def queryExpandBySynonym(synonymArray: JSONArray): String = {
+    var keyword = ""
+    synonymArray.foreach { obj =>
+      val jobj = obj.asInstanceOf[JSONObject]
+      keyword += "," + jobj.getString("name")
+    }
+    return keyword
+  }
+
+
   def wrapWarmCache(): NiNi = {
     Util.caculateCostTime {
       warmCache()
     }
   }
+
 
   def warm(): Unit = {
     var cnt = 0
@@ -1166,17 +1270,44 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     //testqueryBestKeyWord
 
-    testMatchPhraseQuery()
+    // testMatchPhraseQuery()
+    testaddSynonym()
 
   }
+
+
+  def testaddSynonym() = {
+    var keyword = "积蓄有没有"
+    val synonyms = requestHttpForSynonym(keyword)
+    if (synonyms != null) {
+      val synonymArray = synonyms.asInstanceOf[JSONArray]
+      if (synonymArray.size() == 0) {
+        val setSyns = coreNlp(keyword)
+        if (setSyns != null && setSyns.size() > 0) {
+          setSyns.foreach { kv =>
+            val oj = requestHttpForSynonym(kv)
+            if (oj != null) {
+              val synonymArray = oj.asInstanceOf[JSONArray]
+              keyword += queryExpandBySynonym(synonymArray)
+            }
+          }
+        }
+      } else {
+        //add synonym
+        keyword += queryExpandBySynonym(synonymArray)
+      }
+    }
+    println(keyword)
+  }
+
 
   def testMatchPhraseQuery() = {
     val keyword = "vr"
 
-    val result = client.matchPhraseQuery(graphIndexName,graphTypName,0,10,relevantKwsField_kw,keyword)
+    val result = client.matchPhraseQuery(graphIndexName, graphTypName, 0, 10, relevantKwsField_kw, keyword)
     println(result)
 
-    val result2 = client.matchPhraseQuery(graphIndexName,graphTypName,0,10,relevantKwsField,keyword)
+    val result2 = client.matchPhraseQuery(graphIndexName, graphTypName, 0, 10, relevantKwsField, keyword)
     println(result2)
 
     val result1 = client.matchQuery(graphIndexName, graphTypName, 0, 10, relevantKwsField_kw, keyword)
