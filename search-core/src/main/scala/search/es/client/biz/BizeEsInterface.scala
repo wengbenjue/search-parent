@@ -442,6 +442,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       else {
         val isFinished = imutableState.getFinished
         if (isFinished == FinshedStatus.UNFINISHED) {
+          imutableState.setFinished(FinshedStatus.FINISHED)
           new Result(imutableState)
         } else {
           val result = new Result(imutableState, cacheQueryBestKeyWord(query, showLevel, needSearch))
@@ -461,11 +462,14 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     var result = cacheQueryBestKeyWord(query, showLevel, needSearch)
     val state = conf.stateCache.getObj[ProcessState](STATE_PREFFIX + query)
     if (state != null) {
-      resultObj = new Result(conf.stateCache.getObj[ProcessState](STATE_PREFFIX + query), result)
+      val state = conf.stateCache.getObj[ProcessState](STATE_PREFFIX + query)
+      if (state.getFinished == FinshedStatus.UNFINISHED) state.setFinished(FinshedStatus.FINISHED)
+      resultObj = new Result(state, result)
     } else if (state == null && result != null) {
       result = queryBestKeyWord(null, query, showLevel, false, needSearch)
       var newState = conf.stateCache.getObj[ProcessState](STATE_PREFFIX + query)
-      if (newState == null) newState = new ProcessState(0, 0)
+      if (newState == null) newState = new ProcessState(0, 1)
+      if (newState.getFinished == FinshedStatus.UNFINISHED) newState.setFinished(FinshedStatus.FINISHED)
       resultObj = new Result(newState, result)
     }
     resultObj
