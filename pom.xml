@@ -56,6 +56,7 @@
         <dl4j.version>0.4-rc3.8</dl4j.version>
         <ansj.version>1.4</ansj.version>
         <jna.version>4.2.2</jna.version>
+        <corenlp.version>3.6.0</corenlp.version>
         <redisclient.version>1.2.6</redisclient.version>
         <mongoclient.version>3.0.1</mongoclient.version>
         <start-class>search.Application</start-class>
@@ -504,6 +505,27 @@
             </dependency>
 
             <!-- word cut ictclas, part of speech tagging -->
+
+            <!-- corenlp-->
+
+            <dependency>
+                <groupId>edu.stanford.nlp</groupId>
+                <artifactId>stanford-corenlp</artifactId>
+                <version>${corenlp.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>edu.stanford.nlp</groupId>
+                <artifactId>stanford-corenlp</artifactId>
+                <version>${corenlp.version}</version>
+                <classifier>models</classifier>
+            </dependency>
+            <dependency>
+                <groupId>edu.stanford.nlp</groupId>
+                <artifactId>stanford-corenlp</artifactId>
+                <version>${corenlp.version}</version>
+                <classifier>models-chinese</classifier>
+            </dependency>
+            <!-- corenlp-->
 
 
         </dependencies>

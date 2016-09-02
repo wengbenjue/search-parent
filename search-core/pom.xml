@@ -439,6 +439,24 @@
 
         <!-- word cut ictclas, part of speech tagging -->
 
+        <!--core nlp -->
+        <dependency>
+            <groupId>edu.stanford.nlp</groupId>
+            <artifactId>stanford-corenlp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.stanford.nlp</groupId>
+            <artifactId>stanford-corenlp</artifactId>
+            <classifier>models</classifier>
+        </dependency>
+        <dependency>
+            <groupId>edu.stanford.nlp</groupId>
+            <artifactId>stanford-corenlp</artifactId>
+            <classifier>models-chinese</classifier>
+        </dependency>
+
+        <!--core nlp -->
+
 
     </dependencies>
 
