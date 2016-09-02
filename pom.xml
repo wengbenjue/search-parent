@@ -55,6 +55,7 @@
         <nd4j.version>0.4-rc3.8</nd4j.version>
         <dl4j.version>0.4-rc3.8</dl4j.version>
         <ansj.version>1.4</ansj.version>
+        <jna.version>4.2.2</jna.version>
         <redisclient.version>1.2.6</redisclient.version>
         <mongoclient.version>3.0.1</mongoclient.version>
         <start-class>search.Application</start-class>
@@ -488,6 +489,21 @@
                 <artifactId>ansj_seg</artifactId>
                 <version>${ansj.version}</version>
             </dependency>
+
+            <!-- word cut ictclas, part of speech tagging -->
+            <dependency>
+                <groupId>net.java.dev.jna</groupId>
+                <artifactId>jna</artifactId>
+                <version>${jna.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.testng</groupId>
+                <artifactId>testng</artifactId>
+                <version>6.8.8</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- word cut ictclas, part of speech tagging -->
 
 
         </dependencies>

@@ -426,6 +426,20 @@
             <artifactId>ansj_seg</artifactId>
         </dependency>
 
+        <!-- word cut ictclas, part of speech tagging -->
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- word cut ictclas, part of speech tagging -->
+
+
     </dependencies>
 
 
