@@ -7,7 +7,6 @@ import org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration;
 
 //@ComponentScan
 //@EnableAutoConfiguration
-
 @SpringBootApplication(exclude = {SolrAutoConfiguration.class})
 public class Application {
 
