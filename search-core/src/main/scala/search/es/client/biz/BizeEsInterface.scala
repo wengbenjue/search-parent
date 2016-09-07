@@ -442,6 +442,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       else {
         val isFinished = imutableState.getFinished
         if (isFinished == FinshedStatus.UNFINISHED) {
+          imutableState.setCurrentState(KnowledgeGraphStatus.FETCH_PROCESS)
           imutableState.setFinished(FinshedStatus.FINISHED)
           new Result(imutableState)
         } else {
@@ -458,25 +459,31 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   def synTriggerQuery(query: String, showLevel: Integer, needSearch: Int): Result = {
-    var resultObj = new Result(new ProcessState(0, 1))
+    var resultObj = new Result(new ProcessState(1, 1))
     var result = cacheQueryBestKeyWord(query, showLevel, needSearch)
     val state = conf.stateCache.getObj[ProcessState](STATE_PREFFIX + query)
     if (state != null) {
       val state = conf.stateCache.getObj[ProcessState](STATE_PREFFIX + query)
-      if (state.getFinished == FinshedStatus.UNFINISHED) state.setFinished(FinshedStatus.FINISHED)
+      if (state.getFinished == FinshedStatus.UNFINISHED) {
+        state.setFinished(FinshedStatus.FINISHED)
+        state.setCurrentState(KnowledgeGraphStatus.FETCH_PROCESS)
+      }
       resultObj = new Result(state, result)
     } else if (state == null && result != null) {
       result = queryBestKeyWord(null, query, showLevel, false, needSearch)
       var newState = conf.stateCache.getObj[ProcessState](STATE_PREFFIX + query)
-      if (newState == null) newState = new ProcessState(0, 1)
-      if (newState.getFinished == FinshedStatus.UNFINISHED) newState.setFinished(FinshedStatus.FINISHED)
+      if (newState == null) newState = new ProcessState(1, 1)
+      if (newState.getFinished == FinshedStatus.UNFINISHED) {
+        newState.setCurrentState(KnowledgeGraphStatus.FETCH_PROCESS)
+        newState.setFinished(FinshedStatus.FINISHED)
+      }
       resultObj = new Result(newState, result)
     }
     resultObj
   }
 
   def triggerQuery(query: String, showLevel: Integer, needSearch: Int): Result = {
-    val state = new ProcessState(0, 0)
+    val state = new ProcessState(1, 1)
     conf.waiter.post(Request(query, showLevel, needSearch))
     new Result(state)
   }
@@ -583,35 +590,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       logError("keyword can't be null")
       return returnNoData
     }
-    addSynonym
-    //query rewrite
-    //add synonym
-    def addSynonym() = {
-      try {
-        val synonyms = requestHttpForSynonym(keyword)
-        if (synonyms != null) {
-          val synonymArray = synonyms.asInstanceOf[JSONArray]
-          if (synonymArray.size() == 0) {
-            val setSyns = coreNlp(keyword)
-            if (setSyns != null && setSyns.size() > 0) {
-              setSyns.foreach { kv =>
-                val oj = requestHttpForSynonym(kv)
-                if (oj != null) {
-                  val synonymArray = oj.asInstanceOf[JSONArray]
-                  keyword += queryExpandBySynonym(synonymArray)
-                }
-              }
-            }
-          } else {
-            //add synonym
-            keyword += queryExpandBySynonym(synonymArray)
-          }
-        }
-      } catch {
-        case e: Exception =>
-          log.error("synonym failed", e)
-      }
-    }
+
 
 
     updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.UNFINISHED)
@@ -643,6 +622,38 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       if (result != null) {
         updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
         return result
+      }
+    }
+
+
+
+    addSynonym
+    //query rewrite
+    //add synonym
+    def addSynonym() = {
+      try {
+        val synonyms = requestHttpForSynonym(keyword)
+        if (synonyms != null) {
+          val synonymArray = synonyms.asInstanceOf[JSONArray]
+          if (synonymArray.size() == 0) {
+            val setSyns = coreNlp(keyword)
+            if (setSyns != null && setSyns.size() > 0) {
+              setSyns.foreach { kv =>
+                val oj = requestHttpForSynonym(kv)
+                if (oj != null) {
+                  val synonymArray = oj.asInstanceOf[JSONArray]
+                  keyword += queryExpandBySynonym(synonymArray)
+                }
+              }
+            }
+          } else {
+            //add synonym
+            keyword += queryExpandBySynonym(synonymArray)
+          }
+        }
+      } catch {
+        case e: Exception =>
+          log.error("synonym failed", e)
       }
     }
 
