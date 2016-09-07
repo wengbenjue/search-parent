@@ -444,7 +444,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         if (isFinished == FinshedStatus.UNFINISHED) {
           imutableState.setCurrentState(KnowledgeGraphStatus.FETCH_PROCESS)
           imutableState.setFinished(FinshedStatus.FINISHED)
-          new Result(imutableState)
+          new Result(imutableState,cacheQueryBestKeyWord(query, showLevel, needSearch))
         } else {
           val result = new Result(imutableState, cacheQueryBestKeyWord(query, showLevel, needSearch))
           result
