@@ -444,7 +444,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         if (isFinished == FinshedStatus.UNFINISHED) {
           imutableState.setCurrentState(KnowledgeGraphStatus.FETCH_PROCESS)
           imutableState.setFinished(FinshedStatus.FINISHED)
-          new Result(imutableState,cacheQueryBestKeyWord(query, showLevel, needSearch))
+          new Result(imutableState, cacheQueryBestKeyWord(query, showLevel, needSearch))
         } else {
           val result = new Result(imutableState, cacheQueryBestKeyWord(query, showLevel, needSearch))
           result
@@ -664,22 +664,22 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
     //duplicate remove
-      val keywordArray = keyword.split(",")
-      if(keywordArray.length>1){
-       val keywordSet = keywordArray.toSet
-        keyword = keywordSet.mkString(",")
-          for(k <- keywordSet){
-            if(conf.bloomFilter.mightContain(k.trim)){
-              val kv = k.trim
-              var result: QueryData = bloomFilterQuery(kv)
-              if (result != null) {
-                updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
-                keyword = k.trim
-                return result
-              }
-            }
+    val keywordArray = keyword.split(",")
+    if (keywordArray.length > 1) {
+      val keywordSet = keywordArray.toSet
+      keyword = keywordSet.mkString(",")
+      for (k <- keywordSet) {
+        if (conf.bloomFilter.mightContain(k.trim)) {
+          val kv = k.trim
+          var result: QueryData = bloomFilterQuery(kv)
+          if (result != null) {
+            updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
+            keyword = k.trim
+            return result
           }
+        }
       }
+    }
 
 
     var targetKeyword: String = null
@@ -1011,6 +1011,53 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
+  def addSynonmToGraph() = {
+    addFromDic
+    def addFromDic = {
+      val synonmMap = conf.mongoDataManager.getSynonmDicFromNewsKeywordDict()
+      if (synonmMap != null && !synonmMap.isEmpty) {
+        synonmMap.foreach { s =>
+          val k = s._1
+          val sSet = s._2
+          sSet.foreach(requestAddSynonm(k, _))
+        }
+      }
+    }
+
+
+  }
+
+
+  def requestAddSynonm(query: String, synonym: String, reqType: String = "get"): Int = {
+    reqType match {
+      case "get" =>
+        var url: String = s"${synonymAddUrl}${URLEncoder.encode(query, "UTF-8")}/${URLEncoder.encode(synonym, "UTF-8")}"
+        var httpResp: CloseableHttpResponse = null
+        try {
+          httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null)
+          if (httpResp != null) {
+            val entity: HttpEntity = httpResp.getEntity
+            if (entity != null) {
+              val sResponse: String = EntityUtils.toString(entity)
+             // val jsonObj = JSON.parseObject(sResponse)
+              println(sResponse)
+              0
+            } else -1
+          } else -1
+        }
+        catch {
+          case e: IOException =>
+            logError("request synonym add failed!", e)
+            -1
+        } finally {
+          if (httpResp != null)
+            HttpClientUtils.closeQuietly(httpResp)
+        }
+      case _ =>
+        -1
+    }
+  }
+
   /**
     * request nlp graph with targetKeyword
     *
@@ -1310,8 +1357,15 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testqueryBestKeyWord
 
     // testMatchPhraseQuery()
-    testaddSynonym()
+    //testaddSynonym()
+    testAddSynonmToGraph()
 
+  }
+
+
+
+  def testAddSynonmToGraph() = {
+    addSynonmToGraph
   }
 
 

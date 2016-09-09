@@ -2,12 +2,12 @@ package search.es.client.util
 
 import java.util
 
-import com.mongodb.{DBCollection, BasicDBObject, DBObject}
+import com.mongodb.{BasicDBList, BasicDBObject, DBCollection, DBObject}
 import org.bson.types.ObjectId
-import search.common.mongo.base.{MongoTableConstants, MongoBase}
+import search.common.mongo.base.{MongoBase, MongoTableConstants}
 import search.common.util.Logging
-import scala.collection.JavaConversions._
 
+import scala.collection.JavaConversions._
 import scala.io.Source
 
 /**
@@ -192,7 +192,6 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
   }
 
 
-
   def findAndRemove(keyword: String): java.util.Map[_, _] = {
     try {
       val dbResult = getCollection().findAndRemove(new BasicDBObject("keyword", keyword))
@@ -230,11 +229,52 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
   def getDicFromNewsKeywordDict(): java.util.List[DBObject] = {
     val projection = new BasicDBObject()
     projection.put("word", Integer.valueOf(1))
+    projection.put("syno", Integer.valueOf(1))
     val query = new BasicDBObject()
     val dbCurson = getNewsNewsKeywordDictCollection.find(query, projection)
     if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
     val result = dbCurson.toArray
     result
+  }
+
+
+  def getSynonmDicFromNewsKeywordDict(): java.util.Map[String, java.util.Set[String]] = {
+    val map = new java.util.HashMap[String, java.util.Set[String]]()
+    val dm = new DataManager(new EsClientConf())
+    val dics: java.util.List[DBObject] = dm.getDicFromNewsKeywordDict()
+    dics.foreach { dic =>
+      var synso = dic.get("syno")
+      if (synso != null) {
+        val syns = synso.asInstanceOf[BasicDBList]
+        if (syns.size() > 0) {
+          val word = if (dic.get("word") != null) dic.get("word").toString.trim else null
+          if (word != null && !word.equalsIgnoreCase("")) {
+            if (!map.containsKey(word)) {
+              val set = new util.HashSet[String]()
+              syns.foreach { s =>
+                val syName = s.toString.trim
+                if (!syName.equalsIgnoreCase(word) && !word.contains(syName) && !syName.contains(word))
+                  set.add(syName)
+              }
+              if (set.size() > 0)
+                map.put(word, set)
+            } else {
+              val set = new util.HashSet[String]()
+              syns.foreach { s =>
+                val syName = s.toString.trim
+                if (!syName.equalsIgnoreCase(word) && !word.contains(syName) && !syName.contains(word))
+                  set.add(syName)
+              }
+              if (set.size() > 0)
+                map.get(word).addAll(set)
+            }
+          }
+
+        }
+      }
+
+    }
+    map
   }
 
 }
@@ -247,8 +287,47 @@ private[search] object DataManager {
     //testQueryOneByKeyWord
     //testFindBaseStock
     //testFindByKeyword
-    testSaveOrUpdate
+    //testSaveOrUpdate
+    testGetDicFromNewsKeywordDict()
+  }
 
+  def testGetDicFromNewsKeywordDict() = {
+    val map = new java.util.HashMap[String, java.util.Set[String]]()
+    val dm = new DataManager(new EsClientConf())
+    val dics: java.util.List[DBObject] = dm.getDicFromNewsKeywordDict()
+    dics.foreach { dic =>
+      var synso = dic.get("syno")
+      if (synso != null) {
+        val syns = synso.asInstanceOf[BasicDBList]
+        if (syns.size() > 0) {
+          val word = if (dic.get("word") != null) dic.get("word").toString.trim else null
+          if (word != null && !word.equalsIgnoreCase("")) {
+            if (!map.containsKey(word)) {
+              val set = new util.HashSet[String]()
+              syns.foreach { s =>
+                val syName = s.toString.trim
+                if (!syName.equalsIgnoreCase(word) && !word.contains(syName) && !syName.contains(word))
+                  set.add(syName)
+              }
+              if (set.size() > 0)
+                map.put(word, set)
+            } else {
+              val set = new util.HashSet[String]()
+              syns.foreach { s =>
+                val syName = s.toString.trim
+                if (!syName.equalsIgnoreCase(word) && !word.contains(syName) && !syName.contains(word))
+                  set.add(syName)
+              }
+              if (set.size() > 0)
+                map.get(word).addAll(set)
+            }
+          }
+
+        }
+      }
+
+    }
+    println(map)
   }
 
   def testSaveOrUpdate() = {
@@ -262,7 +341,7 @@ private[search] object DataManager {
     dbObject.append("_id", 1)
     dbObject.append("keyword", "haha1")
     docs.add(dbObject)
-   val result = dm.saveOrUpdate(docs)
+    val result = dm.saveOrUpdate(docs)
     println(result)
   }
 
