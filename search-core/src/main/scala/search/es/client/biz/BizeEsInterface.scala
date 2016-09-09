@@ -602,8 +602,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       return result
     }
 
-
-    if (conf.bloomFilter.mightContain(keyword)) {
+    def bloomFilterQuery(keyword: String): QueryData = {
       var result = wrapRequestNlp(sessionId, showLevel, keyword, keyword)
       try {
         val nlpObj = result.getData
@@ -618,6 +617,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         case e: Exception =>
           result = null
       }
+      result
+    }
+
+    if (conf.bloomFilter.mightContain(keyword)) {
+      var result: QueryData = bloomFilterQuery(keyword)
 
       if (result != null) {
         updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
@@ -656,6 +660,26 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           log.error("synonym failed", e)
       }
     }
+
+
+
+    //duplicate remove
+      val keywordArray = keyword.split(",")
+      if(keywordArray.length>1){
+       val keywordSet = keywordArray.toSet
+        keyword = keywordSet.mkString(",")
+          for(k <- keywordSet){
+            if(conf.bloomFilter.mightContain(k.trim)){
+              val kv = k.trim
+              var result: QueryData = bloomFilterQuery(kv)
+              if (result != null) {
+                updateState(sessionId, keyword, KnowledgeGraphStatus.SEARCH_QUERY_PROCESS, FinshedStatus.FINISHED)
+                keyword = k.trim
+                return result
+              }
+            }
+          }
+      }
 
 
     var targetKeyword: String = null

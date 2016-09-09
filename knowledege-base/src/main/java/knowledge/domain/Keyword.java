@@ -12,6 +12,7 @@ import java.util.Set;
 @NodeEntity(label = "keyword")
 public class Keyword extends Entity {
 
+
     private String name;
 
    @Relationship(type = "synonym", direction = "UNDIRECTED")

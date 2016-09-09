@@ -546,9 +546,9 @@ object DefaultIndexManager extends SolrConfiguration {
 object TestIndexManger extends Logging {
   def main(args: Array[String]) {
     // forTest
-    //testRegext
+    testRegext
     //testJsonParser
-    testStartGeneralXmlAndIndex
+    //testStartGeneralXmlAndIndex
   }
 
 

@@ -144,7 +144,7 @@ object EsSearchHttpClientTest {
   def getIndexDataBySet(): java.util.List[IndexObjEntity] = {
     val keywords: java.util.List[IndexObjEntity] = new java.util.ArrayList[IndexObjEntity]
     var list: java.util.List[String] = new java.util.ArrayList[String]()
-    var kvN = "巴安水务"
+    var kvN = "HHH"
     keywords.add(new IndexObjEntity(kvN))
 
     list.add("a")
@@ -165,7 +165,8 @@ object EsSearchHttpClientTest {
   }
 
   def submitIndexDataRwInterval() = {
-    val kvs = getIndexDataFromSerObj()
+  //  val kvs = getIndexDataFromSerObj()
+    val kvs = getIndexDataBySet()
     var cnt = 0
    //val url: String = "http://54.222.222.172:8999/es/index/rws"
    val url: String = "http://localhost:8999/es/index/rws"
