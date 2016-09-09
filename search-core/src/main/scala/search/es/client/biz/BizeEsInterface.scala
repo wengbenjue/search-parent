@@ -666,7 +666,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //duplicate remove
     val keywordArray = keyword.split(",")
     if (keywordArray.length > 1) {
-      val keywordSet = keywordArray.toSet
+      val keywordSetAll = keywordArray.toSet
+      val keywordSet = keywordSetAll.filter(s=>s!=null && !s.equalsIgnoreCase("null") &&  !s.equalsIgnoreCase(""))
       keyword = keywordSet.mkString(",")
       for (k <- keywordSet) {
         if (conf.bloomFilter.mightContain(k.trim)) {
