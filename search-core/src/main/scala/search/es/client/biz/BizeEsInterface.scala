@@ -78,6 +78,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val companyEnField = "s_en"
 
   val timerPeriodSchedule = new CloudTimerWorker(name = "timerPeriodSchedule", interval = 1000 * 60 * 60 * 24, callback = () => loadEventRegexRule())
+  timerPeriodSchedule.startUp()
+
+  val timerPeriodScheduleForBloomFilter = new CloudTimerWorker(name = "timerPeriodScheduleForBloomFilter", interval = 1000 * 60 * 15, callback = () => addBloomFilterFromGraph())
+  timerPeriodScheduleForBloomFilter.startUp()
 
 
   var eventRegexRuleSets = new java.util.HashSet[String]()
@@ -112,7 +116,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   def load() = {
     //loadCache
     loadCacheFromCom
-    addBloomFilter
+    //addBloomFilter
+    addBloomFilterFromGraph()
     cleanRedisByNamespace(cleanNameSpace)
     //indexCatOfKeywords
     loadEventRegexToCache()
@@ -250,9 +255,27 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
+  def addBloomFilterFromGraph(): Long = {
+
+    var cnt = 0
+    val objJson = requestHttpFromGraph()
+    if (objJson != null) {
+      val nodes = objJson.getJSONArray("message")
+      if (nodes != null && nodes.size() > 0) {
+        conf.bloomFilter = BloomFilter[String](Constants.GRAPH_KEYWORDS_BLOOMFILTER_KEY, expectedElements, falsePositiveRate)
+        nodes.foreach(k => conf.bloomFilter.add(k.toString))
+      }
+      cnt = nodes.size()
+    }
+    logInfo(s"add bloomFilter successful from graph,size: ${cnt}")
+    -1
+  }
+
+
   def wrapAddBloomFilter(): NiNi = {
     Util.caculateCostTime {
-      addBloomFilter()
+      //addBloomFilter()
+      addBloomFilterFromGraph()
     }
   }
 
@@ -548,6 +571,32 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     client.decrementIndex(graphIndexName, graphTypName, keywords)
   }
 
+  def requestHttpFromGraph(): JSONObject = {
+    var url: String = s"${graphNodeDataUrl}"
+    var httpResp: CloseableHttpResponse = null
+    try {
+      httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null)
+      if (httpResp != null) {
+        val entity: HttpEntity = httpResp.getEntity
+        if (entity != null) {
+          val sResponse: String = EntityUtils.toString(entity)
+          val jsonObj = JSON.parseObject(sResponse)
+          jsonObj
+        } else null
+      } else null
+    }
+    catch {
+      case e: IOException => {
+        logError("request synonym failed!", e)
+        null
+      }
+    } finally {
+      if (httpResp != null)
+        HttpClientUtils.closeQuietly(httpResp)
+    }
+
+  }
+
   def requestHttpForSynonym(query: String, reqType: String = "get"): AnyRef = {
     reqType match {
       case "get" =>
@@ -667,7 +716,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     val keywordArray = keyword.split(",")
     if (keywordArray.length > 1) {
       val keywordSetAll = keywordArray.toSet
-      val keywordSet = keywordSetAll.filter(s=>s!=null && !s.equalsIgnoreCase("null") &&  !s.equalsIgnoreCase(""))
+      val keywordSet = keywordSetAll.filter(s => s != null && !s.equalsIgnoreCase("null") && !s.equalsIgnoreCase(""))
       keyword = keywordSet.mkString(",")
       for (k <- keywordSet) {
         if (conf.bloomFilter.mightContain(k.trim)) {
@@ -1040,7 +1089,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
             val entity: HttpEntity = httpResp.getEntity
             if (entity != null) {
               val sResponse: String = EntityUtils.toString(entity)
-             // val jsonObj = JSON.parseObject(sResponse)
+              // val jsonObj = JSON.parseObject(sResponse)
               println(sResponse)
               0
             } else -1
@@ -1359,10 +1408,16 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     // testMatchPhraseQuery()
     //testaddSynonym()
-    testAddSynonmToGraph()
-
+    //testAddSynonmToGraph()
+    testAddBloomFilterFromGraph
   }
 
+
+  def testAddBloomFilterFromGraph() = {
+    addBloomFilterFromGraph
+    val flag = conf.bloomFilter.mightContain("乐视|酷派|第一大股东")
+    println(flag)
+  }
 
 
   def testAddSynonmToGraph() = {
