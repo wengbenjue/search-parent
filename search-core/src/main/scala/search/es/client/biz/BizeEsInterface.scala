@@ -1,37 +1,40 @@
 package search.es.client.biz
 
 import java.io.{FileInputStream, FileOutputStream, IOException}
-import java.net.{URLEncoder, URI}
+import java.net.{URI, URLEncoder}
 import java.util
+import java.util.UUID
 import javax.servlet.http.HttpServletRequest
 
-import com.alibaba.fastjson.{JSONArray, JSONObject, JSON}
+import com.alibaba.fastjson.{JSON, JSONArray, JSONObject}
 import com.mongodb.{BasicDBList, BasicDBObject}
-import edu.stanford.nlp.ling.{CoreLabel, CoreAnnotations}
+import edu.stanford.nlp.ling.{CoreAnnotations, CoreLabel}
 import edu.stanford.nlp.pipeline.Annotation
 import edu.stanford.nlp.util.CoreMap
 import org.ansj.splitWord.analysis.ToAnalysis
 import org.apache.http.HttpEntity
 import org.apache.http.client.methods.CloseableHttpResponse
-import org.apache.http.client.utils.{URIUtils, URLEncodedUtils, HttpClientUtils}
+import org.apache.http.client.utils.{HttpClientUtils, URIUtils, URLEncodedUtils}
 import org.apache.http.util.EntityUtils
+import search.common.algorithm.pinyin.PinyinUtils
 import search.common.bloomfilter.mutable.BloomFilter
 import search.common.cache.impl.LocalCache
 import search.common.cache.pagecache.ESSearchPageCache
 import search.common.clock.CloudTimerWorker
 import search.common.config.EsConfiguration
-import search.common.entity.bizesinterface._
+import search.common.entity.bizesinterface.{CompanyStock, Industry, _}
 import search.common.entity.state.ProcessState
 import search.common.http.HttpClientUtil
-import search.common.listener.graph.{WarmCache, Request, UpdateState}
+import search.common.listener.graph.{Request, UpdateState, WarmCache}
 import search.common.redis.RedisClient
 import search.common.serializer.JavaSerializer
 import search.common.tool.corenlp.CoreNLPSegmentType
 import search.common.util._
 import search.es.client.EsClient
-import search.es.client.util.{QueryCatType, EsClientConf}
+import search.es.client.util.{EsClientConf, QueryCatType}
 import search.common.entity.searchinterface.NiNi
-import search.solr.client.{SolrClientConf, SolrClient}
+import search.solr.client.{SolrClient, SolrClientConf}
+
 import scala.collection.JavaConversions._
 import scala.collection.{JavaConversions, JavaConverters}
 import scala.util.control.Breaks._
@@ -84,6 +87,13 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   timerPeriodScheduleForBloomFilter.startUp()
 
 
+  val timerPeriodScheduleForLoadEventToCache = new CloudTimerWorker(name = "timerPeriodScheduleForLoadEventToCache", interval = 1000 * 60 * 60 * 22, callback = () => loadEventToCache())
+  timerPeriodScheduleForLoadEventToCache.startUp()
+
+  val timerPeriodScheduleForLoadGraphHotTopicCache = new CloudTimerWorker(name = "timerPeriodScheduleForLoadGraphHotTopicCache", interval = 1000 * 60 * 60 * 22, callback = () => loadTopicToCache())
+  timerPeriodScheduleForLoadGraphHotTopicCache.startUp()
+
+
   var eventRegexRuleSets = new java.util.HashSet[String]()
 
   def loadEventRegexRule(): Long = {
@@ -103,19 +113,25 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     loadThread.start()
   }
 
+
   init()
 
   def init() = {
     this.conf = new EsClientConf()
     this.conf.init()
     this.client = conf.esClient
+    //load company weight cache
+    loadCompanyWeightCache()
+    loadTopicToCache()
+    loadIndexIndustryToCache()
+    loadEventToCache()
+    //loadCache
+    loadCacheFromCom
     loadStart
   }
 
 
   def load() = {
-    //loadCache
-    loadCacheFromCom
     //addBloomFilter
     addBloomFilterFromGraph()
     cleanRedisByNamespace(cleanNameSpace)
@@ -189,15 +205,75 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
   }
 
+  def addWordToTrieNode(word: String, id: String): Unit = {
+    conf.dictionary.add(word.trim.toUpperCase(), id)
+  }
+
+  def loadCompanyWeightCache() = {
+    val comJsonObj = requestHttpByURL(companyWeightUrl)
+    val comanyArray: JSONArray = comJsonObj.getJSONArray("message")
+    if (comanyArray != null && comanyArray.size() > 0) {
+      comanyArray.foreach { com =>
+        try {
+          val comJobj = com.asInstanceOf[JSONObject]
+          val comanyName = comJobj.getString("com")
+          var weight: Double = comJobj.getDouble("w")
+          // weight = Util.decimalFormat2(weight)
+          weight = (weight * 10000).toInt / 10000.0
+          LocalCache.conmpanyWeightCache(comanyName) = weight
+        } catch {
+          case e: Exception =>
+        }
+      }
+    }
+  }
+
+  def loadGraphHotTopicWeightCache(loadAll: Boolean = false): Long = {
+    val topics = conf.mongoDataManager.findTopicHot(loadAll)
+    if (topics != null && topics.size() > 0) {
+      val currentTopics = topics.get(0)
+      val topic_hots: BasicDBList = if (currentTopics.get("topic_hot") != null) currentTopics.get("topic_hot").asInstanceOf[BasicDBList] else null
+      if (topic_hots != null && topic_hots.size() > 0) {
+        LocalCache.topicHotWeightCache = new scala.collection.mutable.HashMap[String, Double]()
+        topic_hots.foreach { t =>
+          val topic = t.asInstanceOf[BasicDBObject]
+          val topicName: String = if (topic.getString("topic") != null) topic.getString("topic") else null
+          var weight: Double = if (topic.getDouble("hot") != null) topic.getDouble("hot") else 0.0
+          if (topicName != null) {
+            // weight = Util.decimalFormat2(weight)
+            weight = (weight * 10000).toInt / 10000.0
+            LocalCache.topicHotWeightCache(topicName) = weight
+          }
+        }
+      }
+    }
+
+    -1
+  }
+
   def loadCacheFromCom(): String = {
     val stocks = conf.mongoDataManager.findCompanyCode()
     if (stocks != null && stocks.size() > 0) {
       stocks.foreach { dbobj =>
         var comSim: String = null
-
         comSim = if (dbobj.get("w") != null) dbobj.get("w").toString else null
-
         val comCode: String = if (dbobj.get("code") != null) dbobj.get("code").toString else null
+        val id: String = if (dbobj.get("_id") != null) dbobj.get("_id").toString else null
+        var simPy: String = null
+        if (comSim != null) {
+          simPy = PinyinUtils.getPinYin(comSim, false)
+          val company = new CompanyStock(id, comCode, comSim, simPy, 0.0)
+          if (LocalCache.conmpanyWeightCache.containsKey(comSim)) {
+            company.setWeight(LocalCache.conmpanyWeightCache(comSim))
+          }
+          LocalCache.companyStockCache(id) = company
+          // addWordToTrieNode(comCode, id)
+          addWordToTrieNode(comSim, id)
+          /*if (simPy != null && !simPy.trim.isEmpty) {
+            addWordToTrieNode(simPy, id)
+          }*/
+
+        }
         if (comSim != null && comCode != null) {
           LocalCache.baseStockCache(comSim) = new BaseStock(comSim, comCode)
         }
@@ -206,6 +282,63 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       logInfo("comoany stock cached in local cache")
     }
     "comoany stock cached in local cache"
+  }
+
+  def loadEventToCache(): Long = {
+    val events = conf.mongoDataManager.findEvent()
+    if (events != null && events.size() > 0) {
+      events.map { m =>
+        val id: String = if (m.get("_id") != null) m.get("_id").toString.trim else null
+        val eventName: String = if (m.get("szh") != null) m.get("szh").toString.trim else null
+        val eventWeight: Double = if (m.get("w") != null) m.get("w").toString.toDouble else 0.0
+        if (eventName != null && !eventName.equalsIgnoreCase("")) {
+          LocalCache.eventCache(id) = new GraphEvent(id, eventName, eventWeight)
+          conf.dictionary.add(eventName, id)
+        }
+      }
+    }
+    -1
+  }
+
+
+  def loadTopicToCache(): Long = {
+    loadGraphHotTopicWeightCache()
+    val topicConps = conf.mongoDataManager.findGrapnTopicConp()
+    if (topicConps != null && topicConps.size() > 0) {
+      topicConps.map { m =>
+        val topicName: String = if (m.get("w") != null) m.get("w").toString.trim else null
+        val id: String = if (m.get("_id") != null) m.get("_id").toString.trim else null
+        if (topicName != null && !topicName.equalsIgnoreCase("")) {
+          val topic = new GraphTopic(id, topicName, 0.0)
+          if (LocalCache.topicHotWeightCache.containsKey(topicName)) {
+            topic.setWeight(LocalCache.topicHotWeightCache(topicName))
+          }
+          LocalCache.topicCache(id) = topic
+          conf.dictionary.add(topicName, id)
+        }
+      }
+    }
+    -1
+  }
+
+
+  def loadIndexIndustryToCache() = {
+    val industryJsonObj = requestHttpByURL(industryWeightUrl)
+    val industryArray: JSONArray = industryJsonObj.getJSONArray("message")
+    if (industryArray != null && industryArray.size() > 0) {
+      industryArray.foreach { industry =>
+        try {
+          val id = UUID.randomUUID().toString
+          val industryJobj = industry.asInstanceOf[JSONObject]
+          val indName = industryJobj.getString("ind")
+          val weitht = industryJobj.getDouble("w")
+          LocalCache.industryCache(id) = new Industry(id, indName, weitht)
+          conf.dictionary.add(indName, id)
+        } catch {
+          case e: Exception =>
+        }
+      }
+    }
   }
 
   def loadCache(): String = {
@@ -258,7 +391,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   def addBloomFilterFromGraph(): Long = {
 
     var cnt = 0
-    val objJson = requestHttpFromGraph()
+    val objJson = requestHttpByURL(graphNodeDataUrl)
     if (objJson != null) {
       val nodes = objJson.getJSONArray("message")
       if (nodes != null && nodes.size() > 0) {
@@ -316,7 +449,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       logInfo(s"topic company index successfully,total number:${datas.size()}")
     }
 
-    //add stock event to index
+    //add stock event to index news.dict_news_rule
     def indexEvent() = {
       var sets = new java.util.HashSet[String]()
       val datas = new java.util.ArrayList[IndexObjEntity]()
@@ -339,7 +472,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
 
 
-    //add stock industry  to index
+    //add stock industry  to index  news.sens_industry
     def indexIndustry() = {
       val industry2Product = new java.util.HashMap[String, java.util.Collection[String]]()
       val datas = new java.util.ArrayList[IndexObjEntity]()
@@ -448,6 +581,44 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     BizeEsInterface.cleanRedisByNamespace(cleanNameSpace)
   }
 
+
+  def wrapPrefix(word: String, maxLengthPerType: Int = 5): NiNi = {
+    Util.caculateCostTime {
+      prefix(word, maxLengthPerType)
+    }
+  }
+
+  def prefix(word: String, maxLengthPerType: Int = 5): AutoCompleteResult = {
+    val autoCompleteResult = new AutoCompleteResult()
+    val wordAndIdList = conf.graphDictionary.prefixWitId(word.trim.toUpperCase())
+    if (wordAndIdList == null || wordAndIdList.size() == 0) return autoCompleteResult
+    val companyStockList = new util.ArrayList[CompanyStock]()
+    val industryList = new util.ArrayList[Industry]()
+    val eventList = new util.ArrayList[GraphEvent]()
+    val topicList = new util.ArrayList[GraphTopic]()
+    wordAndIdList.foreach { wordAndId =>
+      val id = wordAndId._2
+      if (id == null) return autoCompleteResult
+      if (LocalCache.companyStockCache.containsKey(id.trim))
+        companyStockList.add(LocalCache.companyStockCache(id.trim))
+      if (LocalCache.industryCache.containsKey(id.trim))
+        industryList.add(LocalCache.industryCache(id.trim))
+      if (LocalCache.eventCache.containsKey(id.trim))
+        eventList.add(LocalCache.eventCache(id.trim))
+      if (LocalCache.topicCache.containsKey(id.trim))
+        topicList.add(LocalCache.topicCache(id.trim))
+    }
+    val companyTopK = companyStockList.sortBy(_.getWeight)(Ordering[java.lang.Double].reverse).take(5)
+    val industryTopK = industryList.sortBy(_.getWeight)(Ordering[java.lang.Double].reverse).take(5)
+    val eventTopK = eventList.sortBy(_.getWeight)(Ordering[java.lang.Double].reverse).take(5)
+    val topicTopK = topicList.sortBy(_.getWeight)(Ordering[java.lang.Double].reverse).take(5)
+    autoCompleteResult.setCompany(companyTopK)
+    autoCompleteResult.setIndustry(industryTopK)
+    autoCompleteResult.setEvent(eventTopK)
+    autoCompleteResult.setTopic(topicTopK)
+    autoCompleteResult
+  }
+
   /**
     *
     * @param query
@@ -520,6 +691,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     val resutlt = client.incrementIndex(graphIndexName, graphTypName, keywords)
     addBloomFilter()
     cleanRedisByNamespace(cleanNameSpace)
+
     resutlt
   }
 
@@ -571,8 +743,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     client.decrementIndex(graphIndexName, graphTypName, keywords)
   }
 
-  def requestHttpFromGraph(): JSONObject = {
-    var url: String = s"${graphNodeDataUrl}"
+  def requestHttpByURL(url: String): JSONObject = {
     var httpResp: CloseableHttpResponse = null
     try {
       httpResp = HttpClientUtil.requestHttpSyn(url, "get", null, null)
@@ -1061,7 +1232,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
-  def addSynonmToGraph() = {
+  def addSynonymToGraph() = {
     addFromDic
     def addFromDic = {
       val synonmMap = conf.mongoDataManager.getSynonmDicFromNewsKeywordDict()
@@ -1072,6 +1243,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           sSet.foreach(requestAddSynonm(k, _))
         }
       }
+    }
+    addFromSougou
+    def addFromSougou() = {
+
     }
 
 
@@ -1219,6 +1394,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   def delAllData(): Boolean = {
+    conf.graphDictionary.clear()
     client.delAllData(graphIndexName, graphTypName)
   }
 
@@ -1355,6 +1531,24 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   }
 
+
+  def filterGraphNodes(): GraphNodes = {
+    val allNodeJsonObj = requestHttpByURL(graphNodeDataUrl)
+    if (allNodeJsonObj != null) {
+      val nodes = allNodeJsonObj.getJSONArray("message")
+      if (nodes != null && nodes.size() > 0) {
+        val synoynms = conf.mongoDataManager.getSynonmDicFromSynonymWords()
+        val newNodes = nodes.filter { n =>
+          val nK = n.toString.trim
+          !synoynms.containsKey(nK)
+        }
+        return new GraphNodes(newNodes.toList)
+      }
+    }
+    return new GraphNodes(allNodeJsonObj.toList)
+  }
+
+
   def reqestForCache(keyword: String) = {
     //BizeEsInterface.queryBestKeyWord(null, keyword, null, false, 1)
     BizeEsInterface.cacheQueryBestKeyWord(keyword, null, 1)
@@ -1409,9 +1603,31 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     // testMatchPhraseQuery()
     //testaddSynonym()
     //testAddSynonmToGraph()
-    testAddBloomFilterFromGraph
+    // testAddBloomFilterFromGraph
+    //testFilterGraphNodes
+
+    testTrieNode()
   }
 
+  def testTrieNode() = {
+    val result = conf.dictionary.prefixWitId("QDP".toUpperCase)
+    //val result = conf.dictionary.prefix("sd".toUpperCase)
+    println(result)
+
+    if (conf.dictionary.contains("QDPJ")) {
+      println("have qdpj")
+    } else {
+      println("no qdpj")
+    }
+    val id = conf.dictionary.findWithId("青岛啤酒")
+    println(id)
+    result
+  }
+
+
+  def testFilterGraphNodes() = {
+    filterGraphNodes
+  }
 
   def testAddBloomFilterFromGraph() = {
     addBloomFilterFromGraph
@@ -1421,7 +1637,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   def testAddSynonmToGraph() = {
-    addSynonmToGraph
+    addSynonymToGraph
   }
 
 

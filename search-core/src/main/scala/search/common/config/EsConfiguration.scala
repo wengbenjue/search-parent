@@ -50,4 +50,6 @@ lazy val switchCrawler = Try(esConfig.getString("switch.crawler")).getOrElse("of
   lazy val synonymUrl = Try(esConfig.getString("api.url.synonymUrl")).getOrElse("http://54.222.222.172:9001/api/synonym/k/")
   lazy val synonymAddUrl = Try(esConfig.getString("api.url.synonymAddUrl")).getOrElse("http://54.222.222.172:9001/api/synonym/add/")
   lazy val graphNodeDataUrl = Try(esConfig.getString("api.url.graphNodeDataUrl")).getOrElse("http://54.222.222.172:9000/api/news/allnode")
+  lazy val companyWeightUrl = Try(esConfig.getString("api.url.companyWeightUrl")).getOrElse("http://54.222.222.172:9000/api/news/comw")
+  lazy val industryWeightUrl = Try(esConfig.getString("api.url.industryWeightUrl")).getOrElse("http://54.222.222.172:9000/api/news/indw")
 }

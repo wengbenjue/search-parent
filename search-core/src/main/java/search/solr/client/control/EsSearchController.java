@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import search.common.entity.bizesinterface.GraphNodes;
 import search.common.entity.bizesinterface.IndexObjEntity;
 import search.common.entity.bizesinterface.QueryEntityWithCnt;
 import search.es.client.biz.BizeEsInterface;
@@ -73,7 +74,7 @@ public class EsSearchController {
             nini.setCode(-1);
             nini.setMsg("keywords is null!");
             return nini;
-        } else{
+        } else {
             List<IndexObjEntity> en = new ArrayList<>();
             en.add(new IndexObjEntity(keyword));
             return BizeEsInterface.wrapIndexByKeywords(en);
@@ -116,6 +117,19 @@ public class EsSearchController {
             return result;
         }
 
+    }
+
+
+    @RequestMapping(value = "/search/prefix", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi prefix(@RequestParam("word") String word,
+                       @RequestParam(value = "maxLengthPerType", required = false, defaultValue = "5") Integer maxLengthPerType) {
+        if (word == null || word.trim().equalsIgnoreCase("")) {
+            NiNi nini = new NiNi();
+            nini.setCode(-1);
+            nini.setMsg("prefix is null!");
+            return nini;
+        }
+        return BizeEsInterface.wrapPrefix(word.trim(), maxLengthPerType);
     }
 
     @RequestMapping(value = "/search/clean/cacheredis", method = {RequestMethod.POST, RequestMethod.GET})
@@ -194,6 +208,13 @@ public class EsSearchController {
     @RequestMapping(value = "/search/event/rule/load", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi loadEventRegexToCache() {
         NiNi result = BizeEsInterface.warpLoadEventRegexToCache();
+        return result;
+    }
+
+
+    @RequestMapping(value = "/search/graph/allnode", method = {RequestMethod.POST, RequestMethod.GET})
+    public GraphNodes filterGraphNodes() {
+        GraphNodes result = BizeEsInterface.filterGraphNodes();
         return result;
     }
 

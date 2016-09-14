@@ -82,4 +82,7 @@ private[search] trait Configuration {
   lazy val falsePositiveRate: Double = Try(config.getDouble("bloomfilter.falsePositiveRate")).getOrElse(0.1)
 
   lazy val fluidLimit = Try(config.getInt("fluid.limit")).getOrElse(2000)
+
+  lazy val firstCharacterIndexLength = Try(config.getInt("dictionary.index.first_character_index_length")).getOrElse(20000)
+
 }

@@ -1,12 +1,13 @@
 package search.es.client.util
 
 import edu.stanford.nlp.pipeline.StanfordCoreNLP
+import search.common.algorithm.impl.TrieDictionaryExpand
 import search.common.bloomfilter.mutable.BloomFilter
 import search.common.cache.KVCache
-import search.common.cache.impl.{RedisClientCache, RedisCache, LocalCache}
+import search.common.cache.impl.{LocalCache, RedisCache, RedisClientCache}
 import search.common.config.EsConfiguration
 import search.common.listener.ListenerWaiter
-import search.common.listener.graph.{KnowledgeGraphListenerWaiter, KnowledgeGraphListenerImpl, KnowledgeGraphListenerWaiterManager}
+import search.common.listener.graph.{KnowledgeGraphListenerImpl, KnowledgeGraphListenerWaiter, KnowledgeGraphListenerWaiterManager}
 import search.common.storage.Storage
 import search.common.util.Constants
 import search.common.word2vec.Word2VEC
@@ -36,11 +37,18 @@ private[search] class EsClientConf(loadDefaults: Boolean) extends Cloneable with
   var esPageCache: KVCache = _
   var bloomFilter: BloomFilter[String] = _
   var pipeline: StanfordCoreNLP = _
+  var dictionary: TrieDictionaryExpand = _
+  var graphDictionary : TrieDictionaryExpand = _
+
+  //var dictionary: DictionaryTrieExpand = _
 
 
   def init() = {
     EsClient.initClientPool()
-    this.esClient = new DefaultEsClientImpl(this)
+
+    this.dictionary = new TrieDictionaryExpand()
+    //this.dictionary = new DictionaryTrieExpand()
+    this.graphDictionary = new TrieDictionaryExpand()
     this.mongoDataManager = new DataManager(this)
     this.catNlpDataManager = new CatNlpDataManager(this)
     this.similarityCaculate = new DefaultSimilarityCaculateImpl()
@@ -48,11 +56,12 @@ private[search] class EsClientConf(loadDefaults: Boolean) extends Cloneable with
     this.waiter.listeners.add(new KnowledgeGraphListenerImpl(this))
     this.waiter.start()
     this.storage = Storage("redis")
-    this.stateCache =  new RedisClientCache(this)//new LocalCache()
+    this.stateCache = new RedisClientCache(this) //new LocalCache()
     this.esPageCache = new RedisClientCache(this)
     this.bloomFilter = BloomFilter[String](Constants.GRAPH_KEYWORDS_BLOOMFILTER_KEY, expectedElements, falsePositiveRate)
     //add corenlp
     pipeline = new StanfordCoreNLP("CoreNLP-chinese.properties")
+    this.esClient = new DefaultEsClientImpl(this)
   }
 
 

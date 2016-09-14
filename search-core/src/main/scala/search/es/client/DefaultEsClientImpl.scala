@@ -3,16 +3,17 @@ package search.es.client
 import java.util
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
-import com.mongodb.{BasicDBObject, DBObject, DBCursor}
+import com.mongodb.{BasicDBObject, DBCursor, DBObject}
 import org.elasticsearch.client.Client
-import org.elasticsearch.index.query.{MultiMatchQueryBuilder, MatchQueryBuilder, QueryBuilders}
+import org.elasticsearch.index.query.{MatchQueryBuilder, MultiMatchQueryBuilder, QueryBuilders}
 import search.common.cache.impl.LocalCache
-import search.common.config.{RedisConfiguration, EsConfiguration}
+import search.common.config.{EsConfiguration, RedisConfiguration}
 import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.entity.help.IndexHelpEntity
 import search.common.listener.graph.IndexGraphNlp
-import search.common.util.{Util, Logging}
+import search.common.util.{Logging, Util}
 import search.es.client.util.EsClientConf
+
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters.asJavaListConverter
 
@@ -118,6 +119,10 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       indexGraphNlp(indexName, typeName, data, typeChoose)
   }
 
+  private def addGraphWordToTrieNode(word: String, id: String): Unit = {
+    val item = word.trim.toUpperCase()
+    conf.graphDictionary.add(item, id)
+  }
 
   override def indexGraphNlp(indexName: String, typeName: String, data: java.util.Collection[IndexObjEntity], typeChoose: String): Boolean = {
     val docs = new java.util.ArrayList[java.util.Map[String, Object]]
@@ -162,6 +167,9 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
 
       if (!typeChoose.equalsIgnoreCase(catTypName)) {
+
+        triePluginForAutoComplete(keyword, rvKw)
+
         //base stock
         if (LocalCache.baseStockCache.contains(keyword.trim)) {
           val baseStock = LocalCache.baseStockCache(keyword.trim)
@@ -190,8 +198,6 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
             newDoc.put("stock_code", comCode)
             newDoc.put("stock_code_string", comCode.substring(0, comCode.indexOf("_")))
           }
-
-
         }
       }
 
@@ -229,6 +235,58 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
 
+  def triePluginForAutoComplete(keyword: String, rvKw: java.util.Collection[String]): Unit = {
+    //add keyword of graph to trie tree for auto-complete
+    val id = conf.dictionary.findWithId(keyword)
+    if (id != null && !id.trim.equalsIgnoreCase("")) {
+      //search from company cache
+      if (LocalCache.companyStockCache.containsKey(id.trim)) {
+
+        val companyStock = LocalCache.companyStockCache(id.trim)
+        if (rvKw != null && rvKw.size() > 0) {
+          companyStock.setRelevantWords(rvKw)
+        }
+        //add companyName to trie
+        if (companyStock.getName != null && !companyStock.getName.isEmpty)
+          addGraphWordToTrieNode(companyStock.getName, id)
+        //add stock Code to Trie
+        if (companyStock.getCode != null && !companyStock.getCode.isEmpty)
+          addGraphWordToTrieNode(companyStock.getCode, id)
+        //add simple pinyin to Tire
+        if (companyStock.getSimPy != null && !companyStock.getSimPy.isEmpty)
+          addGraphWordToTrieNode(companyStock.getSimPy, id)
+        relevantKvToTrieGraph(rvKw, id)
+      } else if (LocalCache.eventCache.containsKey(id.trim)) {
+        //search from event cache
+        val event = LocalCache.eventCache(id.trim)
+        if (event.getName != null && !event.getName.isEmpty) {
+          addGraphWordToTrieNode(event.getName, id)
+        }
+        relevantKvToTrieGraph(rvKw, id)
+      } else if (LocalCache.industryCache.containsKey(id.trim)) {
+        // search from industry cache
+        val industry = LocalCache.industryCache(id.trim)
+        if (industry.getName != null && !industry.getName.isEmpty) {
+          addGraphWordToTrieNode(industry.getName, id)
+        }
+        relevantKvToTrieGraph(rvKw, id)
+      } else if (LocalCache.topicCache.containsKey(id.trim)) {
+        // search from topic cache
+        val topic = LocalCache.topicCache(id.trim)
+        if (topic.getName != null && !topic.getName.isEmpty) {
+          addGraphWordToTrieNode(topic.getName, id)
+        }
+        relevantKvToTrieGraph(rvKw, id)
+      }
+    }
+  }
+
+  def relevantKvToTrieGraph(rvKw: java.util.Collection[String], id: String): Unit = {
+    if (rvKw != null && rvKw.size() > 0) {
+      rvKw.foreach(addGraphWordToTrieNode(_, id))
+    }
+  }
+
   override def decrementIndex(indexName: String, typeName: String, data: java.util.Collection[String]): Boolean = {
     val m = conf.mongoDataManager
     var cnt = 0
@@ -252,6 +310,8 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
           logInfo(s"$delType  keyword: $k from index,id: $id")
         }
       }
+      //remove from graph trie
+      conf.graphDictionary.removeWithId(k)
     }
     val size = data.size()
     if (size != 0 && size == cnt) true

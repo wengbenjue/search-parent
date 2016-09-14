@@ -1,21 +1,23 @@
 package search.common.util
 
 import java.io._
-import java.net.{Inet4Address, NetworkInterface, InetAddress}
+import java.net.{Inet4Address, InetAddress, NetworkInterface}
 import java.sql.Timestamp
-import java.text.SimpleDateFormat
+import java.text.{DecimalFormat, SimpleDateFormat}
 import java.util
+import java.util.Date
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.{TimeUnit, ThreadFactory, Executors, ThreadPoolExecutor}
+import java.util.concurrent.{Executors, ThreadFactory, ThreadPoolExecutor, TimeUnit}
 import java.util.regex.{Matcher, Pattern}
 
-import com.google.common.cache.{CacheLoader, CacheBuilder, LoadingCache}
+import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.net.InetAddresses
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import org.apache.commons.lang3.SystemUtils
 import search.common.entity.searchinterface.NiNi
 import search.solr.client.searchInterface.SearchInterface._
 
+import scala.annotation.tailrec
 import scala.collection.JavaConversions.asScalaBuffer
 import scala.collection.JavaConversions.asScalaSet
 import scala.collection.JavaConversions.enumerationAsScalaIterator
@@ -37,6 +39,11 @@ private[search] object Util extends Logging {
 
   def dateToString(date: java.util.Date) = {
     val format = new SimpleDateFormat("yyyy-MM-dd_HH_mm_ss")
+    format.format(date)
+  }
+
+  def dataFomatStringYMD(date: java.util.Date): String = {
+    val format = new SimpleDateFormat("yyyyMMdd")
     format.format(date)
   }
 
@@ -93,6 +100,7 @@ private[search] object Util extends Logging {
   def isEnglish(charaString: String): Boolean = {
     charaString.matches("^[a-z|A-Z|\\s]*")
   }
+
 
   def isNumeric(str: String): Boolean = {
     for (i <- 0 until str.length()) {
@@ -242,6 +250,10 @@ private[search] object Util extends Logging {
     splitArray.toList
   }
 
+  def decimalFormat2(value: Double): Double = {
+    val df = new DecimalFormat("#.##")
+    df.format(value).toDouble
+  }
 
   def regexSplitNoCharcter(str: StringBuffer, regex: String): java.util.Collection[String] = {
     val MIN_THRESHOLD = 50
@@ -348,7 +360,25 @@ private[search] object Util extends Logging {
     list
   }
 
-  def regexExtract(input: String, regex: String, group: Int): Object = {
+  /*type Index = Int
+  def binarySearch(ds: Array[TrieNode], key: Char): Option[Index] = {
+    @tailrec
+    def go(lo: Index, hi: Index): Option[Index] = {
+      if (lo > hi)
+        None
+      else {
+        val mid: Index = lo + (hi - lo) / 2
+        ds(mid) match {
+          case mv if (mv.character.equals(key) ) => Some(mid)
+          case mv if (mv.character <= key) => go(mid + 1, hi)
+          case _ => go(lo, mid - 1)
+        }
+      }
+    }
+    go(0, ds.size - 1)
+  }*/
+
+  def regexExtract(input: String, regex: String, group: Int=0): Object = {
     if (regex == null) {
       return input
     }
@@ -372,8 +402,8 @@ private[search] object Util extends Logging {
         if (group == -1) {
           var r = ""
           val s = new StringBuilder
-          var i: Int = 0
-          while (i <= m.groupCount - 1) {
+          var i: Int = 1
+          while (i <= m.groupCount) {
             {
               s ++= m.group(i)
               if (i != m.groupCount) {
@@ -402,7 +432,15 @@ object testUtil {
   def main(args: Array[String]) {
     // testTime
     //testNumber
-    testRegex
+      //testRegex
+    testFormat()
+  }
+
+
+  def testFormat() = {
+    val result =Util.dataFomatStringYMD(new Date())
+    println(result)
+    println("20160919">"20150920")
   }
 
   def testNumber = {

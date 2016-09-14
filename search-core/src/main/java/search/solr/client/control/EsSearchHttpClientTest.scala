@@ -144,11 +144,34 @@ object EsSearchHttpClientTest {
   def getIndexDataBySet(): java.util.List[IndexObjEntity] = {
     val keywords: java.util.List[IndexObjEntity] = new java.util.ArrayList[IndexObjEntity]
     var list: java.util.List[String] = new java.util.ArrayList[String]()
-    var kvN = "HHH"
-    keywords.add(new IndexObjEntity(kvN))
-
+    var kvN = "双象股份"
     list.add("a")
     list.add("abc")
+    val i = new IndexObjEntity(kvN)
+    i.setRvkw(list)
+    keywords.add(i)
+    keywords.add(new IndexObjEntity("道博股份"))
+
+    keywords.add(new IndexObjEntity("达安基因"))
+    keywords.add(new IndexObjEntity("中国银行"))
+    keywords.add(new IndexObjEntity("万科"))
+
+    keywords.add(new IndexObjEntity("资本市场服务"))
+    keywords.add(new IndexObjEntity("工业机械"))
+    keywords.add(new IndexObjEntity("个人用品"))
+    keywords.add(new IndexObjEntity("苹果概念"))
+    keywords.add(new IndexObjEntity("新三板"))
+    keywords.add(new IndexObjEntity("一带一路"))
+    keywords.add(new IndexObjEntity("虚拟现实"))
+    keywords.add(new IndexObjEntity("PPP"))
+
+    keywords.add(new IndexObjEntity("中标项目"))
+    keywords.add(new IndexObjEntity("业绩下滑"))
+    keywords.add(new IndexObjEntity("筹划并购"))
+
+
+
+
     //keywords.add(new IndexObjEntity(kvN, list))
 
     /*kvN = "test22"
@@ -165,8 +188,8 @@ object EsSearchHttpClientTest {
   }
 
   def submitIndexDataRwInterval() = {
-  //  val kvs = getIndexDataFromSerObj()
-    val kvs = getIndexDataBySet()
+   val kvs = getIndexDataFromSerObj()
+    //val kvs = getIndexDataBySet()
     var cnt = 0
    //val url: String = "http://54.222.222.172:8999/es/index/rws"
    val url: String = "http://localhost:8999/es/index/rws"

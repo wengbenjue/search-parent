@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import search.common.cache.KVCache
 import search.common.config.RedisConfiguration
-import search.common.entity.bizesinterface.BaseStock
+import search.common.entity.bizesinterface._
 import search.common.entity.state.ProcessState
 
 import scala.collection.mutable
@@ -64,5 +64,24 @@ object LocalCache extends RedisConfiguration {
 
 
   final val baseStockCache = new mutable.HashMap[String, BaseStock]()
+
+  //cache Map(id->CompanyStock)
+  final val companyStockCache = new mutable.HashMap[String,CompanyStock]()
+
+  //cache Map(id->Industry)
+  final val industryCache = new mutable.HashMap[String,Industry]()
+
+  //cache Map(id->GraphEvent)
+  final val eventCache = new mutable.HashMap[String,GraphEvent]()
+
+  //cache Map(id->GraphTopic)
+  final val topicCache = new mutable.HashMap[String,GraphTopic]()
+
+
+  //Map(companyName->weight)
+  final val conmpanyWeightCache = new mutable.HashMap[String,Double]()
+
+  //Map(topicName->weight)
+   var topicHotWeightCache = new mutable.HashMap[String,Double]()
 
 }

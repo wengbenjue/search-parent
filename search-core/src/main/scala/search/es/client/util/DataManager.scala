@@ -1,11 +1,12 @@
 package search.es.client.util
 
 import java.util
+import java.util.Date
 
-import com.mongodb.{BasicDBList, BasicDBObject, DBCollection, DBObject}
+import com.mongodb._
 import org.bson.types.ObjectId
 import search.common.mongo.base.{MongoBase, MongoTableConstants}
-import search.common.util.Logging
+import search.common.util.{Logging, Util}
 
 import scala.collection.JavaConversions._
 import scala.io.Source
@@ -43,6 +44,12 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     getCollection(MongoTableConstants.NEWS_DICT_NEWS_RULE)
   }
 
+
+  //topic.topic_hot
+  def getTopicHotCollection: DBCollection = {
+    getCollection(MongoTableConstants.TOPIC_TOPIC_HOT)
+  }
+
   //news.sens_industry
   def getSensIndustryCollection: DBCollection = {
     getCollection(MongoTableConstants.NEWS_SENS_INDUSTRY)
@@ -55,6 +62,11 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
 
   def getNewsNewsKeywordDictCollection: DBCollection = {
     getCollection(MongoTableConstants.NEWS_KEYWORD_DICT)
+  }
+
+
+  def getSougouRelateWordsCollection: DBCollection = {
+    getCollection(MongoTableConstants.SOUGOU_RELATE_WORDS)
   }
 
 
@@ -112,6 +124,7 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
 
   def findCompanyCode(): java.util.List[DBObject] = {
     val projection = new BasicDBObject()
+    projection.put("_id", Integer.valueOf(1))
     projection.put("code", Integer.valueOf(1))
     projection.put("w", Integer.valueOf(1))
     val query = new BasicDBObject()
@@ -124,6 +137,7 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
 
   def findGrapnTopicConp(): java.util.List[DBObject] = {
     val projection = new BasicDBObject()
+    projection.put("_id", Integer.valueOf(1))
     projection.put("code", Integer.valueOf(1))
     projection.put("w", Integer.valueOf(1))
     val query = new BasicDBObject()
@@ -133,10 +147,35 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     result
   }
 
+
+  //topic->tipic_hot
+  def findTopicHot(loadAll: Boolean = true): java.util.List[DBObject] = {
+    val data = new Date()
+    val projection = new BasicDBObject()
+    projection.put("topic_hot", Integer.valueOf(1))
+    val query = new BasicDBObject()
+    var dbCurson: DBCursor = null
+    if (!loadAll) {
+      val contitionDB = new BasicDBObject()
+       contitionDB.append("$gte", Util.dataFomatStringYMD(new Date()))
+      //contitionDB.append("$gte", "20160912")
+      query.put("date",contitionDB)
+    }
+    dbCurson = getTopicHotCollection.find(query, projection)
+    if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
+    val result = dbCurson.toArray
+    result
+  }
+
   def findEvent(): java.util.List[DBObject] = {
     val projection = new BasicDBObject()
+    projection.put("_id", Integer.valueOf(1))
+    //event name
     projection.put("szh", Integer.valueOf(1))
+    //event rule
     projection.put("rule", Integer.valueOf(1))
+    //event weight
+    projection.put("w", Integer.valueOf(1))
     val query = new BasicDBObject()
     val dbCurson = getDictNewsRuleCollection.find(query, projection)
     if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
@@ -147,6 +186,7 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
 
   def findIndustry(): java.util.List[DBObject] = {
     val projection = new BasicDBObject()
+    projection.put("_id", Integer.valueOf(1))
     projection.put("c", Integer.valueOf(1))
     projection.put("w", Integer.valueOf(1))
     val query = new BasicDBObject()
@@ -238,6 +278,18 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
   }
 
 
+  def getDicFromSougouRelateWords(): java.util.List[DBObject] = {
+    val projection = new BasicDBObject()
+    projection.put("taskUrl", Integer.valueOf(1))
+    projection.put("words", Integer.valueOf(1))
+    val query = new BasicDBObject()
+    val dbCurson = getSougouRelateWordsCollection.find(query, projection)
+    if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
+    val result = dbCurson.toArray
+    result
+  }
+
+
   def getSynonmDicFromNewsKeywordDict(): java.util.Map[String, java.util.Set[String]] = {
     val map = new java.util.HashMap[String, java.util.Set[String]]()
     val dm = new DataManager(new EsClientConf())
@@ -277,6 +329,52 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     map
   }
 
+
+  def getSynonmDicFromSynonymWords(): java.util.Map[String, java.util.Set[String]] = {
+    val map = new java.util.HashMap[String, java.util.Set[String]]()
+    val dm = new DataManager(new EsClientConf())
+    val dics: java.util.List[DBObject] = dm.getDicFromSougouRelateWords()
+    dics.foreach { dic =>
+      var synso = dic.get("words")
+      if (synso != null) {
+        val syns = synso.asInstanceOf[BasicDBList]
+        if (syns.size() > 0) {
+          var word = if (dic.get("taskUrl") != null) dic.get("taskUrl").toString.trim else null
+          if (word != null && !word.equalsIgnoreCase("")) {
+            val regexWord = Util.regexExtract(word, "[\\s|\\S]*query=([\\w|\\u4e00-\\u9fa5]+)&[\\s|\\S]*", -1)
+            if (regexWord != null && !regexWord.toString.trim.equalsIgnoreCase("")) {
+              word = regexWord.toString.trim
+              if (!map.containsKey(word)) {
+                val set = new util.HashSet[String]()
+                syns.foreach { s =>
+                  val sWordDBObj = s.asInstanceOf[BasicDBObject]
+                  val syName = sWordDBObj.getString("word").trim
+                  if (!syName.equalsIgnoreCase(word) && !word.contains(syName) && !syName.contains(word))
+                    set.add(syName)
+                }
+                if (set.size() > 0)
+                  map.put(word, set)
+              } else {
+                val set = new util.HashSet[String]()
+                syns.foreach { s =>
+                  val sWordDBObj = s.asInstanceOf[BasicDBObject]
+                  val syName = sWordDBObj.getString("word").trim
+                  if (!syName.equalsIgnoreCase(word) && !word.contains(syName) && !syName.contains(word))
+                    set.add(syName)
+                }
+                if (set.size() > 0)
+                  map.get(word).addAll(set)
+              }
+            }
+          }
+
+        }
+      }
+
+    }
+    map
+  }
+
 }
 
 private[search] object DataManager {
@@ -288,7 +386,20 @@ private[search] object DataManager {
     //testFindBaseStock
     //testFindByKeyword
     //testSaveOrUpdate
-    testGetDicFromNewsKeywordDict()
+    //testGetDicFromNewsKeywordDict()
+    //testGetSynonmDicFromSynonymWords()
+    testFindTopicHot()
+  }
+
+  def testFindTopicHot() = {
+    val dm = new DataManager(new EsClientConf())
+    val result = dm.findTopicHot(false)
+    println(result)
+  }
+
+  def testGetSynonmDicFromSynonymWords() = {
+    val dm = new DataManager(new EsClientConf())
+    dm.getSynonmDicFromSynonymWords()
   }
 
   def testGetDicFromNewsKeywordDict() = {

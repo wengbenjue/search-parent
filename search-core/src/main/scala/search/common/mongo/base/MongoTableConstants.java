@@ -19,6 +19,7 @@ public class MongoTableConstants extends Constants{
 
     public static final String GRAPH_TOPIC_CONP = "graph.topic_conp";
 
+    public static final String TOPIC_TOPIC_HOT = "topic.topic_hot";
 
     public static final String NEWS_DICT_NEWS_RULE = "news.dict_news_rule";
 
@@ -27,6 +28,8 @@ public class MongoTableConstants extends Constants{
     public static final String NEWS_ENTITY_MULTI_REL = "news.entity_multi_rel";
 
     public static final String NEWS_KEYWORD_DICT = "news.keyword_dict";
+
+    public static final String SOUGOU_RELATE_WORDS = "synonym_words.sougou_relate_words";
 
 
 }

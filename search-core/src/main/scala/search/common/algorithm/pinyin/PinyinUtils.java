@@ -1,22 +1,15 @@
 package search.common.algorithm.pinyin;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-
+import com.google.common.collect.ArrayListMultimap;
 import net.sourceforge.pinyin4j.PinyinHelper;
 import net.sourceforge.pinyin4j.format.HanyuPinyinCaseType;
 import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
 import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
 import net.sourceforge.pinyin4j.format.HanyuPinyinVCharType;
 import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
-
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.common.collect.ArrayListMultimap;
+import java.io.*;
 
 public class PinyinUtils {
 
@@ -81,19 +74,20 @@ public class PinyinUtils {
 		
 		return PinyinHelper.toHanyuPinyinStringArray(chineseCharacter, outputFormat);
 	}
-
+	public static String getPinYin(String chinese) throws BadHanyuPinyinOutputFormatCombination{
+		return getPinYin(chinese,true);
+	}
 	/**
 	 * get chinese words pin yin
 	 * @param chinese
-	 * @param
+	 * @param fullPy
 	 * @return
 	 * @throws BadHanyuPinyinOutputFormatCombination
 	 */
-	public static String getPinYin(String chinese) throws BadHanyuPinyinOutputFormatCombination{
+	public static String getPinYin(String chinese,Boolean fullPy) throws BadHanyuPinyinOutputFormatCombination{
 		if(StringUtils.isEmpty(chinese)){
 			return null;
 		}
-
 		chinese = chinese.replaceAll("[\\.，\\,！·\\!？\\?；\\;\\(\\)（）\\[\\]\\:： ]+", " ").trim();
 
 		char[] chs = chinese.toCharArray();
@@ -105,9 +99,9 @@ public class PinyinUtils {
 				throw new BadHanyuPinyinOutputFormatCombination("pinyin array is empty, char:"+chs[i]+",chinese:"+chinese);
 			}
 			if(py_arr.length==1){
-				py_sb.append(convertInitialToUpperCase(py_arr[0]));
+				py_sb.append(fullPy ?convertInitialToUpperCase(py_arr[0]):py_arr[0].charAt(0) );
 			}else if(py_arr.length==2 && py_arr[0].equals(py_arr[1])){
-				py_sb.append(convertInitialToUpperCase(py_arr[0]));
+				py_sb.append(fullPy ?convertInitialToUpperCase(py_arr[0]):py_arr[0].charAt(0) );
 			}else{
 				String resultPy = null, defaultPy = null;;
 				for (String py : py_arr) {
@@ -167,7 +161,7 @@ public class PinyinUtils {
 						resultPy = py_arr[0];
 					}
 				}
-				py_sb.append(convertInitialToUpperCase(resultPy));
+				py_sb.append(fullPy ? convertInitialToUpperCase(resultPy): resultPy.charAt(0));
 			}
 		}
 
@@ -179,6 +173,20 @@ public class PinyinUtils {
 			return "";
 		}
 		return str.substring(0, 1).toUpperCase()+str.substring(1);
+	}
+
+	public static void main(String[] args) {
+		String str = "便宜坊";
+
+		try {
+			System.out.println(str + " pyf="
+					+ PinyinUtils.getPinYin(str));
+
+			System.out.println(str + " simple pinyin pyf="
+					+ PinyinUtils.getPinYin(str,false));
+		} catch (BadHanyuPinyinOutputFormatCombination e) {
+			e.printStackTrace();
+		}
 	}
 }
 
