@@ -13,24 +13,27 @@ import org.elasticsearch.action.admin.indices.alias.Alias
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexResponse
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
-import org.elasticsearch.action.bulk.{BulkResponse, BulkRequest}
+import org.elasticsearch.action.bulk.{BulkRequest, BulkResponse}
 import org.elasticsearch.action.delete.DeleteResponse
 import org.elasticsearch.action.deletebyquery.{DeleteByQueryAction, DeleteByQueryRequestBuilder}
 import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
-import org.elasticsearch.action.search.{SearchType, SearchResponse}
-import org.elasticsearch.action.update.{UpdateResponse, UpdateRequestBuilder}
-import org.elasticsearch.client.{Requests, Client}
+import org.elasticsearch.action.search.{SearchResponse, SearchType}
+import org.elasticsearch.action.update.{UpdateRequestBuilder, UpdateResponse}
+import org.elasticsearch.client.{Client, Requests}
 import org.elasticsearch.client.transport.{NoNodeAvailableException, TransportClient}
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
-import org.elasticsearch.common.xcontent.{XContentFactory, XContentBuilder}
+import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
 import org.elasticsearch.index.query._
+import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilder
 import org.elasticsearch.plugin.deletebyquery.DeleteByQueryPlugin
-import org.elasticsearch.search.{SearchHits, SearchHit}
+import org.elasticsearch.search.{SearchHit, SearchHits}
 import search.common.config.EsConfiguration
 import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.util.Logging
+
 import scala.collection.JavaConversions._
+import scala.reflect.ClassTag
 
 
 /**
@@ -61,6 +64,8 @@ private[search] trait EsClient extends EsConfiguration {
   def decrementIndex(indexName: String, typeName: String, data: java.util.Collection[String]): Boolean
 
   def addDocument(indexName: String, typeName: String, doc: java.util.Map[String, Object]): Boolean
+
+  def addDocument[T: ClassTag](indexName: String, typeName: String, id: String, doc: T): Boolean
 
   def addDocuments(indexName: String, typeName: String, docs: java.util.List[java.util.Map[String, Object]]): Boolean
 
@@ -273,6 +278,24 @@ private[search] object EsClient extends EsConfiguration with Logging {
     } catch {
       case e: Exception =>
         logError("create mapping failed!", e)
+        false
+    }
+  }
+
+  /**
+    *
+    * @param client
+    * @param indexName
+    * @param typeName
+    * @param bytes
+    * @return
+    */
+  def postDocument(client: Client, indexName: String, typeName: String, id: String, bytes: Array[Byte]): Boolean = {
+    try {
+      client.prepareIndex(indexName, typeName, id).setSource(bytes).get()
+      true
+    } catch {
+      case e: Exception =>
         false
     }
   }
@@ -521,13 +544,39 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @return
     */
   def multiMatchQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]] = {
+    multiMatchQuery(client, indexName, typeName, from, to, keyWords, "or", 0.3f, "1", minimumShouldMatch = null, "most", fields: _*)
+  }
+
+  def multiMatchQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, op: String, tieBreaker: Float, fuzziness: String, minimumShouldMatch: String, queryType: String, fields: String*): Array[java.util.Map[String, Object]] = {
+    val multiMatchQuery = QueryBuilders.multiMatchQuery(keyWords, fields: _*)
+
+    if (fuzziness != null && !fuzziness.isEmpty) multiMatchQuery.fuzziness(fuzziness)
+
+    if (minimumShouldMatch != null && !minimumShouldMatch.isEmpty) multiMatchQuery.minimumShouldMatch(minimumShouldMatch)
+
+    var operator: MatchQueryBuilder.Operator = MatchQueryBuilder.Operator.OR
+    if (op != null && op.trim.equalsIgnoreCase("and")) {
+      operator = MatchQueryBuilder.Operator.AND
+    }
+    var tieBreakerF = tieBreaker
+    if (tieBreaker == null) tieBreakerF = 0.0f
+
+    var searchType: MultiMatchQueryBuilder.Type = MultiMatchQueryBuilder.Type.BEST_FIELDS
+    if (queryType != null && (queryType.trim.equalsIgnoreCase("most_fields") || queryType.trim.equalsIgnoreCase("mostFields") || queryType.trim.equalsIgnoreCase("most"))) {
+      searchType = MultiMatchQueryBuilder.Type.MOST_FIELDS
+    } else if (queryType != null && (queryType.trim.equalsIgnoreCase("cross_fields") || queryType.trim.equalsIgnoreCase("crossFields") ||queryType.trim.equalsIgnoreCase("cross"))) {
+      searchType = MultiMatchQueryBuilder.Type.CROSS_FIELDS
+    } else if (queryType != null && queryType.trim.equalsIgnoreCase("phrase")) {
+      searchType = MultiMatchQueryBuilder.Type.PHRASE
+    } else if (queryType != null && (queryType.trim.equalsIgnoreCase("phrase_prefix") || queryType.trim.equalsIgnoreCase("phrasePrefix"))) {
+      searchType = MultiMatchQueryBuilder.Type.PHRASE_PREFIX
+    }
+
     queryAsMap(client, indexName, typeName, from, to,
-      QueryBuilders.multiMatchQuery(keyWords, fields: _*)
-       .operator(MatchQueryBuilder.Operator.OR)
-        .tieBreaker(0.2f)
-          .fuzziness("1")
-        //.minimumShouldMatch("75%")
-        .`type`(MultiMatchQueryBuilder.Type.BEST_FIELDS)
+      multiMatchQuery
+        .operator(operator)
+        .tieBreaker(tieBreakerF)
+        .`type`(searchType)
     )
   }
 
@@ -566,6 +615,14 @@ private[search] object EsClient extends EsConfiguration with Logging {
     */
   def rangeQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, field: String, lowerBounder: Object, upperBounder: Object): Array[java.util.Map[String, Object]] = {
     queryAsMap(client, indexName, typeName, from, to, QueryBuilders.rangeQuery(field).gt(lowerBounder).lt(upperBounder))
+  }
+
+  def disMaxQuery(client: Client, indexName: String, typeName: String, query: String, from: Int, to: Int, boost: Float = 1.0f, tieBreaker: Float = 0.3f, fields: Seq[String]): Array[java.util.Map[String, Object]] = {
+    val disMaxQuery = QueryBuilders.disMaxQuery() //just use best field score
+    fields.foreach(f => disMaxQuery.add(QueryBuilders.termQuery(f, query)))
+    queryAsMap(client, indexName, typeName, from, to, disMaxQuery.boost(boost)
+      .tieBreaker(tieBreaker) //other fields(expect best field that the score is highest) multiply this weight and compound to the total score
+    )
   }
 
   def prefixQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, field: String, preffix: String): Array[java.util.Map[String, Object]] = {

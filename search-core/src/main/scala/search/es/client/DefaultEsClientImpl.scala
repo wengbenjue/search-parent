@@ -4,6 +4,7 @@ import java.util
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
 import com.mongodb.{BasicDBObject, DBCursor, DBObject}
+import org.codehaus.jackson.map.ObjectMapper
 import org.elasticsearch.client.Client
 import org.elasticsearch.index.query.{MatchQueryBuilder, MultiMatchQueryBuilder, QueryBuilders}
 import search.common.cache.impl.LocalCache
@@ -16,6 +17,7 @@ import search.es.client.util.EsClientConf
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters.asJavaListConverter
+import scala.reflect.ClassTag
 
 
 /**
@@ -36,6 +38,10 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   if (consumerThreadsNum > 0) currentThreadsNum = consumerThreadsNum
   val indexRunnerThreadPool = Util.newDaemonFixedThreadPool(currentThreadsNum, "index_runner_thread_excutor")
   var indexQueue: LinkedBlockingQueue[IndexHelpEntity] = new LinkedBlockingQueue[IndexHelpEntity]()
+
+  final val  mapper = new ObjectMapper()
+
+
 
   override def count(indexName: String, typeName: String): Long = {
     val cnt = EsClient.count(EsClient.getClientFromPool(), indexName, typeName)._1
@@ -316,6 +322,12 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     val size = data.size()
     if (size != 0 && size == cnt) true
     else false
+  }
+
+
+  override def addDocument[T: ClassTag](indexName: String, typeName: String, id: String,doc: T): Boolean = {
+    EsClient.postDocument(EsClient.getClientFromPool(), indexName, typeName,id,  mapper.writeValueAsBytes(doc))
+
   }
 
   override def addDocument(indexName: String, typeName: String, doc: java.util.Map[String, Object]): Boolean = {
