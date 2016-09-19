@@ -1,13 +1,10 @@
 package search.es.client
 
 import java.net.InetAddress
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.alibaba.fastjson.{JSON, JSONObject}
 import com.google.common.collect.Maps
-import org.apache.lucene.queryparser.xml.FilterBuilder
-import org.elasticsearch.ElasticsearchException
 import org.elasticsearch.action.ActionFuture
 import org.elasticsearch.action.admin.indices.alias.Alias
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
@@ -21,12 +18,15 @@ import org.elasticsearch.action.search.{SearchResponse, SearchType}
 import org.elasticsearch.action.update.{UpdateRequestBuilder, UpdateResponse}
 import org.elasticsearch.client.{Client, Requests}
 import org.elasticsearch.client.transport.{NoNodeAvailableException, TransportClient}
+import org.elasticsearch.common.lucene.search.function.{CombineFunction, FieldValueFactorFunction}
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
 import org.elasticsearch.index.query._
-import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilder
+import org.elasticsearch.index.query.functionscore.fieldvaluefactor.FieldValueFactorFunctionBuilder
+import org.elasticsearch.index.query.functionscore.{ScoreFunctionBuilder, ScoreFunctionBuilders}
 import org.elasticsearch.plugin.deletebyquery.DeleteByQueryPlugin
+import org.elasticsearch.search.sort.SortOrder
 import org.elasticsearch.search.{SearchHit, SearchHits}
 import search.common.config.EsConfiguration
 import search.common.entity.bizesinterface.IndexObjEntity
@@ -435,13 +435,27 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @return
     */
   def query(client: Client, indexName: String, typeName: String, from: Int, to: Int, qb: QueryBuilder): SearchHits = {
+    query(client, indexName, typeName, from, to, sorts = null, qb)
+  }
+
+  def query(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: Map[String, String], qb: QueryBuilder): SearchHits = {
     try {
-      val res: SearchResponse = client.
+      val search = client.
         prepareSearch(indexName)
         .setTypes(typeName)
         .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
         .setQuery(qb)
-        .setFrom(from).setSize(to).execute.actionGet
+      if (from >= 0 && to > 0) search.setFrom(from).setSize(to)
+      if (sorts != null && !sorts.isEmpty) {
+        sorts.foreach { case (field, sort) =>
+          if (sort.equalsIgnoreCase("asc") || sort.equalsIgnoreCase("ASC")) {
+            search.addSort(field, SortOrder.ASC)
+          } else {
+            search.addSort(field, SortOrder.DESC)
+          }
+        }
+      }
+      val res: SearchResponse = search.execute.actionGet
       res.getHits
     } catch {
       case e: Exception =>
@@ -547,37 +561,8 @@ private[search] object EsClient extends EsConfiguration with Logging {
     multiMatchQuery(client, indexName, typeName, from, to, keyWords, "or", 0.3f, "1", minimumShouldMatch = null, "most", fields: _*)
   }
 
-  def multiMatchQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, op: String, tieBreaker: Float, fuzziness: String, minimumShouldMatch: String, queryType: String, fields: String*): Array[java.util.Map[String, Object]] = {
-    val multiMatchQuery = QueryBuilders.multiMatchQuery(keyWords, fields: _*)
-
-    if (fuzziness != null && !fuzziness.isEmpty) multiMatchQuery.fuzziness(fuzziness)
-
-    if (minimumShouldMatch != null && !minimumShouldMatch.isEmpty) multiMatchQuery.minimumShouldMatch(minimumShouldMatch)
-
-    var operator: MatchQueryBuilder.Operator = MatchQueryBuilder.Operator.OR
-    if (op != null && op.trim.equalsIgnoreCase("and")) {
-      operator = MatchQueryBuilder.Operator.AND
-    }
-    var tieBreakerF = tieBreaker
-    if (tieBreaker == null) tieBreakerF = 0.0f
-
-    var searchType: MultiMatchQueryBuilder.Type = MultiMatchQueryBuilder.Type.BEST_FIELDS
-    if (queryType != null && (queryType.trim.equalsIgnoreCase("most_fields") || queryType.trim.equalsIgnoreCase("mostFields") || queryType.trim.equalsIgnoreCase("most"))) {
-      searchType = MultiMatchQueryBuilder.Type.MOST_FIELDS
-    } else if (queryType != null && (queryType.trim.equalsIgnoreCase("cross_fields") || queryType.trim.equalsIgnoreCase("crossFields") ||queryType.trim.equalsIgnoreCase("cross"))) {
-      searchType = MultiMatchQueryBuilder.Type.CROSS_FIELDS
-    } else if (queryType != null && queryType.trim.equalsIgnoreCase("phrase")) {
-      searchType = MultiMatchQueryBuilder.Type.PHRASE
-    } else if (queryType != null && (queryType.trim.equalsIgnoreCase("phrase_prefix") || queryType.trim.equalsIgnoreCase("phrasePrefix"))) {
-      searchType = MultiMatchQueryBuilder.Type.PHRASE_PREFIX
-    }
-
-    queryAsMap(client, indexName, typeName, from, to,
-      multiMatchQuery
-        .operator(operator)
-        .tieBreaker(tieBreakerF)
-        .`type`(searchType)
-    )
+  private def multiMatchQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, op: String, tieBreaker: Float, fuzziness: String, minimumShouldMatch: String, queryType: String, fields: String*): Array[java.util.Map[String, Object]] = {
+    queryAsMap(client, indexName, typeName, from, to, Query.multiMatchQuery(keyWords, op, tieBreaker, fuzziness, minimumShouldMatch, queryType, fields: _*))
   }
 
   /**
@@ -654,6 +639,61 @@ private[search] object EsClient extends EsConfiguration with Logging {
     queryAsMap(client, indexName, typeName, from, to, QueryBuilders.constantScoreQuery(QueryBuilders.termQuery(field, keyWords)).boost(score))
   }
 
+
+  /**
+    * 多值字段查询，并按指定字段进行衰减
+    *
+    * @param client
+    * @param indexName
+    * @param typeName
+    * @param from
+    * @param to
+    * @param decayField
+    * @param scale
+    * @param offset
+    * @param decay
+    * @param scoreMode
+    * @param boostMode
+    * @param keyword
+    * @param op
+    * @param tieBreaker
+    * @param fuzziness
+    * @param minimumShouldMatch
+    * @param queryType
+    * @param fields
+    * @return
+    */
+  def multiMatchFunctionScoreQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int,
+                                   decayField: String, scale: String, offset: String, decay: Double,
+                                   scoreMode: String, boostMode: String,
+                                   keyword: String, op: String, tieBreaker: Float, fuzziness: String, minimumShouldMatch: String, queryType: String, fields: String*): Array[java.util.Map[String, Object]] = {
+    functionScoreQuery(client, indexName, typeName, from, to, Function.gaussDecayFunction(decayField, scale, offset, decay), scoreMode, boostMode,
+      Query.multiMatchQuery(keyword, op, tieBreaker, fuzziness, minimumShouldMatch, queryType, fields: _*))
+  }
+
+
+  private def functionScoreQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, scoreFunctionBuilder: ScoreFunctionBuilder, scoreMode: String = "multiply", boostMode: String = "multiply", qb: QueryBuilder): Array[java.util.Map[String, Object]] = {
+    val functionQuery = QueryBuilders.functionScoreQuery(qb)
+    functionQuery.scoreMode("multiply")
+    if (scoreMode != null) functionQuery.scoreMode(scoreMode)
+    functionQuery.boostMode(CombineFunction.MULT)
+    if (boostMode.trim.equalsIgnoreCase("multiply")) {
+      functionQuery.boostMode(CombineFunction.MULT)
+    } else if (boostMode.trim.equalsIgnoreCase("replace")) {
+      functionQuery.boostMode(CombineFunction.REPLACE)
+    } else if (boostMode.trim.equalsIgnoreCase("sum")) {
+      functionQuery.boostMode(CombineFunction.SUM)
+    } else if (boostMode.trim.equalsIgnoreCase("avg")) {
+      functionQuery.boostMode(CombineFunction.AVG)
+    } else if (boostMode.trim.equalsIgnoreCase("min")) {
+      functionQuery.boostMode(CombineFunction.MIN)
+    } else if (boostMode.trim.equalsIgnoreCase("max")) {
+      functionQuery.boostMode(CombineFunction.MAX)
+    }
+    if (scoreFunctionBuilder == null) return null
+    functionQuery.add(scoreFunctionBuilder)
+    queryAsMap(client, indexName, typeName, from, to, functionQuery)
+  }
 
   /**
     * 为一份文档建立索引
