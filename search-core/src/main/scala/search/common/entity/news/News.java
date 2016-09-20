@@ -22,6 +22,17 @@ public class News {
     public News() {
     }
 
+    public News(String id, String title) {
+        this.id = id;
+        this.title = title;
+    }
+
+    public News(String id, String title, Collection<String> companys) {
+        this.id = id;
+        this.title = title;
+        this.companys = companys;
+    }
+
     public News(String id, String title, String auth, String summary, Date createOn, Integer popularity, String url, Collection<String> companys, Collection<String> events, Collection<String> topics) {
         this.id = id;
         this.title = title;

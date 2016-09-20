@@ -4,19 +4,20 @@ import java.io.{FileInputStream, IOException}
 import java.net.URLEncoder
 import java.util
 
-import com.alibaba.fastjson.{JSONObject, JSONArray, JSON}
+import com.alibaba.fastjson.{JSON, JSONArray, JSONObject}
 import org.apache.http.HttpEntity
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.utils.HttpClientUtils
 import org.apache.http.util.EntityUtils
-import search.common.entity.bizesinterface.{QueryEntityWithCnt, IndexObjEntity}
+import search.common.entity.bizesinterface.{IndexObjEntity, QueryEntityWithCnt}
+import search.common.entity.news.News
 import search.common.entity.searchinterface.parameter.IndexKeywordsParameter
 import search.common.http.HttpClientUtil
 import search.common.serializer.JavaSerializer
 import search.es.client.biz.BizeEsInterface._
 import search.solr.client.SolrClientConf
-import scala.collection.JavaConversions._
 
+import scala.collection.JavaConversions._
 import scala.io.Source
 
 /**
@@ -27,13 +28,41 @@ object EsSearchHttpClientTest {
 
   def main(args: Array[String]) {
     //indexByKeywords
-    submitIndexDataRwInterval
+    //submitIndexDataRwInterval
     //getIndexDataFromSerObj()
     //testSearchFluid
     //testShowStateRedisCache()
     // testCleanBySet
+    testIndexNews
   }
 
+
+  def testIndexNews() {
+    val url = "http://localhost:8999/es/index/news"
+    val objList = new util.ArrayList[News]()
+
+    val news1 = new News("1", "title1")
+    objList.add(news1)
+    val companys = new util.ArrayList[String]()
+    companys.add("a")
+    companys.add("b")
+    val news2 = new News("1", "title1", companys)
+    objList.add(news2)
+
+    val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", objList, null)
+    try {
+      val entity: HttpEntity = httpResp.getEntity
+      val sResponse: String = EntityUtils.toString(entity)
+      System.out.println(sResponse)
+    }
+    catch {
+      case e: IOException => {
+        e.printStackTrace
+      }
+    } finally {
+      HttpClientUtils.closeQuietly(httpResp)
+    }
+  }
 
   def testCleanBySet() = {
     val url: String = "http://54.222.222.172:8999/es/search/nlp_cache/clean"
@@ -188,11 +217,11 @@ object EsSearchHttpClientTest {
   }
 
   def submitIndexDataRwInterval() = {
-   val kvs = getIndexDataFromSerObj()
+    val kvs = getIndexDataFromSerObj()
     //val kvs = getIndexDataBySet()
     var cnt = 0
-   //val url: String = "http://54.222.222.172:8999/es/index/rws"
-   val url: String = "http://localhost:8999/es/index/rws"
+    //val url: String = "http://54.222.222.172:8999/es/index/rws"
+    val url: String = "http://localhost:8999/es/index/rws"
     var keywords = new java.util.ArrayList[IndexObjEntity]()
     kvs.foreach { obj =>
       if (cnt == 20) {

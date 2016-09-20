@@ -152,6 +152,8 @@ object HttpClientUtil {
       if (jStirng != null)
         entity = new StringEntity(jStirng, "utf-8")
     } else {
+      if (jStirng != null)
+        entity = new StringEntity(jStirng, "utf-8")
       if (formparams != null && !formparams.isEmpty)
         entity = new UrlEncodedFormEntity(formparams, "utf-8")
     }
