@@ -18,6 +18,7 @@ import search.solr.client.index.manager.impl.DefaultIndexManager._
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters.asJavaListConverter
+import scala.collection.mutable
 import scala.reflect.ClassTag
 
 
@@ -344,6 +345,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
   /**
     * 多线程的方式添加文档到ES
+    *
     * @param indexName
     * @param typeName
     * @param docs
@@ -411,7 +413,30 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     EsClient.boolMustQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, keyWords)
   }
 
+  override def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String]): Array[java.util.Map[String, Object]] = {
+    EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts, qb = null)
+  }
 
+  /**
+    * 查询关键词 query 并根据指定字段进行衰减，如果有过滤器或者排序加入相关规则
+    *
+    * @param indexName
+    * @param typeName
+    * @param from
+    * @param to
+    * @param filter
+    * @param sorts
+    * @param query 查询关键词
+    * @param decayField
+    * @param fields
+    * @return
+    */
+  override def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, fields: String*): Array[java.util.Map[String, Object]] = {
+    EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
+      Query.functionScoreQuery(Function.gaussDecayFunction(decayField, "120w", "5w", 0.3)
+        , scoreMode = "multiply", boostMode = "multiply",
+        Query.multiMatchQuery(query, "or", 0.3f, null, "60%", queryType = "best", fields: _*)))
+  }
 }
 
 private[search] class EsIndexRunner(indexName: String, typeName: String, conf: EsClientConf, start: Int, rows: Int) extends Runnable with Logging {

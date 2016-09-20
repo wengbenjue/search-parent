@@ -216,7 +216,7 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     val query = new BasicDBObject()
     val contitionDB = new BasicDBObject()
     var calendar = Calendar.getInstance()
-    calendar.add(Calendar.MONTH, -1);//得到前1个月
+    calendar.add(Calendar.MONTH, -1)//得到前1个月
     val  formNow1Month = calendar.getTime()
     contitionDB.append("$gte", Util.dataFomatStringYYYY_MM_dd_HH_mm_ss(formNow1Month))
     query.put("dt",contitionDB)

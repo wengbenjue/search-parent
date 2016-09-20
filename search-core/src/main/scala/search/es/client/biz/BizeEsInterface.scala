@@ -3,7 +3,7 @@ package search.es.client.biz
 import java.io.{FileInputStream, FileOutputStream, IOException}
 import java.net.{URI, URLEncoder}
 import java.util
-import java.util.UUID
+import java.util.{Calendar, UUID}
 import javax.servlet.http.HttpServletRequest
 
 import com.alibaba.fastjson.{JSON, JSONArray, JSONObject}
@@ -36,7 +36,7 @@ import search.common.entity.searchinterface.NiNi
 import search.solr.client.{SolrClient, SolrClientConf}
 
 import scala.collection.JavaConversions._
-import scala.collection.{JavaConversions, JavaConverters}
+import scala.collection.{JavaConversions, JavaConverters, mutable}
 import scala.util.control.Breaks._
 
 /**
@@ -1603,7 +1603,58 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     // testTrieNode()
 
-    testIndexNewsFromMongo()
+    //testIndexNewsFromMongo()
+
+   // testSearchQbWithFilterAndSorts()
+    testSearchQbWithFilterAndSortsWithDecayAndSearch
+  }
+
+  def testSearchQbWithFilterAndSorts() = {
+    val filter = new mutable.HashMap[String,(Object,Boolean)]()
+    //filter("title") = ("苹果",false)
+    var calendar = Calendar.getInstance()
+    calendar.add(Calendar.DATE, -1)
+    calendar.set(Calendar.MILLISECOND, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.HOUR, 0)
+    val lowlerBounder = calendar.getTime
+    val upperBounder = calendar.getTime
+    filter("create_on") = ((lowlerBounder,null),true)
+   // filter("create_on") = ((null,upperBounder),true)
+    val result = client.searchQbWithFilterAndSorts(newsIndexName,newsTypName,0,10,filter,sorts = null)
+    println(result)
+  }
+
+  def testSearchQbWithFilterAndSortsWithDecayAndSearch() = {
+    val query = "苹果"
+    val title = "title^6"
+    val auth = "auth^3"
+    val summary = "summary"
+    val topics = "topics^5"
+    val events = "events^5"
+    val companys = "companys^5"
+    val decayField = "create_on"
+
+
+    var filter = new mutable.HashMap[String,(Object,Boolean)]()
+    //filter("title") = ("苹果",false)
+    var calendar = Calendar.getInstance()
+    calendar.add(Calendar.DATE, -10)
+    calendar.set(Calendar.MILLISECOND, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.HOUR, 0)
+    val lowlerBounder = calendar.getTime
+    val upperBounder = calendar.getTime
+    filter("create_on") = ((lowlerBounder,null),true)
+    // filter("create_on") = ((null,upperBounder),true)
+    var sorts = new mutable.HashMap[String,String]()
+    sorts("create_on") = "desc"
+    sorts = null
+
+    val result = client.searchQbWithFilterAndSorts(newsIndexName,newsTypName,
+      0,10,filter,sorts,query,decayField,
+      title,auth,summary,topics,events,companys)
+    println(result)
   }
 
 

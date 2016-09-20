@@ -17,7 +17,7 @@ import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.{SearchResponse, SearchType}
 import org.elasticsearch.action.update.{UpdateRequestBuilder, UpdateResponse}
 import org.elasticsearch.client.{Client, Requests}
-import org.elasticsearch.client.transport.{ TransportClient}
+import org.elasticsearch.client.transport.{TransportClient}
 import org.elasticsearch.common.lucene.search.function.{CombineFunction}
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
@@ -96,6 +96,10 @@ private[search] trait EsClient extends EsConfiguration {
   def wildcardQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, wildcard: String): Array[java.util.Map[String, Object]]
 
   def fuzzyQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, fuzzy: String): Array[java.util.Map[String, Object]]
+
+  def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String]): Array[java.util.Map[String, Object]]
+
+  def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String],query: String,decayField: String,fields: String*): Array[java.util.Map[String, Object]]
 
 }
 
@@ -388,9 +392,6 @@ private[search] object EsClient extends EsConfiguration with Logging {
   }
 
 
-
-
-
   /**
     * update index by document id
     *
@@ -441,7 +442,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
     query(client, indexName, typeName, from, to, sorts = null, qb)
   }
 
-  def query(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: Map[String, String], qb: QueryBuilder): SearchHits = {
+  def query(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder): SearchHits = {
     try {
       val search = client.
         prepareSearch(indexName)
@@ -469,7 +470,22 @@ private[search] object EsClient extends EsConfiguration with Logging {
 
 
   def queryAsMap(client: Client, indexName: String, typeName: String, from: Int, to: Int, qb: QueryBuilder): Array[java.util.Map[String, Object]] = {
-    val allHits = query(client, indexName, typeName, from, to, qb)
+    queryAsMap(client, indexName, typeName, from, to, sorts = null, qb)
+  }
+
+  /**
+    *
+    * @param client
+    * @param indexName
+    * @param typeName
+    * @param from
+    * @param to
+    * @param sorts
+    * @param qb
+    * @return
+    */
+  def queryAsMap(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder): Array[java.util.Map[String, Object]] = {
+    val allHits = query(client, indexName, typeName, from, to, sorts, qb)
     val hits = allHits.getHits
     if (hits == null || hits.size == 0) return null
     val result = hits.map { hit =>
@@ -520,6 +536,45 @@ private[search] object EsClient extends EsConfiguration with Logging {
   def boolMustQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
     val qb: QueryBuilder = QueryBuilders.boolQuery.must(QueryBuilders.termQuery(field, keyWords)).filter(QueryBuilders.termQuery(field, keyWords))
     queryAsMap(client, indexName, typeName, from, to, qb)
+  }
+
+
+  /**
+    *
+    * @param client
+    * @param indexName
+    * @param typeName
+    * @param from
+    * @param to
+    * @param filter Map((过滤字段，（过滤值，是否为范围过滤）)) true代表范围过滤
+    * @param sorts
+    * @param qb
+    * @return
+    */
+  def searchQbWithFilterAndSorts(client: Client, indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder): Array[java.util.Map[String, Object]] = {
+    val boolQuery = QueryBuilders.boolQuery
+    if (qb != null) boolQuery.must(qb)
+    if (filter != null && !filter.isEmpty) {
+      filter.foreach { f =>
+        val field = f._1
+        val value = f._2._1
+        val isRange = f._2._2
+        if (!isRange) {
+          boolQuery.filter(QueryBuilders.termQuery(field, value))
+        } else {
+          val rangeBounders = value.asInstanceOf[(_, _)]
+          if (rangeBounders != null) {
+            val lowerBounder = rangeBounders._1
+            val upperBounder = rangeBounders._2
+            val rangeQuery = QueryBuilders.rangeQuery(field)
+            if (lowerBounder != null) rangeQuery.gt(lowerBounder)
+            if (upperBounder != null) rangeQuery.lt(upperBounder)
+            if (lowerBounder != null || upperBounder != null) boolQuery.filter(rangeQuery)
+          }
+        }
+      }
+    }
+    queryAsMap(client, indexName, typeName, from, to, sorts, boolQuery)
   }
 
 
@@ -676,25 +731,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
 
 
   private def functionScoreQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, scoreFunctionBuilder: ScoreFunctionBuilder, scoreMode: String = "multiply", boostMode: String = "multiply", qb: QueryBuilder): Array[java.util.Map[String, Object]] = {
-    val functionQuery = QueryBuilders.functionScoreQuery(qb)
-    functionQuery.scoreMode("multiply")
-    if (scoreMode != null) functionQuery.scoreMode(scoreMode)
-    functionQuery.boostMode(CombineFunction.MULT)
-    if (boostMode.trim.equalsIgnoreCase("multiply")) {
-      functionQuery.boostMode(CombineFunction.MULT)
-    } else if (boostMode.trim.equalsIgnoreCase("replace")) {
-      functionQuery.boostMode(CombineFunction.REPLACE)
-    } else if (boostMode.trim.equalsIgnoreCase("sum")) {
-      functionQuery.boostMode(CombineFunction.SUM)
-    } else if (boostMode.trim.equalsIgnoreCase("avg")) {
-      functionQuery.boostMode(CombineFunction.AVG)
-    } else if (boostMode.trim.equalsIgnoreCase("min")) {
-      functionQuery.boostMode(CombineFunction.MIN)
-    } else if (boostMode.trim.equalsIgnoreCase("max")) {
-      functionQuery.boostMode(CombineFunction.MAX)
-    }
-    if (scoreFunctionBuilder == null) return null
-    functionQuery.add(scoreFunctionBuilder)
+    val functionQuery = Query.functionScoreQuery(scoreFunctionBuilder, scoreMode, boostMode, qb)
     queryAsMap(client, indexName, typeName, from, to, functionQuery)
   }
 

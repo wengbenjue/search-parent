@@ -1,11 +1,35 @@
 package search.es.client
 
-import org.elasticsearch.index.query.{MatchQueryBuilder, MultiMatchQueryBuilder, QueryBuilders}
+import org.elasticsearch.common.lucene.search.function.CombineFunction
+import org.elasticsearch.index.query.functionscore.{FunctionScoreQueryBuilder, ScoreFunctionBuilder}
+import org.elasticsearch.index.query.{MatchQueryBuilder, MultiMatchQueryBuilder, QueryBuilder, QueryBuilders}
 
 /**
   * Created by soledede.weng on 2016/9/19.
   */
 private[search] object Query {
+
+  def functionScoreQuery(scoreFunctionBuilder: ScoreFunctionBuilder, scoreMode: String = "multiply", boostMode: String = "multiply", qb: QueryBuilder): FunctionScoreQueryBuilder = {
+    val functionQuery = QueryBuilders.functionScoreQuery(qb)
+    functionQuery.scoreMode("multiply")
+    if (scoreMode != null) functionQuery.scoreMode(scoreMode)
+    functionQuery.boostMode(CombineFunction.MULT)
+    if (boostMode.trim.equalsIgnoreCase("multiply")) {
+      functionQuery.boostMode(CombineFunction.MULT)
+    } else if (boostMode.trim.equalsIgnoreCase("replace")) {
+      functionQuery.boostMode(CombineFunction.REPLACE)
+    } else if (boostMode.trim.equalsIgnoreCase("sum")) {
+      functionQuery.boostMode(CombineFunction.SUM)
+    } else if (boostMode.trim.equalsIgnoreCase("avg")) {
+      functionQuery.boostMode(CombineFunction.AVG)
+    } else if (boostMode.trim.equalsIgnoreCase("min")) {
+      functionQuery.boostMode(CombineFunction.MIN)
+    } else if (boostMode.trim.equalsIgnoreCase("max")) {
+      functionQuery.boostMode(CombineFunction.MAX)
+    }
+    if (scoreFunctionBuilder == null) return null
+    functionQuery.add(scoreFunctionBuilder)
+  }
 
 
   /**

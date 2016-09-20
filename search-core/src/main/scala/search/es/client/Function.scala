@@ -17,7 +17,7 @@ private[search] object Function extends Logging {
     *
     * @param field
     * @param scale  衰减的最大范围
-    * @param offset 衰减的间隔
+    * @param offset 衰减开始
     * @param decay  衰减速率
     * @return
     */
