@@ -23,6 +23,7 @@ import search.common.cache.pagecache.ESSearchPageCache
 import search.common.clock.CloudTimerWorker
 import search.common.config.EsConfiguration
 import search.common.entity.bizesinterface.{CompanyStock, Industry, _}
+import search.common.entity.news.News
 import search.common.entity.state.ProcessState
 import search.common.http.HttpClientUtil
 import search.common.listener.graph.{Request, UpdateState, WarmCache}
@@ -547,6 +548,19 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     Util.caculateCostTime {
       indexDataWithRw(keywords)
     }
+  }
+
+  def wrapIndexNews(news: util.Collection[News]): NiNi = {
+    Util.caculateCostTime {
+      indexNews(news)
+    }
+  }
+
+  def indexNews(news: util.Collection[News]): Boolean = {
+    if (news != null && news.size() > 0) {
+      val newsMapList = news.map(Util.convertBean(_))
+      client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
+    } else false
   }
 
   def indexByKeywords(sessionId: String, originQuery: String, keywords: java.util.Collection[String]): NiNi = {
@@ -1605,12 +1619,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     //testIndexNewsFromMongo()
 
-   // testSearchQbWithFilterAndSorts()
+    // testSearchQbWithFilterAndSorts()
     testSearchQbWithFilterAndSortsWithDecayAndSearch
   }
 
   def testSearchQbWithFilterAndSorts() = {
-    val filter = new mutable.HashMap[String,(Object,Boolean)]()
+    val filter = new mutable.HashMap[String, (Object, Boolean)]()
     //filter("title") = ("苹果",false)
     var calendar = Calendar.getInstance()
     calendar.add(Calendar.DATE, -1)
@@ -1619,9 +1633,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     calendar.set(Calendar.HOUR, 0)
     val lowlerBounder = calendar.getTime
     val upperBounder = calendar.getTime
-    filter("create_on") = ((lowlerBounder,null),true)
-   // filter("create_on") = ((null,upperBounder),true)
-    val result = client.searchQbWithFilterAndSorts(newsIndexName,newsTypName,0,10,filter,sorts = null)
+    filter("create_on") = ((lowlerBounder, null), true)
+    // filter("create_on") = ((null,upperBounder),true)
+    val result = client.searchQbWithFilterAndSorts(newsIndexName, newsTypName, 0, 10, filter, sorts = null)
     println(result)
   }
 
@@ -1636,7 +1650,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     val decayField = "create_on"
 
 
-    var filter = new mutable.HashMap[String,(Object,Boolean)]()
+    var filter = new mutable.HashMap[String, (Object, Boolean)]()
     //filter("title") = ("苹果",false)
     var calendar = Calendar.getInstance()
     calendar.add(Calendar.DATE, -10)
@@ -1645,15 +1659,15 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     calendar.set(Calendar.HOUR, 0)
     val lowlerBounder = calendar.getTime
     val upperBounder = calendar.getTime
-    filter("create_on") = ((lowlerBounder,null),true)
+    filter("create_on") = ((lowlerBounder, null), true)
     // filter("create_on") = ((null,upperBounder),true)
-    var sorts = new mutable.HashMap[String,String]()
+    var sorts = new mutable.HashMap[String, String]()
     sorts("create_on") = "desc"
     sorts = null
 
-    val result = client.searchQbWithFilterAndSorts(newsIndexName,newsTypName,
-      0,10,filter,sorts,query,decayField,
-      title,auth,summary,topics,events,companys)
+    val result = client.searchQbWithFilterAndSorts(newsIndexName, newsTypName,
+      0, 10, filter, sorts, query, decayField,
+      title, auth, summary, topics, events, companys)
     println(result)
   }
 

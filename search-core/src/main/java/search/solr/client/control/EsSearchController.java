@@ -9,6 +9,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import search.common.entity.bizesinterface.GraphNodes;
 import search.common.entity.bizesinterface.IndexObjEntity;
 import search.common.entity.bizesinterface.QueryEntityWithCnt;
+import search.common.entity.news.News;
 import search.es.client.biz.BizeEsInterface;
 import search.common.entity.searchinterface.NiNi;
 import search.common.entity.searchinterface.parameter.*;
@@ -26,6 +27,18 @@ import java.util.Set;
 @RestController
 @RequestMapping("/es")
 public class EsSearchController {
+
+
+    @RequestMapping(value = "/index/news", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi indexNews(final Collection<News> news) {
+        if (news == null) {
+            NiNi nini = new NiNi();
+            nini.setCode(-1);
+            nini.setMsg("news is null!");
+            return nini;
+        } else
+            return BizeEsInterface.wrapIndexNews(news);
+    }
 
 
     //search and filter by keywords

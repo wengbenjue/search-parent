@@ -14,6 +14,7 @@ public class News {
     private String summary; //摘要
     private Date createOn; //创建时间
     private Integer popularity;//热度
+    private String url; //新闻url
     private Collection<String> companys; //相关公司
     private Collection<String> events; //相关事件
     private Collection<String> topics; //相关主题
@@ -21,13 +22,14 @@ public class News {
     public News() {
     }
 
-    public News(String id, String title, String auth, String summary, Date createOn, Integer popularity, Collection<String> companys, Collection<String> events, Collection<String> topics) {
+    public News(String id, String title, String auth, String summary, Date createOn, Integer popularity, String url, Collection<String> companys, Collection<String> events, Collection<String> topics) {
         this.id = id;
         this.title = title;
         this.auth = auth;
         this.summary = summary;
         this.createOn = createOn;
         this.popularity = popularity;
+        this.url = url;
         this.companys = companys;
         this.events = events;
         this.topics = topics;
@@ -103,5 +105,13 @@ public class News {
 
     public void setTopics(Collection<String> topics) {
         this.topics = topics;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 }

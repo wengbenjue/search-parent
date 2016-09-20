@@ -30,6 +30,10 @@ private[search] object NewsUtil extends Logging{
           if (summary != null && !"".equalsIgnoreCase(summary)) map.put("summary", summary)
           val createOn = if (dbObj.get("dt") != null) dbObj.get("dt").toString else null
           if (createOn != null && !"".equalsIgnoreCase(createOn)) map.put("create_on", Util.stringToDate(createOn))
+
+          val url = if (dbObj.get("url") != null) dbObj.get("url").toString.trim else null
+          if (url != null && !"".equalsIgnoreCase(url)) map.put("url", url)
+
           val companys = if (dbObj.get("asw") != null) dbObj.get("asw").asInstanceOf[BasicDBList] else null
           if (companys != null && companys.size() > 0) {
             val multFieldList = new util.ArrayList[String]()

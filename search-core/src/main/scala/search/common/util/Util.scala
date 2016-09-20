@@ -1,5 +1,6 @@
 package search.common.util
 
+import java.beans.Introspector
 import java.io._
 import java.net.{Inet4Address, InetAddress, NetworkInterface}
 import java.sql.Timestamp
@@ -65,6 +66,28 @@ private[search] object Util extends Logging {
     date
   }
 
+
+  def convertBean(bean: Object): java.util.Map[String,Object] = {
+    val clazz = bean.getClass()
+    val returnMap = new java.util.HashMap[String, Object]()
+    val beanInfo = Introspector.getBeanInfo(clazz)
+
+    val propertyDescriptors = beanInfo.getPropertyDescriptors()
+    for (i <- 0 until propertyDescriptors.length) {
+      val descriptor = propertyDescriptors(i)
+      val propertyName = descriptor.getName()
+      if (!propertyName.equals("class")) {
+        val readMethod = descriptor.getReadMethod()
+        val result = readMethod.invoke(bean, new Object)
+        if (result != null) {
+          returnMap.put(propertyName, result)
+        } else {
+          returnMap.put(propertyName, "")
+        }
+      }
+    }
+    return returnMap
+  }
 
   // for clone
   def deepClone(src: Object): Object = {
