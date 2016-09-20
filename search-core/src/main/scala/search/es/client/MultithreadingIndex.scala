@@ -83,6 +83,7 @@ private[search] class MultithreadingIndex() extends Logging {
         }
         doc.remove("id")
         doc.remove("_id")
+        logInfo(s"id ${id} indexed.")
         if (id == null) request.add(Requests.indexRequest(indexName).`type`(typeName).source(doc))
         else request.add(Requests.indexRequest(indexName).`type`(typeName).id(id.toString.trim).source(doc))
         if (cnt > 3000 && cnt % 3000 == 0) {

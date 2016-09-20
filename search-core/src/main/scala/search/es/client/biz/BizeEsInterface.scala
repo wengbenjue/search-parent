@@ -276,6 +276,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         }
         if (comSim != null && comCode != null) {
           LocalCache.baseStockCache(comSim) = new BaseStock(comSim, comCode)
+          LocalCache.codeToCompanyNameCache(comCode) = comSim
         }
 
       }
@@ -555,9 +556,13 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
+  /**
+    * 多线程建立新闻索引
+    */
   def indexNewsFromMongo() = {
     val news = conf.mongoDataManager.findHotNews()
     val newsMapList = NewsUtil.newsToMapCollection(news)
+    if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
   }
 
 
@@ -1596,7 +1601,15 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     // testAddBloomFilterFromGraph
     //testFilterGraphNodes
 
-    testTrieNode()
+    // testTrieNode()
+
+    testIndexNewsFromMongo()
+  }
+
+
+  def testIndexNewsFromMongo() = {
+    indexNewsFromMongo
+    Thread.currentThread().suspend()
   }
 
   def testTrieNode() = {

@@ -59,6 +59,13 @@ private[search] object Util extends Logging {
     date
   }
 
+  def stringToDate(dateString: String, formatString: String = "yyyy-MM-dd HH:mm:ss") = {
+    val format = new SimpleDateFormat(formatString)
+    val date = format.parse(dateString)
+    date
+  }
+
+
   // for clone
   def deepClone(src: Object): Object = {
     var o: Object = null
@@ -78,7 +85,6 @@ private[search] object Util extends Logging {
     }
     return o
   }
-
 
 
   def convertDateFormat(time: java.util.Date): String = {
@@ -383,7 +389,7 @@ private[search] object Util extends Logging {
     go(0, ds.size - 1)
   }*/
 
-  def regexExtract(input: String, regex: String, group: Int=0): Object = {
+  def regexExtract(input: String, regex: String, group: Int = 0): Object = {
     if (regex == null) {
       return input
     }
@@ -437,20 +443,20 @@ object testUtil {
   def main(args: Array[String]) {
     // testTime
     //testNumber
-      //testRegex
+    //testRegex
     testFormat()
   }
 
 
   def testFormat() = {
-    val result =Util.dataFomatStringYMD(new Date())
+    val result = Util.dataFomatStringYMD(new Date())
     println(result)
-    println("20160919">"20150920")
+    println("20160919" > "20150920")
   }
 
   def testNumber = {
     println(Util.isNumeric("43345s"))
-    println("is english:"+Util.isEnglish("LiuDeHUA"))
+    println("is english:" + Util.isEnglish("LiuDeHUA"))
   }
 
   def testTime = {
@@ -462,6 +468,6 @@ object testUtil {
   def testRegex() = {
     val input = "A布局dg生态sd4"
     val regex = "(.*?)布局(.*?)生态(.*?)"
-    println(Util.regex(input,regex))
+    println(Util.regex(input, regex))
   }
 }
