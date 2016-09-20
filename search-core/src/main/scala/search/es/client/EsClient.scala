@@ -3,7 +3,7 @@ package search.es.client
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.alibaba.fastjson.{JSON, JSONObject}
+import com.alibaba.fastjson.{JSON}
 import com.google.common.collect.Maps
 import org.elasticsearch.action.ActionFuture
 import org.elasticsearch.action.admin.indices.alias.Alias
@@ -17,17 +17,16 @@ import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.{SearchResponse, SearchType}
 import org.elasticsearch.action.update.{UpdateRequestBuilder, UpdateResponse}
 import org.elasticsearch.client.{Client, Requests}
-import org.elasticsearch.client.transport.{NoNodeAvailableException, TransportClient}
-import org.elasticsearch.common.lucene.search.function.{CombineFunction, FieldValueFactorFunction}
+import org.elasticsearch.client.transport.{ TransportClient}
+import org.elasticsearch.common.lucene.search.function.{CombineFunction}
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
 import org.elasticsearch.index.query._
-import org.elasticsearch.index.query.functionscore.fieldvaluefactor.FieldValueFactorFunctionBuilder
 import org.elasticsearch.index.query.functionscore.{ScoreFunctionBuilder, ScoreFunctionBuilders}
 import org.elasticsearch.plugin.deletebyquery.DeleteByQueryPlugin
 import org.elasticsearch.search.sort.SortOrder
-import org.elasticsearch.search.{SearchHit, SearchHits}
+import org.elasticsearch.search.{SearchHits}
 import search.common.config.EsConfiguration
 import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.util.Logging
@@ -67,8 +66,9 @@ private[search] trait EsClient extends EsConfiguration {
 
   def addDocument[T: ClassTag](indexName: String, typeName: String, id: String, doc: T): Boolean
 
-  def addDocuments(indexName: String, typeName: String, docs: java.util.List[java.util.Map[String, Object]]): Boolean
+  def addDocuments(indexName: String, typeName: String, docs: java.util.Collection[java.util.Map[String, Object]]): Boolean
 
+  def addDocumentsWithMultiThreading(indexName: String, typeName: String, docs: java.util.Collection[java.util.Map[String, Object]]): Boolean
 
   def matchPhraseQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]]
 
@@ -340,7 +340,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @param typeName
     * @param docs
     */
-  def bulkPostDocument(client: Client, indexName: String, typeName: String, docs: java.util.List[java.util.Map[String, Object]]): Boolean = {
+  def bulkPostDocument(client: Client, indexName: String, typeName: String, docs: java.util.Collection[java.util.Map[String, Object]]): Boolean = {
 
     import scala.collection.JavaConversions._
     try {
@@ -386,6 +386,9 @@ private[search] object EsClient extends EsConfiguration with Logging {
         false
     }
   }
+
+
+
 
 
   /**
@@ -887,3 +890,4 @@ private[search] object EsClient extends EsConfiguration with Logging {
 
 
 }
+

@@ -555,6 +555,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
+  def indexNewsFromMongo() = {
+    val news = conf.mongoDataManager.findHotNews()
+    val newsMapList = NewsUtil.newsToMapCollection(news)
+  }
+
+
   def wrapShowStateAndGetByQuery(req: HttpServletRequest, query: String, showLevel: Integer, needSearch: Int): NiNi = {
     Util.caculateCostTime {
       Util.fluidControl({
@@ -798,10 +804,15 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
   }
 
+
   /**
+    * 查询图谱接口
     *
+    * @param sessionId
     * @param query
+    * @param showLevel
     * @param reSearch
+    * @param needSearch
     * @return
     */
   def queryBestKeyWord(sessionId: String, query: String, showLevel: Integer, reSearch: Boolean = false, needSearch: Int): AnyRef = {
@@ -905,7 +916,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     def totalRelevantTargetKeyWord(): Unit = {
       //pinyinFieldWithBoost,  companyFieldWithBoost, companyEnFieldWithBoost, word2vecWithBoost, word2vecRwWithBoost, comStockCodeFieldWithBoost, pinyinFieldWithBoost,relevantKwsField_kwWithBoost,keywordStringFieldWithBoost,
-      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword, keywordFieldWithBoost,relevantKwsFieldWithBoost,relevantKwsField_kwWithBoost)
+      val matchQueryResult1 = client.multiMatchQuery(graphIndexName, graphTypName, 0, 1, keyword, keywordFieldWithBoost, relevantKwsFieldWithBoost, relevantKwsField_kwWithBoost)
       //val matchQueryResult1 = client.matchQuery(graphIndexName, graphTypName, 0, 1, keywordField, keyword )
       if (matchQueryResult1 != null && matchQueryResult1.length > 0) {
         val doc = matchQueryResult1.head
@@ -1410,11 +1421,6 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     delAllData()
   }
 
-  def wrapDumpIndexToDisk(): NiNi = {
-    Util.caculateCostTime {
-      dumpIndexToDisk()
-    }
-  }
 
   def coreNlp(text: String, resultType: Int = CoreNLPSegmentType.WORDCUT): util.Set[String] = {
     val wordSet = new util.HashSet[String]()
@@ -1553,20 +1559,6 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //val url = "http://54.222.222.172:8999/es/search/keywords/?keyword="
     //requestHttp(keyword, warmUrl)
     logInfo(s"keyword: ${keyword} warmed!")
-  }
-
-  def dumpIndexToDisk(): String = {
-    val cnt = BizeEsInterface.count().toInt
-    val result = BizeEsInterface.matchAllQueryWithCount(0, cnt)
-    val fOut = new FileOutputStream(dumpIndexPath)
-    val ser = JavaSerializer(new SolrClientConf()).newInstance()
-    val outputStrem = ser.serializeStream(fOut)
-    outputStrem.writeObject(result)
-    outputStrem.flush()
-    outputStrem.close()
-    val resultString = s"dump index to dis successful,size:${cnt},local path:${dumpIndexPath}"
-    println(resultString)
-    resultString
   }
 
 

@@ -29,6 +29,8 @@ public class MongoTableConstants extends Constants{
 
     public static final String NEWS_KEYWORD_DICT = "news.keyword_dict";
 
+    public static final String NEWS_NEWS_TOPIC = "news.news_topic";
+
     public static final String SOUGOU_RELATE_WORDS = "synonym_words.sougou_relate_words";
 
 

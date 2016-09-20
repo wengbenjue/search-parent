@@ -14,6 +14,7 @@ import search.common.entity.help.IndexHelpEntity
 import search.common.listener.graph.IndexGraphNlp
 import search.common.util.{Logging, Util}
 import search.es.client.util.EsClientConf
+import search.solr.client.index.manager.impl.DefaultIndexManager._
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters.asJavaListConverter
@@ -39,8 +40,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   val indexRunnerThreadPool = Util.newDaemonFixedThreadPool(currentThreadsNum, "index_runner_thread_excutor")
   var indexQueue: LinkedBlockingQueue[IndexHelpEntity] = new LinkedBlockingQueue[IndexHelpEntity]()
 
-  final val  mapper = new ObjectMapper()
-
+  final val mapper = new ObjectMapper()
 
 
   override def count(indexName: String, typeName: String): Long = {
@@ -325,8 +325,8 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
 
-  override def addDocument[T: ClassTag](indexName: String, typeName: String, id: String,doc: T): Boolean = {
-    EsClient.postDocument(EsClient.getClientFromPool(), indexName, typeName,id,  mapper.writeValueAsBytes(doc))
+  override def addDocument[T: ClassTag](indexName: String, typeName: String, id: String, doc: T): Boolean = {
+    EsClient.postDocument(EsClient.getClientFromPool(), indexName, typeName, id, mapper.writeValueAsBytes(doc))
 
   }
 
@@ -337,8 +337,21 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
 
-  override def addDocuments(indexName: String, typeName: String, docs: java.util.List[java.util.Map[String, Object]]): Boolean = {
+  override def addDocuments(indexName: String, typeName: String, docs: java.util.Collection[java.util.Map[String, Object]]): Boolean = {
     EsClient.bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
+  }
+
+
+  /**
+    * 多线程的方式添加文档到ES
+    * @param indexName
+    * @param typeName
+    * @param docs
+    * @return
+    */
+  override def addDocumentsWithMultiThreading(indexName: String, typeName: String, docs: java.util.Collection[java.util.Map[String, Object]]): Boolean = {
+    DefaultEsClientImpl.indexProcessThreadPool.execute(new IndexManageProcessrRunner(indexName, typeName, docs))
+    true
   }
 
   override def deleteIndex(indexName: String): Boolean = {
@@ -428,8 +441,26 @@ private[search] class EsIndexRunner(indexName: String, typeName: String, conf: E
   }
 }
 
+class IndexManageProcessrRunner(indexName: String, typeName: String, docs: java.util.Collection[java.util.Map[String, Object]]) extends Runnable {
+  override def run(): Unit = {
+    new MultithreadingIndex().bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
+  }
+}
 
-object DefaultEsClientImpl {
+
+object DefaultEsClientImpl extends EsConfiguration {
+
+
+  var coreThreadsNumber = consumerCoreThreadsNum
+
+
+  var currentThreadsNum = Util.inferCores() * coreThreadsNumber
+
+
+  if (consumerThreadsNum > 0) currentThreadsNum = consumerThreadsNum
+
+
+  val indexProcessThreadPool = Util.newDaemonFixedThreadPool(currentThreadsNum, "index_process_thread_excutor_es")
 
 
   def main(args: Array[String]) {

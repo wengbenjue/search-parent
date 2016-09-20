@@ -12,6 +12,7 @@ import search.common.entity.bizesinterface.QueryEntityWithCnt;
 import search.es.client.biz.BizeEsInterface;
 import search.common.entity.searchinterface.NiNi;
 import search.common.entity.searchinterface.parameter.*;
+import search.es.client.biz.Wraps;
 import search.solr.client.searchInterface.SearchInterface;
 
 import javax.servlet.http.HttpServletRequest;
@@ -169,7 +170,7 @@ public class EsSearchController {
 
     @RequestMapping(value = "/index/dump", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi wrapDumpIndexToDisk() {
-        NiNi result = BizeEsInterface.wrapDumpIndexToDisk();
+        NiNi result = Wraps.wrapDumpIndexToDisk();
         return result;
 
     }

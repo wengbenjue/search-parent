@@ -1,7 +1,7 @@
 package search.es.client.util
 
 import java.util
-import java.util.Date
+import java.util.{Calendar, Date}
 
 import com.mongodb._
 import org.bson.types.ObjectId
@@ -15,6 +15,7 @@ import scala.io.Source
   * Created by soledede.weng on 2016/7/27.
   */
 private[search] class DataManager(conf: EsClientConf) extends MongoBase {
+
 
 
   override def getCollection: DBCollection = {
@@ -53,6 +54,11 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
   //news.sens_industry
   def getSensIndustryCollection: DBCollection = {
     getCollection(MongoTableConstants.NEWS_SENS_INDUSTRY)
+  }
+
+  //news.news_topic
+  def getNewsTopicCollection: DBCollection = {
+    getCollection(MongoTableConstants.NEWS_NEWS_TOPIC)
   }
 
 
@@ -157,6 +163,7 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     var dbCurson: DBCursor = null
     if (!loadAll) {
       val contitionDB = new BasicDBObject()
+
        contitionDB.append("$gte", Util.dataFomatStringYMD(new Date()))
       //contitionDB.append("$gte", "20160912")
       query.put("date",contitionDB)
@@ -191,6 +198,29 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     projection.put("w", Integer.valueOf(1))
     val query = new BasicDBObject()
     val dbCurson = getSensIndustryCollection.find(query, projection)
+    if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
+    val result = dbCurson.toArray
+    result
+  }
+
+  def findHotNews(): java.util.List[DBObject] = {
+    val projection = new BasicDBObject()
+    projection.put("uid", Integer.valueOf(1))
+    projection.put("t", Integer.valueOf(1))
+    projection.put("auth", Integer.valueOf(1))
+    projection.put("dt", Integer.valueOf(1))
+    projection.put("sum", Integer.valueOf(1))
+    projection.put("rule", Integer.valueOf(1))
+    projection.put("asw", Integer.valueOf(1))
+    projection.put("topic", Integer.valueOf(1))
+    val query = new BasicDBObject()
+    val contitionDB = new BasicDBObject()
+    var calendar = Calendar.getInstance()
+    calendar.add(Calendar.MONTH, -1);//得到前1个月
+    val  formNow1Month = calendar.getTime()
+    contitionDB.append("$gte", Util.dataFomatStringYYYY_MM_dd_HH_mm_ss(formNow1Month))
+    query.put("dt",contitionDB)
+    val dbCurson = getNewsTopicCollection.find(query, projection)
     if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
     val result = dbCurson.toArray
     result
@@ -388,7 +418,15 @@ private[search] object DataManager {
     //testSaveOrUpdate
     //testGetDicFromNewsKeywordDict()
     //testGetSynonmDicFromSynonymWords()
-    testFindTopicHot()
+    //testFindTopicHot()
+    testFindHotNews()
+  }
+
+  def testFindHotNews() = {
+    val dm = new DataManager(new EsClientConf())
+    val result = dm.findHotNews()
+    println(result)
+
   }
 
   def testFindTopicHot() = {
