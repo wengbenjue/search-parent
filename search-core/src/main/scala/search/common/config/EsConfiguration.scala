@@ -47,6 +47,9 @@ lazy val switchCrawler = Try(esConfig.getString("switch.crawler")).getOrElse("of
 
   lazy val dumpIndexPath = Try(esConfig.getString("index.dumpPath")).getOrElse("D:/es_graph_index")
 
+  lazy val dumpDictionaryPath = Try(esConfig.getString("dump.dictionaryPath")).getOrElse("/home/soledede/searchclient/es_trie_dictionary")
+  lazy val dumpGraphDictionaryPath = Try(esConfig.getString("dump.graphDictionaryPath")).getOrElse("/home/soledede/searchclient/es_trie_graph_dictionary")
+
   lazy val fetchUrl = Try(esConfig.getString("api.url.crawler")).getOrElse("http://192.168.250.207:8010/api/graph?")
   lazy val graphUrl = Try(esConfig.getString("api.url.graph")).getOrElse("http://192.168.250.207:9000/api/graph/mgra?c=")
   lazy val warmUrl = Try(esConfig.getString("api.url.warmUrl")).getOrElse("http://54.222.222.172:8999/es/search/state/?keyword=")

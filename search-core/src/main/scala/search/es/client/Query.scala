@@ -43,7 +43,9 @@ private[search] object Query {
     * @param fields
     * @return
     */
-  def multiMatchQuery(query: Object, op: String, tieBreaker: Float, fuzziness: String, minimumShouldMatch: String, queryType: String, fields: String*): MultiMatchQueryBuilder = {
+  def multiMatchQuery(query: Object, op: String, tieBreaker: Float, fuzziness: String, minimumShouldMatch: String, queryType: String, fields: String*): QueryBuilder = {
+    if(query==null) return QueryBuilders.matchAllQuery()
+
     val multiMatchQuery = QueryBuilders.multiMatchQuery(query, fields: _*)
 
     if (fuzziness != null && !fuzziness.isEmpty) multiMatchQuery.fuzziness(fuzziness)
@@ -54,8 +56,7 @@ private[search] object Query {
     if (op != null && op.trim.equalsIgnoreCase("and")) {
       operator = MatchQueryBuilder.Operator.AND
     }
-    var tieBreakerF = tieBreaker
-    if (tieBreaker == null) tieBreakerF = 0.0f
+    if (tieBreaker != null && tieBreaker>=0)  multiMatchQuery.tieBreaker(tieBreaker)
 
     var searchType: MultiMatchQueryBuilder.Type = MultiMatchQueryBuilder.Type.BEST_FIELDS
     if (queryType != null && (queryType.trim.equalsIgnoreCase("most_fields") || queryType.trim.equalsIgnoreCase("mostFields") || queryType.trim.equalsIgnoreCase("most"))) {
@@ -69,7 +70,6 @@ private[search] object Query {
     }
     multiMatchQuery
       .operator(operator)
-      .tieBreaker(tieBreakerF)
       .`type`(searchType)
   }
 

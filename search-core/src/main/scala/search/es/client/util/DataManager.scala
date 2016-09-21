@@ -203,7 +203,7 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     result
   }
 
-  def findHotNews(): java.util.List[DBObject] = {
+  def findHotNews(formNowMonth: Date,toNowMonth: Date): java.util.List[DBObject] = {
     val projection = new BasicDBObject()
     projection.put("uid", Integer.valueOf(1))
     projection.put("t", Integer.valueOf(1))
@@ -215,11 +215,10 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     projection.put("topic", Integer.valueOf(1))
     val query = new BasicDBObject()
     val contitionDB = new BasicDBObject()
-    var calendar = Calendar.getInstance()
-    calendar.add(Calendar.MONTH, -1)//得到前1个月
-    val  formNow1Month = calendar.getTime()
-    contitionDB.append("$gte", Util.dataFomatStringYYYY_MM_dd_HH_mm_ss(formNow1Month))
+    contitionDB.append("$gte", Util.dataFomatStringYYYY_MM_dd_HH_mm_ss(formNowMonth))
+   contitionDB.append("$lte",Util.dataFomatStringYYYY_MM_dd_HH_mm_ss(toNowMonth))
     query.put("dt",contitionDB)
+
     val dbCurson = getNewsTopicCollection.find(query, projection)
     if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
     val result = dbCurson.toArray
@@ -424,7 +423,13 @@ private[search] object DataManager {
 
   def testFindHotNews() = {
     val dm = new DataManager(new EsClientConf())
-    val result = dm.findHotNews()
+    var calendar = Calendar.getInstance()
+    calendar.add(Calendar.MONTH, -6)//得到前6个月
+    val  formNowMonth = calendar.getTime()
+    calendar.setTime(new Date())
+    calendar.add(Calendar.MONTH, -5)//得到前5个月
+    val  toNowMonth = calendar.getTime()
+    val result = dm.findHotNews(formNowMonth,toNowMonth)
     println(result)
 
   }

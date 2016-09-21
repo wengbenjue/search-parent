@@ -3,7 +3,7 @@ package search.es.client.biz
 import java.io.{FileInputStream, FileOutputStream, IOException}
 import java.net.{URI, URLEncoder}
 import java.util
-import java.util.{Calendar, UUID}
+import java.util.{Calendar, Date, UUID}
 import javax.servlet.http.HttpServletRequest
 
 import com.alibaba.fastjson.{JSON, JSONArray, JSONObject}
@@ -23,7 +23,7 @@ import search.common.cache.pagecache.ESSearchPageCache
 import search.common.clock.CloudTimerWorker
 import search.common.config.EsConfiguration
 import search.common.entity.bizesinterface.{CompanyStock, Industry, _}
-import search.common.entity.news.News
+import search.common.entity.news.{News, NewsResult}
 import search.common.entity.state.ProcessState
 import search.common.http.HttpClientUtil
 import search.common.listener.graph.{Request, UpdateState, WarmCache}
@@ -47,6 +47,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   var conf: EsClientConf = _
   var client: EsClient = _
 
+  var calendar = Calendar.getInstance()
 
   val keywordFieldWithBoost = "keyword^8"
   val relevantKwsField_kwWithBoost = "relevant_kws.relevant_kws_kw^4"
@@ -81,18 +82,29 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val comStockCodeStringField = "stock_code_string"
   val companyEnField = "s_en"
 
+
+  //=========================================================================
+  //news
+  val title = "title^6"
+  val auth = "auth^3"
+  val summary = "summary"
+  val topics = "topics^5"
+  val events = "events^5"
+  val companys = "companys^5"
+  val decayField = "create_on"
+
+
   val timerPeriodSchedule = new CloudTimerWorker(name = "timerPeriodSchedule", interval = 1000 * 60 * 60 * 24, callback = () => loadEventRegexRule())
-  timerPeriodSchedule.startUp()
 
   val timerPeriodScheduleForBloomFilter = new CloudTimerWorker(name = "timerPeriodScheduleForBloomFilter", interval = 1000 * 60 * 15, callback = () => addBloomFilterFromGraph())
-  timerPeriodScheduleForBloomFilter.startUp()
+
 
 
   val timerPeriodScheduleForLoadEventToCache = new CloudTimerWorker(name = "timerPeriodScheduleForLoadEventToCache", interval = 1000 * 60 * 60 * 22, callback = () => loadEventToCache())
-  timerPeriodScheduleForLoadEventToCache.startUp()
+
 
   val timerPeriodScheduleForLoadGraphHotTopicCache = new CloudTimerWorker(name = "timerPeriodScheduleForLoadGraphHotTopicCache", interval = 1000 * 60 * 60 * 22, callback = () => loadTopicToCache())
-  timerPeriodScheduleForLoadGraphHotTopicCache.startUp()
+
 
 
   var eventRegexRuleSets = new java.util.HashSet[String]()
@@ -104,11 +116,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   def loadThread = new Thread {
     override def run(): Unit = {
-      load
+      load()
     }
   }
 
-  loadThread.setDaemon(true)
+  //loadThread.setDaemon(true)
 
   def loadStart() = {
     loadThread.start()
@@ -139,6 +151,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //indexCatOfKeywords
     loadEventRegexToCache()
     timerPeriodSchedule.startUp()
+    timerPeriodScheduleForBloomFilter.startUp()
+    timerPeriodScheduleForLoadEventToCache.startUp()
+    timerPeriodScheduleForLoadGraphHotTopicCache.startUp()
+    indexNewsFromMongo()
   }
 
   def warpLoadEventRegexToCache(): NiNi = {
@@ -573,10 +589,28 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   /**
     * 多线程建立新闻索引
     */
-  def indexNewsFromMongo() = {
-    val news = conf.mongoDataManager.findHotNews()
-    val newsMapList = NewsUtil.newsToMapCollection(news)
-    if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
+  def indexNewsFromMongo(topMonth: Int=6) = {
+    var calendar = Calendar.getInstance()
+    for(i <- 1 until  topMonth){
+      calendar.setTime(new Date())
+      calendar.add(Calendar.MONTH, -(i+1))
+      val  formNowMonth = calendar.getTime()
+
+      calendar.setTime(new Date())
+      calendar.add(Calendar.MONTH, -i)
+      val  toNowMonth = calendar.getTime()
+        logInfo(s"index top ${(i+1)} to ${i} month,date:formNowMonth:${formNowMonth},toNowMonth:${toNowMonth}")
+      val news = conf.mongoDataManager.findHotNews(formNowMonth,toNowMonth)
+      val newsMapList = NewsUtil.newsToMapCollection(news)
+      if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
+    }
+
+
+
+
+
+
+
   }
 
 
@@ -821,6 +855,63 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       case _ =>
         null
     }
+  }
+
+  /**
+    *
+    * @param query
+    * @param from
+    * @param to
+    * @param leastTopMonth
+    * @param sorts
+    * @return
+    */
+  def wrapQueryNews(query: String, from: Int, to: Int, leastTopMonth: Int,sort: String, order: String, sorts: java.util.Map[String, String]): NiNi = {
+    Util.caculateCostTime {
+      queryNews(query, from, to, leastTopMonth, sort,order,sorts)
+    }
+  }
+
+
+  /**
+    * 新闻搜索
+    *
+    * @param query
+    * @param from
+    * @param to
+    * @param leastTopMonth
+    * @param sorts
+    * @return
+    */
+  def queryNews(query: String, from: Int, to: Int, leastTopMonth: Int, sort: String, order: String, sorts: java.util.Map[String, String]): NewsResult = {
+    var filter = new mutable.HashMap[String, (Object, Boolean)]()
+    var topMonth = 6
+    if (leastTopMonth != null && leastTopMonth > 0) topMonth = leastTopMonth
+    calendar.setTime(new Date())
+    calendar.add(Calendar.MONTH, -topMonth)
+    calendar.set(Calendar.MILLISECOND, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.HOUR, 0)
+    val lowlerBounder = calendar.getTime
+    filter("create_on") = ((lowlerBounder, null), true)
+    var sortF: scala.collection.mutable.Map[String, String] = null
+    if (sorts != null) {
+      sortF = JavaConversions.mapAsScalaMap(sorts)
+    }
+
+
+    if (sortF == null) {
+      if (sort != null) {
+        var orderNew = order
+        if (order == null) orderNew = "desc"
+        sortF = new mutable.HashMap[String, String]()
+        sortF(sort.trim) = orderNew.trim
+      }
+    }
+    val (count, result) = client.searchQbWithFilterAndSorts(newsIndexName, newsTypName,
+      from, to, filter, sortF, query, decayField,
+      title, auth, summary, topics, events, companys)
+    new NewsResult(Integer.valueOf(count.toString), result)
   }
 
 
@@ -1617,10 +1708,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     // testTrieNode()
 
-    //testIndexNewsFromMongo()
+    testIndexNewsFromMongo()
 
     // testSearchQbWithFilterAndSorts()
-    testSearchQbWithFilterAndSortsWithDecayAndSearch
+    //testSearchQbWithFilterAndSortsWithDecayAndSearch
   }
 
   def testSearchQbWithFilterAndSorts() = {
@@ -1673,7 +1764,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   def testIndexNewsFromMongo() = {
-    indexNewsFromMongo
+    indexNewsFromMongo()
     Thread.currentThread().suspend()
   }
 

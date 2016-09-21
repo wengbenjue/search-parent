@@ -78,11 +78,9 @@ private[search] object Util extends Logging {
       val propertyName = descriptor.getName()
       if (!propertyName.equals("class")) {
         val readMethod = descriptor.getReadMethod()
-        val result = readMethod.invoke(bean, new Object)
+        val result = readMethod.invoke(bean)
         if (result != null) {
           returnMap.put(propertyName, result)
-        } else {
-          returnMap.put(propertyName, "")
         }
       }
     }

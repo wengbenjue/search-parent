@@ -400,6 +400,9 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   override def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int): (Long, Array[java.util.Map[String, Object]]) = {
     EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to)
   }
+  def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int,sorts: mutable.Map[String, String]): (Long, Array[java.util.Map[String, Object]]) = {
+    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to,sorts)
+  }
 
   override def termQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
     EsClient.termQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, keyWords)
@@ -413,7 +416,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     EsClient.boolMustQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, keyWords)
   }
 
-  override def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String]): Array[java.util.Map[String, Object]] = {
+  override def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String]): (Long, Array[java.util.Map[String, Object]]) = {
     EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts, qb = null)
   }
 
@@ -431,11 +434,16 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     * @param fields
     * @return
     */
-  override def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, fields: String*): Array[java.util.Map[String, Object]] = {
+  override def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, fields: String*): (Long, Array[java.util.Map[String, Object]]) = {
+    /* EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
+       Query.functionScoreQuery(Function.gaussDecayFunction(decayField, "120w", "5w", 0.3)
+         , scoreMode = "multiply", boostMode = "multiply",
+         Query.multiMatchQuery(query, "and", 0.3f, null, "80%", queryType = "best", fields: _*)))*/
+    if (query == null) return matchAllQueryWithCount(indexName, typeName, from, to,sorts)
     EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
       Query.functionScoreQuery(Function.gaussDecayFunction(decayField, "120w", "5w", 0.3)
         , scoreMode = "multiply", boostMode = "multiply",
-        Query.multiMatchQuery(query, "or", 0.3f, null, "60%", queryType = "best", fields: _*)))
+        Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", fields: _*)))
   }
 }
 

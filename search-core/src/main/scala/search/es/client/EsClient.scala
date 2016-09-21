@@ -3,7 +3,7 @@ package search.es.client
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.alibaba.fastjson.{JSON}
+import com.alibaba.fastjson.JSON
 import com.google.common.collect.Maps
 import org.elasticsearch.action.ActionFuture
 import org.elasticsearch.action.admin.indices.alias.Alias
@@ -17,8 +17,8 @@ import org.elasticsearch.action.index.{IndexRequest, IndexResponse}
 import org.elasticsearch.action.search.{SearchResponse, SearchType}
 import org.elasticsearch.action.update.{UpdateRequestBuilder, UpdateResponse}
 import org.elasticsearch.client.{Client, Requests}
-import org.elasticsearch.client.transport.{TransportClient}
-import org.elasticsearch.common.lucene.search.function.{CombineFunction}
+import org.elasticsearch.client.transport.TransportClient
+import org.elasticsearch.common.lucene.search.function.CombineFunction
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
@@ -26,12 +26,13 @@ import org.elasticsearch.index.query._
 import org.elasticsearch.index.query.functionscore.{ScoreFunctionBuilder, ScoreFunctionBuilders}
 import org.elasticsearch.plugin.deletebyquery.DeleteByQueryPlugin
 import org.elasticsearch.search.sort.SortOrder
-import org.elasticsearch.search.{SearchHits}
+import org.elasticsearch.search.SearchHits
 import search.common.config.EsConfiguration
 import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.util.Logging
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 import scala.reflect.ClassTag
 
 
@@ -97,9 +98,9 @@ private[search] trait EsClient extends EsConfiguration {
 
   def fuzzyQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, fuzzy: String): Array[java.util.Map[String, Object]]
 
-  def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String]): Array[java.util.Map[String, Object]]
+  def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String]): (Long,Array[java.util.Map[String, Object]])
 
-  def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String],query: String,decayField: String,fields: String*): Array[java.util.Map[String, Object]]
+  def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String],query: String,decayField: String,fields: String*): (Long,Array[java.util.Map[String, Object]])
 
 }
 
@@ -498,9 +499,12 @@ private[search] object EsClient extends EsConfiguration with Logging {
     }
     result
   }
+  def queryAsMapWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int,qb: QueryBuilder): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCount(client,indexName,typeName,from,to,null,qb)
+  }
 
-  def queryAsMapWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, qb: QueryBuilder): (Long, Array[java.util.Map[String, Object]]) = {
-    val allHits = query(client, indexName, typeName, from, to, qb)
+  def queryAsMapWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int,sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder): (Long, Array[java.util.Map[String, Object]]) = {
+    val allHits = query(client, indexName, typeName, from, to,sorts, qb)
     val hits = allHits.getHits
     val cnt = allHits.getTotalHits
     if (hits == null || hits.size == 0) return (cnt, null)
@@ -533,6 +537,10 @@ private[search] object EsClient extends EsConfiguration with Logging {
     queryAsMapWithCount(client, indexName, typeName, from, to, QueryBuilders.matchAllQuery)
   }
 
+  def matchAllQueryWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int,sorts: mutable.Map[String, String]): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCount(client, indexName, typeName, from, to, sorts,QueryBuilders.matchAllQuery)
+  }
+
   def boolMustQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
     val qb: QueryBuilder = QueryBuilders.boolQuery.must(QueryBuilders.termQuery(field, keyWords)).filter(QueryBuilders.termQuery(field, keyWords))
     queryAsMap(client, indexName, typeName, from, to, qb)
@@ -551,7 +559,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @param qb
     * @return
     */
-  def searchQbWithFilterAndSorts(client: Client, indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder): Array[java.util.Map[String, Object]] = {
+  def searchQbWithFilterAndSorts(client: Client, indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder): (Long,Array[java.util.Map[String, Object]]) = {
     val boolQuery = QueryBuilders.boolQuery
     if (qb != null) boolQuery.must(qb)
     if (filter != null && !filter.isEmpty) {
@@ -574,7 +582,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
         }
       }
     }
-    queryAsMap(client, indexName, typeName, from, to, sorts, boolQuery)
+    queryAsMapWithCount(client, indexName, typeName, from, to, sorts, boolQuery)
   }
 
 

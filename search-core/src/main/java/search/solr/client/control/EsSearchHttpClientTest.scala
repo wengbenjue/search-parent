@@ -10,7 +10,7 @@ import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.utils.HttpClientUtils
 import org.apache.http.util.EntityUtils
 import search.common.entity.bizesinterface.{IndexObjEntity, QueryEntityWithCnt}
-import search.common.entity.news.News
+import search.common.entity.news.{News, NewsQuery}
 import search.common.entity.searchinterface.parameter.IndexKeywordsParameter
 import search.common.http.HttpClientUtil
 import search.common.serializer.JavaSerializer
@@ -33,12 +33,36 @@ object EsSearchHttpClientTest {
     //testSearchFluid
     //testShowStateRedisCache()
     // testCleanBySet
-    testIndexNews
+    //testIndexNews
+    testSearchNews
   }
 
+  def testSearchNews() = {
+    val url = "http://localhost:8999/es/search/news"
+    val newsQuery = new NewsQuery()
+    newsQuery.setQuery("苹果")
+
+    val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", newsQuery, null)
+    try {
+      val entity: HttpEntity = httpResp.getEntity
+      val sResponse: String = EntityUtils.toString(entity)
+      System.out.println(sResponse)
+    }
+    catch {
+      case e: IOException => {
+        e.printStackTrace
+      }
+    } finally {
+      HttpClientUtils.closeQuietly(httpResp)
+    }
+  }
 
   def testIndexNews() {
     val url = "http://localhost:8999/es/index/news"
+
+    val headers: java.util.Map[String, String] = new java.util.HashMap[String, String]
+    headers.put("Content-Type", "application/json")
+
     val objList = new util.ArrayList[News]()
 
     val news1 = new News("1", "title1")
@@ -46,10 +70,10 @@ object EsSearchHttpClientTest {
     val companys = new util.ArrayList[String]()
     companys.add("a")
     companys.add("b")
-    val news2 = new News("1", "title1", companys)
+    val news2 = new News("2", "title1", companys)
     objList.add(news2)
 
-    val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", objList, null)
+    val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", objList, headers)
     try {
       val entity: HttpEntity = httpResp.getEntity
       val sResponse: String = EntityUtils.toString(entity)

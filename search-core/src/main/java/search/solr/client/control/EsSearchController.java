@@ -10,6 +10,7 @@ import search.common.entity.bizesinterface.GraphNodes;
 import search.common.entity.bizesinterface.IndexObjEntity;
 import search.common.entity.bizesinterface.QueryEntityWithCnt;
 import search.common.entity.news.News;
+import search.common.entity.news.NewsQuery;
 import search.es.client.biz.BizeEsInterface;
 import search.common.entity.searchinterface.NiNi;
 import search.common.entity.searchinterface.parameter.*;
@@ -30,7 +31,7 @@ public class EsSearchController {
 
 
     @RequestMapping(value = "/index/news", method = {RequestMethod.POST, RequestMethod.GET})
-    public NiNi indexNews(final Collection<News> news) {
+    public NiNi indexNews(@RequestBody final Collection<News> news) {
         if (news == null) {
             NiNi nini = new NiNi();
             nini.setCode(-1);
@@ -38,6 +39,12 @@ public class EsSearchController {
             return nini;
         } else
             return BizeEsInterface.wrapIndexNews(news);
+    }
+
+    //search and filter by keywords
+    @RequestMapping(value = "/search/news", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi searchNews(final NewsQuery newsQuery) {
+            return BizeEsInterface.wrapQueryNews(newsQuery.getQuery(),newsQuery.getFrom(),newsQuery.getTo(),newsQuery.getLeastTopMonth(),newsQuery.getSort(),newsQuery.getOrder(),newsQuery.getSorts());
     }
 
 
