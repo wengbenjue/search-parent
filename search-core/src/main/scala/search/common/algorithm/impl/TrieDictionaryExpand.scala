@@ -7,7 +7,7 @@ import search.common.algorithm.{DictionaryExpand, TrieNode}
 /**
   * Created by soledede.weng on 2016/9/13.
   */
-class TrieDictionaryExpand extends TrieDictionary with DictionaryExpand {
+class TrieDictionaryExpand extends TrieDictionary with DictionaryExpand with Serializable{
 
   override def add(word: String, id: String): Unit = {
     if (word == null || word.trim.length < 1) {

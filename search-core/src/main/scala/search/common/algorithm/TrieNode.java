@@ -1,12 +1,13 @@
 package search.common.algorithm;
 
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 /**
  * Created by soledede.weng on 2016/9/13.
  */
-public  class TrieNode implements Comparable {
+public  class TrieNode implements Serializable , Comparable{
     private char character;
     private boolean terminal;
     private TrieNode brother;

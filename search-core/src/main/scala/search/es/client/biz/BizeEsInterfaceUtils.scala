@@ -59,7 +59,9 @@ private[search] object BizeEsInterfaceUtils extends Logging with EsConfiguration
         }
         inputStream.close()
       } catch {
+        case fE: java.io.FileNotFoundException=>logInfo("I can't read,no dump to disk")
         case e: Exception =>
+          logError("read dump trie failed! dumpDictionaryPath",e)
       }
     }
 
@@ -74,7 +76,9 @@ private[search] object BizeEsInterfaceUtils extends Logging with EsConfiguration
         }
         inputStream.close()
       } catch {
+        case fE: java.io.FileNotFoundException=>logInfo("I can't read,no dump to disk")
         case e: Exception =>
+          logError("read dump trie failed! dumpGraphDictionaryPath",e)
       }
     }
 
@@ -105,6 +109,7 @@ private[search] object BizeEsInterfaceUtils extends Logging with EsConfiguration
           println(resultString)
         } catch {
           case e: Exception =>
+            logError("write dump trie failed! dumpDictionaryPath",e)
         }
       }
     }
@@ -122,6 +127,7 @@ private[search] object BizeEsInterfaceUtils extends Logging with EsConfiguration
           println(resultString)
         } catch {
           case e: Exception =>
+            logError("write dump trie failed! dumpGraphDictionaryPath",e)
         }
       }
     }

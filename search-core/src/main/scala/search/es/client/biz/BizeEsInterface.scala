@@ -143,10 +143,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     /**
       * Trie Node
       */
-    val timerPeriodScheduleForDumpTrie = new CloudTimerWorker(name = "timerPeriodScheduleForDumpTrie", interval = 1000 * 60 * 30, callback = () => BizeEsInterfaceUtils.dumpTrieToDisk(conf))
+    val timerPeriodScheduleForDumpTrie = new CloudTimerWorker(name = "timerPeriodScheduleForDumpTrie", interval = 1000 * 60 * 1, callback = () => BizeEsInterfaceUtils.dumpTrieToDisk(conf))
     timerPeriodScheduleForDumpTrie.startUp()
-    BizeEsInterfaceUtils.dumpTrieToDisk(conf)
     BizeEsInterfaceUtils.readDumpTrieFromDisk(conf)
+    BizeEsInterfaceUtils.dumpTrieToDisk(conf)
   }
 
 

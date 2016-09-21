@@ -3,7 +3,7 @@ package search.common.algorithm
 /**
   * Created by soledede.weng on 2016/9/13.
   */
-trait DictionaryExpand {
+trait DictionaryExpand extends Serializable{
   def add(word: String,id: String): Unit
 
   /**
