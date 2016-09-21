@@ -28,13 +28,13 @@ object EsSearchHttpClientTest {
 
   def main(args: Array[String]) {
     //indexByKeywords
-    //submitIndexDataRwInterval
+    submitIndexDataRwInterval
     //getIndexDataFromSerObj()
     //testSearchFluid
     //testShowStateRedisCache()
     // testCleanBySet
     //testIndexNews
-    testSearchNews
+    //testSearchNews
   }
 
   def testSearchNews() = {

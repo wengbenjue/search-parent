@@ -22,21 +22,26 @@ private[search] object BizeEsInterfaceUtils extends Logging with EsConfiguration
     * @return
     */
   def dumpIndexToDisk(): String = {
-    val cnt = BizeEsInterface.count().toInt
-    val result = BizeEsInterface.matchAllQueryWithCount(0, cnt)
-    val fOut = new FileOutputStream(dumpIndexPath)
-    val ser = JavaSerializer(new SolrClientConf()).newInstance()
-    val outputStrem = ser.serializeStream(fOut)
-    outputStrem.writeObject(result)
-    outputStrem.flush()
-    outputStrem.close()
-    val resultString = s"dump index to dis successful,size:${cnt},local path:${dumpIndexPath}"
-    println(resultString)
-    resultString
+    try {
+      val cnt = BizeEsInterface.count().toInt
+      val result = BizeEsInterface.matchAllQueryWithCount(0, cnt)
+      val fOut = new FileOutputStream(dumpIndexPath)
+      val ser = JavaSerializer(new SolrClientConf()).newInstance()
+      val outputStrem = ser.serializeStream(fOut)
+      outputStrem.writeObject(result)
+      outputStrem.flush()
+      outputStrem.close()
+      val resultString = s"dump index to dis successful,size:${cnt},local path:${dumpIndexPath}"
+      println(resultString)
+      resultString
+    } catch {
+      case e: Exception => null
+    }
   }
 
   /**
     * 从磁盘读入Trie树
+    *
     * @param conf
     */
   def readDumpTrieFromDisk(conf: EsClientConf) = {
@@ -78,9 +83,10 @@ private[search] object BizeEsInterfaceUtils extends Logging with EsConfiguration
 
   /**
     * dump Trie树到磁盘
+    *
     * @param conf
     */
-  def dumpTrieToDisk(conf: EsClientConf): Unit = {
+  def dumpTrieToDisk(conf: EsClientConf): Long = {
 
     dumpDictionaryToDisk
     dumpGraphDictionaryToDisk
@@ -88,30 +94,38 @@ private[search] object BizeEsInterfaceUtils extends Logging with EsConfiguration
 
     def dumpDictionaryToDisk() = {
       if (conf.dictionary != null) {
-        val fOut = new FileOutputStream(dumpDictionaryPath)
-        val ser = JavaSerializer(new SolrClientConf()).newInstance()
-        val outputStrem = ser.serializeStream(fOut)
-        outputStrem.writeObject(conf.dictionary)
-        outputStrem.flush()
-        outputStrem.close()
-        val resultString = s"dump trie dictionary  to dis successful,local path:${dumpDictionaryPath}"
-        println(resultString)
+        try {
+          val fOut = new FileOutputStream(dumpDictionaryPath)
+          val ser = JavaSerializer(new SolrClientConf()).newInstance()
+          val outputStrem = ser.serializeStream(fOut)
+          outputStrem.writeObject(conf.dictionary)
+          outputStrem.flush()
+          outputStrem.close()
+          val resultString = s"dump trie dictionary  to dis successful,local path:${dumpDictionaryPath}"
+          println(resultString)
+        } catch {
+          case e: Exception =>
+        }
       }
     }
 
     def dumpGraphDictionaryToDisk() = {
       if (conf.graphDictionary != null) {
-        val fOut = new FileOutputStream(dumpGraphDictionaryPath)
-        val ser = JavaSerializer(new SolrClientConf()).newInstance()
-        val outputStrem = ser.serializeStream(fOut)
-        outputStrem.writeObject(conf.graphDictionary)
-        outputStrem.flush()
-        outputStrem.close()
-        val resultString = s"dump trie dictionary  to dis successful,local path:${dumpGraphDictionaryPath}"
-        println(resultString)
+        try {
+          val fOut = new FileOutputStream(dumpGraphDictionaryPath)
+          val ser = JavaSerializer(new SolrClientConf()).newInstance()
+          val outputStrem = ser.serializeStream(fOut)
+          outputStrem.writeObject(conf.graphDictionary)
+          outputStrem.flush()
+          outputStrem.close()
+          val resultString = s"dump trie dictionary  to dis successful,local path:${dumpGraphDictionaryPath}"
+          println(resultString)
+        } catch {
+          case e: Exception =>
+        }
       }
     }
-
+    -1
   }
 
 

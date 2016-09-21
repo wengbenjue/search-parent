@@ -99,12 +99,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val timerPeriodScheduleForBloomFilter = new CloudTimerWorker(name = "timerPeriodScheduleForBloomFilter", interval = 1000 * 60 * 15, callback = () => addBloomFilterFromGraph())
 
 
-
   val timerPeriodScheduleForLoadEventToCache = new CloudTimerWorker(name = "timerPeriodScheduleForLoadEventToCache", interval = 1000 * 60 * 60 * 22, callback = () => loadEventToCache())
 
 
   val timerPeriodScheduleForLoadGraphHotTopicCache = new CloudTimerWorker(name = "timerPeriodScheduleForLoadGraphHotTopicCache", interval = 1000 * 60 * 60 * 22, callback = () => loadTopicToCache())
-
 
 
   var eventRegexRuleSets = new java.util.HashSet[String]()
@@ -141,6 +139,14 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //loadCache
     loadCacheFromCom
     loadStart
+
+    /**
+      * Trie Node
+      */
+    val timerPeriodScheduleForDumpTrie = new CloudTimerWorker(name = "timerPeriodScheduleForDumpTrie", interval = 1000 * 60 * 30, callback = () => BizeEsInterfaceUtils.dumpTrieToDisk(conf))
+    timerPeriodScheduleForDumpTrie.startUp()
+    BizeEsInterfaceUtils.dumpTrieToDisk(conf)
+    BizeEsInterfaceUtils.readDumpTrieFromDisk(conf)
   }
 
 
@@ -589,26 +595,21 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   /**
     * 多线程建立新闻索引
     */
-  def indexNewsFromMongo(topMonth: Int=6) = {
+  def indexNewsFromMongo(topMonth: Int = 6) = {
     var calendar = Calendar.getInstance()
-    for(i <- 1 until  topMonth){
+    for (i <- 1 until topMonth) {
       calendar.setTime(new Date())
-      calendar.add(Calendar.MONTH, -(i+1))
-      val  formNowMonth = calendar.getTime()
+      calendar.add(Calendar.MONTH, -(i + 1))
+      val formNowMonth = calendar.getTime()
 
       calendar.setTime(new Date())
       calendar.add(Calendar.MONTH, -i)
-      val  toNowMonth = calendar.getTime()
-        logInfo(s"index top ${(i+1)} to ${i} month,date:formNowMonth:${formNowMonth},toNowMonth:${toNowMonth}")
-      val news = conf.mongoDataManager.findHotNews(formNowMonth,toNowMonth)
+      val toNowMonth = calendar.getTime()
+      logInfo(s"index top ${(i + 1)} to ${i} month,date:formNowMonth:${formNowMonth},toNowMonth:${toNowMonth}")
+      val news = conf.mongoDataManager.findHotNews(formNowMonth, toNowMonth)
       val newsMapList = NewsUtil.newsToMapCollection(news)
       if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
     }
-
-
-
-
-
 
 
   }
@@ -866,9 +867,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param sorts
     * @return
     */
-  def wrapQueryNews(query: String, from: Int, to: Int, leastTopMonth: Int,sort: String, order: String, sorts: java.util.Map[String, String]): NiNi = {
+  def wrapQueryNews(query: String, from: Int, to: Int, leastTopMonth: Int, sort: String, order: String, sorts: java.util.Map[String, String]): NiNi = {
     Util.caculateCostTime {
-      queryNews(query, from, to, leastTopMonth, sort,order,sorts)
+      queryNews(query, from, to, leastTopMonth, sort, order, sorts)
     }
   }
 
