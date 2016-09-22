@@ -1,14 +1,12 @@
 package search.solr.client.control;
 
 
-import org.springframework.boot.autoconfigure.integration.IntegrationAutoConfiguration;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import search.common.entity.bizesinterface.GraphNodes;
 import search.common.entity.bizesinterface.IndexObjEntity;
-import search.common.entity.bizesinterface.QueryEntityWithCnt;
 import search.common.entity.news.News;
 import search.common.entity.news.NewsQuery;
 import search.es.client.biz.BizeEsInterface;

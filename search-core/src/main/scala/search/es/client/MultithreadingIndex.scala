@@ -1,9 +1,12 @@
 package search.es.client
 
+import com.mongodb.BasicDBObject
 import org.elasticsearch.action.ActionFuture
 import org.elasticsearch.action.bulk.BulkRequest
 import org.elasticsearch.action.index.IndexResponse
 import org.elasticsearch.client.{Client, Requests}
+import search.common.cache.impl.LocalCache
+import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.util.Logging
 import search.es.client.util.EsClientConf
 
@@ -116,5 +119,6 @@ private[search] class MultithreadingIndex() extends Logging {
         false
     }
   }
+
 
 }

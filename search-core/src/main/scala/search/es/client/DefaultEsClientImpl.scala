@@ -7,10 +7,12 @@ import com.mongodb.{BasicDBObject, DBCursor, DBObject}
 import org.codehaus.jackson.map.ObjectMapper
 import org.elasticsearch.client.Client
 import org.elasticsearch.index.query.{MatchQueryBuilder, MultiMatchQueryBuilder, QueryBuilders}
+import org.elasticsearch.search.suggest.SuggestBuilder.SuggestionBuilder
 import search.common.cache.impl.LocalCache
 import search.common.config.{EsConfiguration, RedisConfiguration}
 import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.entity.help.IndexHelpEntity
+import search.common.entity.news.QueryResult
 import search.common.listener.graph.IndexGraphNlp
 import search.common.util.{Logging, Util}
 import search.es.client.util.EsClientConf
@@ -398,11 +400,22 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
   override def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int): (Long, Array[java.util.Map[String, Object]]) = {
-    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to)
+    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to,searchResult=null)
   }
-  def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int,sorts: mutable.Map[String, String]): (Long, Array[java.util.Map[String, Object]]) = {
-    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to,sorts)
+
+  def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String],searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
+    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to, sorts,searchResult)
   }
+
+  def matchAllQueryWithCountHl(indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], highlightedField: List[String]): (Long, Array[java.util.Map[String, Object]]) = {
+    EsClient.matchAllQueryWithCountHL(EsClient.getClientFromPool(), indexName, typeName, from, to, sorts, highlightedField)
+  }
+
+
+  def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], suggestionBuilder: SuggestionBuilder[_], suggestQuery: String,searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
+    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to, sorts, suggestionBuilder, suggestQuery,searchResult)
+  }
+
 
   override def termQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
     EsClient.termQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, keyWords)
@@ -417,7 +430,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
   override def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String]): (Long, Array[java.util.Map[String, Object]]) = {
-    EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts, qb = null)
+    EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts, qb = null,highlightedField=null,searchResult = null)
   }
 
   /**
@@ -435,17 +448,54 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     * @return
     */
   override def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, fields: String*): (Long, Array[java.util.Map[String, Object]]) = {
+    searchQbWithFilterAndSortsWithSuggest(indexName, typeName, from, to, filter, sorts, query, decayField, suggestField = null, highlightedField = null,searchResult=null, fields: _*)
+  }
+
+
+  /**
+    * with suggest
+    *
+    * @param indexName
+    * @param typeName
+    * @param from
+    * @param to
+    * @param filter
+    * @param sorts
+    * @param query
+    * @param decayField
+    * @param suggestField
+    * @param fields
+    * @return
+    */
+  override def searchQbWithFilterAndSortsWithSuggest(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, suggestField: String, highlightedField: List[String],searchResult:QueryResult, fields: String*): (Long, Array[java.util.Map[String, Object]]) = {
     /* EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
        Query.functionScoreQuery(Function.gaussDecayFunction(decayField, "120w", "5w", 0.3)
          , scoreMode = "multiply", boostMode = "multiply",
          Query.multiMatchQuery(query, "and", 0.3f, null, "80%", queryType = "best", fields: _*)))*/
-    if (query == null) return matchAllQueryWithCount(indexName, typeName, from, to,sorts)
-    EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
-      Query.functionScoreQuery(Function.gaussDecayFunction(decayField, "120w", "5w", 0.3)
-        , scoreMode = "multiply", boostMode = "multiply",
-        Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", fields: _*)))
+    if (query == null) {
+      return matchAllQueryWithCountHl(indexName, typeName, from, to, sorts, highlightedField)
+    }
+
+    if (suggestField != null) {
+      EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
+        Query.functionScoreQuery(Function.gaussDecayFunction(decayField, "120w", "5w", 0.3)
+          , scoreMode = "multiply", boostMode = "multiply",
+          Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", fields: _*)),
+        Query.suggestPhraseSuggestionQuery(suggestField, query), query,
+        highlightedField,searchResult
+      )
+    } else {
+      EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
+        Query.functionScoreQuery(Function.gaussDecayFunction(decayField, "120w", "5w", 0.3)
+          , scoreMode = "multiply", boostMode = "multiply",
+          Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", fields: _*)),
+        highlightedField,searchResult)
+    }
+
   }
+
 }
+
 
 private[search] class EsIndexRunner(indexName: String, typeName: String, conf: EsClientConf, start: Int, rows: Int) extends Runnable with Logging {
 

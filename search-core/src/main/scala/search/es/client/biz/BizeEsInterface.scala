@@ -23,7 +23,7 @@ import search.common.cache.pagecache.ESSearchPageCache
 import search.common.clock.CloudTimerWorker
 import search.common.config.EsConfiguration
 import search.common.entity.bizesinterface.{CompanyStock, Industry, _}
-import search.common.entity.news.{News, NewsResult}
+import search.common.entity.news.{News, QueryResult}
 import search.common.entity.state.ProcessState
 import search.common.http.HttpClientUtil
 import search.common.listener.graph.{Request, UpdateState, WarmCache}
@@ -37,6 +37,7 @@ import search.common.entity.searchinterface.NiNi
 import search.solr.client.{SolrClient, SolrClientConf}
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ListBuffer
 import scala.collection.{JavaConversions, JavaConverters, mutable}
 import scala.util.control.Breaks._
 
@@ -81,6 +82,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val comStockCodeField = "stock_code"
   val comStockCodeStringField = "stock_code_string"
   val companyEnField = "s_en"
+
+
+  val newsSuggestField = "title"
 
 
   //=========================================================================
@@ -143,7 +147,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     /**
       * Trie Node
       */
-    val timerPeriodScheduleForDumpTrie = new CloudTimerWorker(name = "timerPeriodScheduleForDumpTrie", interval = 1000 * 60 * 1, callback = () => BizeEsInterfaceUtils.dumpTrieToDisk(conf))
+    val timerPeriodScheduleForDumpTrie = new CloudTimerWorker(name = "timerPeriodScheduleForDumpTrie", interval = 1000 * 60 * 30, callback = () => BizeEsInterfaceUtils.dumpTrieToDisk(conf))
     timerPeriodScheduleForDumpTrie.startUp()
     BizeEsInterfaceUtils.readDumpTrieFromDisk(conf)
     BizeEsInterfaceUtils.dumpTrieToDisk(conf)
@@ -884,7 +888,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param sorts
     * @return
     */
-  def queryNews(query: String, from: Int, to: Int, leastTopMonth: Int, sort: String, order: String, sorts: java.util.Map[String, String]): NewsResult = {
+  def queryNews(query: String, from: Int, to: Int, leastTopMonth: Int, sort: String, order: String, sorts: java.util.Map[String, String]): QueryResult = {
+    val queryResult = new QueryResult()
+
     var filter = new mutable.HashMap[String, (Object, Boolean)]()
     var topMonth = 6
     if (leastTopMonth != null && leastTopMonth > 0) topMonth = leastTopMonth
@@ -901,6 +907,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
 
 
+
     if (sortF == null) {
       if (sort != null) {
         var orderNew = order
@@ -909,10 +916,16 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         sortF(sort.trim) = orderNew.trim
       }
     }
-    val (count, result) = client.searchQbWithFilterAndSorts(newsIndexName, newsTypName,
-      from, to, filter, sortF, query, decayField,
+
+    //hl
+    val hlList = List("title","summary")
+
+    val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
+      from, to, filter, sortF, query, decayField, newsSuggestField, hlList, queryResult,
       title, auth, summary, topics, events, companys)
-    new NewsResult(Integer.valueOf(count.toString), result)
+    queryResult.setCount(Integer.valueOf(count.toString))
+    queryResult.setResult(result)
+    queryResult
   }
 
 
