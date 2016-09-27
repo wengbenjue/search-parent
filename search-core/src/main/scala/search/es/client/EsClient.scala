@@ -474,7 +474,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
         search.setHighlighterPostTags("</span>")
       }
 
-      if (from >= 0 && to > 0) search.setFrom(from).setSize(to)
+      if (from >= 0 && to >= 0) search.setFrom(from).setSize(to)
       if (sorts != null && !sorts.isEmpty) {
         sorts.foreach { case (field, sort) =>
           if (sort.equalsIgnoreCase("asc") || sort.equalsIgnoreCase("ASC")) {

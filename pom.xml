@@ -60,6 +60,7 @@
         <redisclient.version>1.2.6</redisclient.version>
         <mongoclient.version>3.0.1</mongoclient.version>
         <pinyin4j.version>2.5.0</pinyin4j.version>
+        <poi.version>3.14</poi.version>
         <start-class>search.Application</start-class>
         <MaxPermSize>128m</MaxPermSize>
     </properties>
@@ -533,6 +534,17 @@
             </dependency>
             <!-- corenlp-->
 
+            <!-- java读写excel -->
+            <dependency>
+                <groupId>org.apache.poi</groupId>
+                <artifactId>poi</artifactId>
+                <version>${poi.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.poi</groupId>
+                <artifactId>poi-ooxml</artifactId>
+                <version>${poi.version}</version>
+            </dependency>
 
         </dependencies>
     </dependencyManagement>

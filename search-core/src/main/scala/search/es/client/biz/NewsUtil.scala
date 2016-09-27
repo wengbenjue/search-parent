@@ -24,6 +24,10 @@ private[search] object NewsUtil extends Logging{
           map.put("_id", id)
           val title = if (dbObj.get("t") != null) dbObj.get("t").toString.trim else null
           if (title != null && !"".equalsIgnoreCase(title)) map.put("title", title)
+
+          val url = if (dbObj.get("url") != null) dbObj.get("url").toString.trim else null
+          if (url != null && !"".equalsIgnoreCase(url)) map.put("url", url)
+
           val auth = if (dbObj.get("auth") != null) dbObj.get("auth").toString.trim else null
           if (auth != null && !"".equalsIgnoreCase(auth)) map.put("auth", auth)
           val summary = if (dbObj.get("sum") != null) dbObj.get("sum").toString.trim else null
@@ -31,8 +35,7 @@ private[search] object NewsUtil extends Logging{
           val createOn = if (dbObj.get("dt") != null) dbObj.get("dt").toString else null
           if (createOn != null && !"".equalsIgnoreCase(createOn)) map.put("create_on", Util.stringToDate(createOn))
 
-          val url = if (dbObj.get("url") != null) dbObj.get("url").toString.trim else null
-          if (url != null && !"".equalsIgnoreCase(url)) map.put("url", url)
+
 
           val companys = if (dbObj.get("asw") != null) dbObj.get("asw").asInstanceOf[BasicDBList] else null
           if (companys != null && companys.size() > 0) {
@@ -66,6 +69,14 @@ private[search] object NewsUtil extends Logging{
             }
             if (multFieldList.size() > 0)
               map.put("topics", multFieldList)
+          }
+
+          val kws = if (dbObj.get("kw") != null) dbObj.get("kw").asInstanceOf[BasicDBList] else null
+          if (kws != null && kws.size() > 0) {
+            val multFieldList = new util.ArrayList[String]()
+            kws.foreach(s => multFieldList.add(s.toString))
+            if (multFieldList.size() > 0)
+              map.put("kw", multFieldList)
           }
         }
         if (!map.isEmpty)

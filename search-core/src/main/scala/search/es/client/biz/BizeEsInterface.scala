@@ -98,6 +98,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val decayField = "create_on"
 
 
+  var hlList: List[String] = null
+  if(hlFields!=null && !hlFields.equalsIgnoreCase("")){
+   val hlArrays = hlFields.split(",")
+    if(hlArrays!=null && hlArrays.length>0) hlList = hlArrays.toList
+  }
+
   val timerPeriodSchedule = new CloudTimerWorker(name = "timerPeriodSchedule", interval = 1000 * 60 * 60 * 24, callback = () => loadEventRegexRule())
 
   val timerPeriodScheduleForBloomFilter = new CloudTimerWorker(name = "timerPeriodScheduleForBloomFilter", interval = 1000 * 60 * 15, callback = () => addBloomFilterFromGraph())
@@ -878,6 +884,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
+  def queryNews(query: String, from: Int, to: Int,leastTopMonth: Int): QueryResult = {
+    queryNews(query,from,to,leastTopMonth,sort = null,order = null,sorts = null)
+  }
+
   /**
     * 新闻搜索
     *
@@ -918,7 +928,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
 
     //hl
-    val hlList = List("title","summary")
+    //val hlList = List("title","summary")
+    //val hlList = List("title")
+
 
     val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
       from, to, filter, sortF, query, decayField, newsSuggestField, hlList, queryResult,
@@ -1531,6 +1543,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     client.delAllData(graphIndexName, graphTypName)
   }
 
+  def deleIndex(indexName: String,graphTypeName: String): Boolean={
+    client.delAllData(indexName, graphTypeName)
+  }
+
 
   def wrapCleanAllFromMongoAndIndex = {
     Util.caculateCostTime {
@@ -1722,10 +1738,19 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     // testTrieNode()
 
-    testIndexNewsFromMongo()
+    //testIndexNewsFromMongo()
 
     // testSearchQbWithFilterAndSorts()
     //testSearchQbWithFilterAndSortsWithDecayAndSearch
+
+    testDeleteAllIndexData()
+
+
+  }
+
+
+  def testDeleteAllIndexData() = {
+    client.delAllData(newsIndexName,newsTypName)
   }
 
   def testSearchQbWithFilterAndSorts() = {
