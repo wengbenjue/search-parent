@@ -1,5 +1,6 @@
 package search.es.client.biz
 
+import java.io.PrintWriter
 import java.util
 
 import scala.collection.JavaConversions._
@@ -8,10 +9,13 @@ import search.common.cache.impl.LocalCache
 import search.common.util.{Logging, Util}
 import shapeless.get
 
+import scala.collection.mutable
+
 /**
   * Created by soledede.weng on 2016/9/20.
   */
 private[search] object NewsUtil extends Logging{
+  val authSet = new mutable.HashSet[String]()
 
   def newsToMapCollection(news: java.util.List[DBObject]): util.Collection[java.util.Map[String, Object]] = {
     val mapList = new util.ArrayList[java.util.Map[String, Object]]()
@@ -29,7 +33,10 @@ private[search] object NewsUtil extends Logging{
           if (url != null && !"".equalsIgnoreCase(url)) map.put("url", url)
 
           val auth = if (dbObj.get("auth") != null) dbObj.get("auth").toString.trim else null
-          if (auth != null && !"".equalsIgnoreCase(auth)) map.put("auth", auth)
+          if (auth != null && !"".equalsIgnoreCase(auth)) {
+            map.put("auth", auth)
+            //authSet += auth
+          }
           val summary = if (dbObj.get("sum") != null) dbObj.get("sum").toString.trim else null
           if (summary != null && !"".equalsIgnoreCase(summary)) map.put("summary", summary)
           val createOn = if (dbObj.get("dt") != null) dbObj.get("dt").toString else null
@@ -54,7 +61,10 @@ private[search] object NewsUtil extends Logging{
           val events = if (dbObj.get("rule") != null) dbObj.get("rule").asInstanceOf[BasicDBList] else null
           if (events != null && events.size() > 0) {
             val multFieldList = new util.ArrayList[String]()
-            events.foreach(s => multFieldList.add(s.toString))
+            events.foreach{s =>
+              if(LocalCache.eventSet.contains(s.toString))
+              multFieldList.add(s.toString)
+            }
             if (multFieldList.size() > 0)
               map.put("events", multFieldList)
           }
@@ -86,6 +96,13 @@ private[search] object NewsUtil extends Logging{
       case e: Exception => logError("news convert to map from mongo failed!",e)
     }
     mapList
+  }
+
+  def writeAuthToFile(auths: mutable.Set[String]) = {
+    val out = new PrintWriter("D:\\java\\auth.txt")
+    auths.foreach(a=>out.println(a))
+    out.close()
+    println(s"成功写入新闻来源文件个数: ${auths.size}")
   }
 
 }

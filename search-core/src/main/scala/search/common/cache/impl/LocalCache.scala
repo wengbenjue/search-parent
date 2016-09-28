@@ -75,6 +75,9 @@ object LocalCache extends RedisConfiguration {
   //cache Map(id->GraphEvent)
   final val eventCache = new mutable.HashMap[String,GraphEvent]()
 
+  //cache Event cache
+  final val eventSet = new mutable.HashSet[String]()
+
   //cache Map(id->GraphTopic)
   final val topicCache = new mutable.HashMap[String,GraphTopic]()
 

@@ -1,6 +1,6 @@
 package search.es.client.biz
 
-import java.io.{FileInputStream, FileOutputStream, IOException}
+import java.io.{FileInputStream, FileOutputStream, IOException, PrintWriter}
 import java.net.{URI, URLEncoder}
 import java.util
 import java.util.{Calendar, Date, UUID}
@@ -99,9 +99,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   var hlList: List[String] = null
-  if(hlFields!=null && !hlFields.equalsIgnoreCase("")){
-   val hlArrays = hlFields.split(",")
-    if(hlArrays!=null && hlArrays.length>0) hlList = hlArrays.toList
+  if (hlFields != null && !hlFields.equalsIgnoreCase("")) {
+    val hlArrays = hlFields.split(",")
+    if (hlArrays != null && hlArrays.length > 0) hlList = hlArrays.toList
   }
 
   val timerPeriodSchedule = new CloudTimerWorker(name = "timerPeriodSchedule", interval = 1000 * 60 * 60 * 24, callback = () => loadEventRegexRule())
@@ -327,6 +327,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         val eventWeight: Double = if (m.get("w") != null) m.get("w").toString.toDouble else 0.0
         if (eventName != null && !eventName.equalsIgnoreCase("")) {
           LocalCache.eventCache(id) = new GraphEvent(id, eventName, eventWeight)
+          LocalCache.eventSet += eventName
           conf.dictionary.add(eventName, id)
         }
       }
@@ -605,9 +606,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   /**
     * 多线程建立新闻索引
     */
-  def indexNewsFromMongo(topMonth: Int = 6) = {
+  def indexNewsFromMongo(topMonth: Int = 9) = {
     var calendar = Calendar.getInstance()
-    for (i <- 1 until topMonth) {
+    for (i <- 0 until topMonth) {
       calendar.setTime(new Date())
       calendar.add(Calendar.MONTH, -(i + 1))
       val formNowMonth = calendar.getTime()
@@ -620,8 +621,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       val newsMapList = NewsUtil.newsToMapCollection(news)
       if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
     }
+    //NewsUtil.writeAuthToFile(NewsUtil.authSet)
+  }
 
-
+  //从pdf分析出的文本文件建立索引
+  def indexFromPdf() = {
+    client.addDocumentsWithMultiThreading(announceIndexName, announceTypeName, PublicAnnounUtil.loadAllPdfTxt())
   }
 
 
@@ -884,8 +889,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
-  def queryNews(query: String, from: Int, to: Int,leastTopMonth: Int): QueryResult = {
-    queryNews(query,from,to,leastTopMonth,sort = null,order = null,sorts = null)
+  def queryNews(query: String, from: Int, to: Int, leastTopMonth: Int): QueryResult = {
+    queryNews(query, from, to, leastTopMonth, sort = null, order = null, sorts = null)
   }
 
   /**
@@ -1543,7 +1548,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     client.delAllData(graphIndexName, graphTypName)
   }
 
-  def deleIndex(indexName: String,graphTypeName: String): Boolean={
+  def deleIndex(indexName: String, graphTypeName: String): Boolean = {
     client.delAllData(indexName, graphTypeName)
   }
 
@@ -1743,14 +1748,18 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     // testSearchQbWithFilterAndSorts()
     //testSearchQbWithFilterAndSortsWithDecayAndSearch
 
-    testDeleteAllIndexData()
+    //testDeleteAllIndexData()
 
-
+    testIndexFromPdf()
   }
 
+  def testIndexFromPdf() = {
+    indexFromPdf
+    Thread.currentThread().suspend()
+  }
 
   def testDeleteAllIndexData() = {
-    client.delAllData(newsIndexName,newsTypName)
+    client.delAllData(newsIndexName, newsTypName)
   }
 
   def testSearchQbWithFilterAndSorts() = {
@@ -1803,7 +1812,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   def testIndexNewsFromMongo() = {
-    indexNewsFromMongo()
+    indexNewsFromMongo(9)
     Thread.currentThread().suspend()
   }
 

@@ -38,6 +38,9 @@ lazy val switchCrawler = Try(esConfig.getString("switch.crawler")).getOrElse("of
   lazy val newsIndexName = Try(esConfig.getString("news.indexName")).getOrElse("news")
   lazy val newsTypName = Try(esConfig.getString("news.typName")).getOrElse("news")
 
+  lazy val announceIndexName = Try(esConfig.getString("announce.indexName")).getOrElse("announ")
+  lazy val announceTypeName = Try(esConfig.getString("announce.typeName")).getOrElse("announ")
+
   lazy val catTypName = Try(esConfig.getString("graph.catTypeName")).getOrElse("cat")
 
   lazy val cleanNameSpace = Try(esConfig.getString("clean.namespace")).getOrElse("graph_state")
