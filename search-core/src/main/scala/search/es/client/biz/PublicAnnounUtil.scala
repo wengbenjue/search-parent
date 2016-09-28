@@ -3,26 +3,35 @@ package search.es.client.biz
 import java.io.File
 import java.util
 
+import search.common.config.EsConfiguration
 import search.common.util.Util
+import search.es.client.EsClient
 
 import scala.io.Source
 
 /**
   * Created by soledede.weng on 2016/9/28.
   */
-private[search] object PublicAnnounUtil {
+private[search] object PublicAnnounUtil extends EsConfiguration{
 
 
-  def loadAllPdfTxt(): java.util.Collection[java.util.Map[String, Object]] = {
-    val listPdf = new util.ArrayList[java.util.Map[String, Object]]()
+  def loadAllPdfTxt(client: EsClient) = {
+    var listPdf = new util.ArrayList[java.util.Map[String, Object]]()
     val dirPath = "D:\\announce\\Text\\2015\\YEAR"
     val dir = new File(dirPath)
     val files = dir.listFiles().filter(_.isFile)
+    var cnt = 0
     files.foreach { f =>
       val mapPdf = loadAnnounceDataFromPdfTxt(f.getAbsolutePath)
       if (!mapPdf.isEmpty) listPdf.add(mapPdf)
+      if(cnt>=3000) {
+        client.addDocumentsWithMultiThreading(announceIndexName, announceTypeName,listPdf )
+        listPdf = new util.ArrayList[java.util.Map[String, Object]]()
+        cnt = 0
+      }
     }
-    listPdf
+
+    client.addDocumentsWithMultiThreading(announceIndexName, announceTypeName,listPdf )
   }
 
   def loadAnnounceDataFromPdfTxt(path: String): java.util.Map[String, Object] = {

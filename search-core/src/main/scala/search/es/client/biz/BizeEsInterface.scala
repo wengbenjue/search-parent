@@ -626,7 +626,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   //从pdf分析出的文本文件建立索引
   def indexFromPdf() = {
-    client.addDocumentsWithMultiThreading(announceIndexName, announceTypeName, PublicAnnounUtil.loadAllPdfTxt())
+    PublicAnnounUtil.loadAllPdfTxt(client)
+
   }
 
 
