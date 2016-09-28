@@ -620,6 +620,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       val news = conf.mongoDataManager.findHotNews(formNowMonth, toNowMonth)
       val newsMapList = NewsUtil.newsToMapCollection(news)
       if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
+      Thread.sleep(1000*60*1)
     }
     //NewsUtil.writeAuthToFile(NewsUtil.authSet)
   }
@@ -1744,7 +1745,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     // testTrieNode()
 
-    //testIndexNewsFromMongo()
+
 
     // testSearchQbWithFilterAndSorts()
     //testSearchQbWithFilterAndSortsWithDecayAndSearch
@@ -1752,6 +1753,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testDeleteAllIndexData()
 
     testIndexFromPdf()
+    //testIndexNewsFromMongo()
   }
 
   def testIndexFromPdf() = {

@@ -89,7 +89,7 @@ private[search] class MultithreadingIndex() extends Logging {
         logInfo(s"id ${id} indexed.")
         if (id == null) request.add(Requests.indexRequest(indexName).`type`(typeName).source(doc))
         else request.add(Requests.indexRequest(indexName).`type`(typeName).id(id.toString.trim).source(doc))
-        if (cnt > 3000 && cnt % 3000 == 0) {
+        if (cnt > 1000 && cnt % 1000 == 0) {
           bulkPostDocumentSubmit(client, request)
           request = Requests.bulkRequest
           Thread.sleep(1000)
