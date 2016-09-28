@@ -6,7 +6,8 @@ import java.util.Date
 
 import org.apache.poi.hssf.usermodel.HSSFCellStyle
 import org.apache.poi.hssf.util.HSSFColor
-import org.apache.poi.ss.usermodel.{BorderStyle, FillPatternType, HorizontalAlignment}
+import org.apache.poi.ss.usermodel.{BorderStyle, CellStyle, FillPatternType, HorizontalAlignment}
+import org.apache.poi.xssf.streaming.SXSSFWorkbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import search.common.config.EsConfiguration
 import search.common.util.{Logging, Util}
@@ -24,19 +25,21 @@ private[search] object PoiExcelUtil extends Logging with EsConfiguration {
 
   def writeNewsExcel() = {
     val pageSize = 3000
+    val flushSize = 100
+    var flushFactor = 0
 
-    val fileOut = new FileOutputStream(newExcelPath)
+    var fileOut = new FileOutputStream(newExcelPath)
 
     //创建工作簿
-    val wb = new XSSFWorkbook()
+    //val wb = new XSSFWorkbook()
+   val wb = new SXSSFWorkbook()
     // 创建工作表
     val sheet = wb.createSheet("news")
-
     val createHelper = wb.getCreationHelper()
 
     //设置Excel中的边框
     val cellStyle = wb.createCellStyle()
-    cellStyle.setAlignment(HorizontalAlignment.CENTER)
+    /*cellStyle.setAlignment(HorizontalAlignment.CENTER)
     cellStyle.setBorderBottom(BorderStyle.MEDIUM)
     cellStyle.setBottomBorderColor(HSSFColor.BLACK.index)
     cellStyle.setBorderLeft(BorderStyle.MEDIUM)
@@ -44,6 +47,17 @@ private[search] object PoiExcelUtil extends Logging with EsConfiguration {
     cellStyle.setBorderRight(BorderStyle.MEDIUM)
     cellStyle.setRightBorderColor(HSSFColor.BLACK.index)
     cellStyle.setBorderTop(BorderStyle.MEDIUM)
+    cellStyle.setTopBorderColor(HSSFColor.BLACK.index)*/
+
+
+    cellStyle.setAlignment(CellStyle.ALIGN_CENTER)
+    cellStyle.setBorderBottom(CellStyle.BORDER_MEDIUM)
+    cellStyle.setBottomBorderColor(HSSFColor.BLACK.index)
+    cellStyle.setBorderLeft(CellStyle.BORDER_MEDIUM)
+    cellStyle.setLeftBorderColor(HSSFColor.BLACK.index);
+    cellStyle.setBorderRight(CellStyle.BORDER_MEDIUM)
+    cellStyle.setRightBorderColor(HSSFColor.BLACK.index)
+    cellStyle.setBorderTop(CellStyle.BORDER_MEDIUM)
     cellStyle.setTopBorderColor(HSSFColor.BLACK.index)
 
     // 创建标题行
@@ -96,6 +110,7 @@ private[search] object PoiExcelUtil extends Logging with EsConfiguration {
 
     //记录行数
     var cnt = 1
+    var cnt_exec = 1
     logInfo(s"当前写入行数(除表头外):${cnt}")
 
     def queryStrings(): Seq[String] = {
@@ -108,9 +123,13 @@ private[search] object PoiExcelUtil extends Logging with EsConfiguration {
     queryStrings.foreach(queryNews(_))
 
     wb.write(fileOut)
+    fileOut.close()
     logInfo(s"写入Excel完成,path:${newExcelPath}")
 
     def queryNews(query: String): Unit = {
+
+
+
       logInfo(s"查询并写入query:${query}")
       var result: Array[java.util.Map[String, AnyRef]] = null
       var count: Int = 0
@@ -151,15 +170,28 @@ private[search] object PoiExcelUtil extends Logging with EsConfiguration {
       if (query != null) {
         row = sheet.createRow(cnt)
         cnt += 1
+        cnt_exec += 1
         val cell = row.createCell(0)
         val style = wb.createCellStyle()
 
         style.setFillForegroundColor(HSSFColor.RED.index)
-        style.setFillPattern(FillPatternType.SOLID_FOREGROUND)
+        //style.setFillPattern(FillPatternType.SOLID_FOREGROUND)
+        style.setFillPattern(CellStyle.SOLID_FOREGROUND)
+
 
         cell.setCellStyle(style)
         cell.setCellValue(query)
         row.createCell(1).setCellValue(count)
+      }
+
+
+      if(cnt_exec>=flushSize){
+        flushFactor += 1
+        for(i <- flushFactor*flushSize until flushFactor*flushSize+flushSize){
+          logInfo(s"flush rownum: ${i}, ${sheet.getRow(i)}")
+        }
+        logInfo(s"刷新当前批次${flushSize}到磁盘！")
+        cnt_exec= 0
       }
 
       news.foreach { newsMap =>
@@ -204,15 +236,21 @@ private[search] object PoiExcelUtil extends Logging with EsConfiguration {
         // 添加数据行
         row = sheet.createRow(cnt)
         cnt += 1
+        cnt_exec += 1
 
-        row.createCell(2).setCellValue(title)
-        row.createCell(3).setCellValue(url)
-        row.createCell(4).setCellValue(summary)
-        row.createCell(5).setCellValue(companysString)
-        row.createCell(6).setCellValue(kwString)
-        row.createCell(7).setCellValue(topicsString)
-        row.createCell(8).setCellValue(eventsString)
-        row.createCell(9).setCellValue(create_on)
+        try {
+          row.createCell(2).setCellValue(title)
+          row.createCell(3).setCellValue(url)
+          if (summary.length >= 32767) summary = summary.substring(0, 32766)
+          row.createCell(4).setCellValue(summary)
+          row.createCell(5).setCellValue(companysString)
+          row.createCell(6).setCellValue(kwString)
+          row.createCell(7).setCellValue(topicsString)
+          row.createCell(8).setCellValue(eventsString)
+          row.createCell(9).setCellValue(create_on)
+        } catch {
+          case e: Exception => logError("row failed",e)
+        }
       }
 
     }

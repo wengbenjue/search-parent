@@ -170,7 +170,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     timerPeriodScheduleForBloomFilter.startUp()
     timerPeriodScheduleForLoadEventToCache.startUp()
     timerPeriodScheduleForLoadGraphHotTopicCache.startUp()
-    indexNewsFromMongo()
+    //indexNewsFromMongo()
   }
 
   def warpLoadEventRegexToCache(): NiNi = {
