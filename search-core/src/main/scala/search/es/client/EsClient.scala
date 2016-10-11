@@ -1,12 +1,10 @@
 package search.es.client
 
 import java.net.InetAddress
-import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
 import com.alibaba.fastjson.JSON
 import com.google.common.collect.Maps
-import org.codehaus.jackson.map.ObjectMapper
 import org.elasticsearch.action.ActionFuture
 import org.elasticsearch.action.admin.indices.alias.Alias
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse
@@ -20,7 +18,6 @@ import org.elasticsearch.action.search.{SearchResponse, SearchType}
 import org.elasticsearch.action.update.{UpdateRequestBuilder, UpdateResponse}
 import org.elasticsearch.client.{Client, Requests}
 import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.common.lucene.search.function.CombineFunction
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
@@ -29,13 +26,13 @@ import org.elasticsearch.index.query.functionscore.{ScoreFunctionBuilder, ScoreF
 import org.elasticsearch.plugin.deletebyquery.DeleteByQueryPlugin
 import org.elasticsearch.search.sort.SortOrder
 import org.elasticsearch.search.SearchHits
+import org.elasticsearch.search.aggregations.AbstractAggregationBuilder
+import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import org.elasticsearch.search.suggest.SuggestBuilder.SuggestionBuilder
-import org.elasticsearch.search.suggest.phrase.PhraseSuggestionBuilder
 import search.common.config.EsConfiguration
 import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.entity.news.{NewsQuery, QueryResult}
 import search.common.entity.result.{ResultSearchUtil, Suggest}
-import search.common.entity.searchinterface.SearchResult
 import search.common.util.Logging
 
 import scala.collection.JavaConversions._
@@ -107,9 +104,9 @@ private[search] trait EsClient extends EsConfiguration {
 
   def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String]): (Long, Array[java.util.Map[String, Object]])
 
-  def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String], query: String, decayField: String, fields: String*): (Long, Array[java.util.Map[String, Object]])
+  def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String], query: String, decayField: String, aggs: Seq[AbstractAggregationBuilder], fields: String*): (Long, Array[java.util.Map[String, Object]])
 
-  def searchQbWithFilterAndSortsWithSuggest(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, suggestField: String, highlightedField: List[String],searchResult:QueryResult, fields: String*): (Long, Array[java.util.Map[String, Object]])
+  def searchQbWithFilterAndSortsWithSuggest(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, suggestField: String, highlightedField: List[String], searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder], fields: String*): (Long, Array[java.util.Map[String, Object]])
 
 }
 
@@ -179,7 +176,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
   }
 
   def count(client: Client, indexName: String, typeName: String) = {
-    matchAllQueryWithCount(client, indexName, typeName, 0, 0,searchResult = null)
+    matchAllQueryWithCount(client, indexName, typeName, 0, 0, searchResult = null, aggs = null)
   }
 
   /**
@@ -448,15 +445,15 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @param qb
     * @return
     */
-  def query(client: Client, indexName: String, typeName: String, from: Int, to: Int, qb: QueryBuilder): SearchHits = {
-    query(client, indexName, typeName, from, to, sorts = null, qb)
+  def query(client: Client, indexName: String, typeName: String, from: Int, to: Int, qb: QueryBuilder, aggs: Seq[AbstractAggregationBuilder]): SearchHits = {
+    query(client, indexName, typeName, from, to, sorts = null, qb, aggs)
   }
 
-  def query(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder): SearchHits = {
-    query(client, indexName, typeName, from, to, sorts, qb, suggestionBuilder = null, suggestQuery = null, highlightedField = null,searchResult = null)
+  def query(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, aggs: Seq[AbstractAggregationBuilder]): SearchHits = {
+    query(client, indexName, typeName, from, to, sorts, qb, suggestionBuilder = null, suggestQuery = null, highlightedField = null, searchResult = null, aggs)
   }
 
-  def query(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, suggestionBuilder: SuggestionBuilder[_], suggestQuery: String, highlightedField: List[String],searchResult:QueryResult ): SearchHits = {
+  def query(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, suggestionBuilder: SuggestionBuilder[_], suggestQuery: String, highlightedField: List[String], searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder]): SearchHits = {
     try {
       val search = client.
         prepareSearch(indexName)
@@ -485,10 +482,20 @@ private[search] object EsClient extends EsConfiguration with Logging {
         }
       }
 
+      //add aggs
+      if (aggs != null && aggs.size > 0) {
+        aggs.foreach(search.addAggregation(_))
+      }
+
+
 
       val res: SearchResponse = search.execute.actionGet
       //suggest
       ResultSearchUtil.getSuggestList(suggestQuery, "suggest", res.getSuggest, searchResult)
+
+      //aggreation
+      aggreationsResult(searchResult, res)
+
       res.getHits
     } catch {
       case e: Exception =>
@@ -497,6 +504,31 @@ private[search] object EsClient extends EsConfiguration with Logging {
     }
   }
 
+
+  private def aggreationsResult(searchResult: QueryResult, res: SearchResponse): Unit = {
+    if (res.getAggregations != null) {
+      val aggList = res.getAggregations.asMap()
+      if (aggList != null && !aggList.isEmpty) {
+        val wordCounts = new java.util.LinkedHashMap[java.lang.String, java.util.LinkedHashMap[java.lang.String, java.lang.Long]]()
+        aggList.foreach { case (k, agg) =>
+          if (agg.isInstanceOf[Terms]) {
+            val terms = agg.asInstanceOf[Terms]
+            val buckets = terms.getBuckets
+            if (buckets != null && buckets.size() > 0) {
+              val termMap = new java.util.LinkedHashMap[java.lang.String, java.lang.Long]
+              buckets.foreach { termBucket =>
+                val key = termBucket.getKeyAsString
+                val docCnt = termBucket.getDocCount
+                termMap.put(key.trim, docCnt)
+              }
+              if (!termMap.isEmpty) wordCounts.put(k, termMap)
+            }
+          }
+        }
+        if (!wordCounts.isEmpty) searchResult.setWordCounts(wordCounts)
+      }
+    }
+  }
 
   def queryAsMap(client: Client, indexName: String, typeName: String, from: Int, to: Int, qb: QueryBuilder): Array[java.util.Map[String, Object]] = {
     queryAsMap(client, indexName, typeName, from, to, sorts = null, qb)
@@ -514,7 +546,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @return
     */
   def queryAsMap(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder): Array[java.util.Map[String, Object]] = {
-    val allHits = query(client, indexName, typeName, from, to, sorts, qb)
+    val allHits = query(client, indexName, typeName, from, to, sorts, qb, aggs = null)
     val hits = allHits.getHits
     if (hits == null || hits.size == 0) return null
     val result = hits.map { hit =>
@@ -528,8 +560,8 @@ private[search] object EsClient extends EsConfiguration with Logging {
     result
   }
 
-  def queryAsMapWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, qb: QueryBuilder,searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
-    queryAsMapWithCount(client, indexName, typeName, from, to, sorts = null, qb,searchResult)
+  def queryAsMapWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, qb: QueryBuilder, searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCount(client, indexName, typeName, from, to, sorts = null, qb, searchResult, aggs)
   }
 
   /**
@@ -544,17 +576,17 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @param qb
     * @return
     */
-  def queryAsMapWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder,searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
-    queryAsMapWithCount(client, indexName, typeName, from, to, sorts, qb, null, null,searchResult)
+  def queryAsMapWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCount(client, indexName, typeName, from, to, sorts, qb, null, null, searchResult, aggs)
   }
 
-  def queryAsMapWithCountHl(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, highlightedField: List[String]): (Long, Array[java.util.Map[String, Object]]) = {
-    queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, qb, null, null, highlightedField,searchResult=null)
+  def queryAsMapWithCountHl(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, highlightedField: List[String], aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, qb, null, null, highlightedField, searchResult = null, aggs)
   }
 
 
-  def queryAsMapWithCountHl(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, suggestionBuilder: SuggestionBuilder[_], suggestQuery: String, highlightedField: List[String],searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
-    val allHits = query(client, indexName, typeName, from, to, sorts, qb, suggestionBuilder, suggestQuery, highlightedField,searchResult)
+  def queryAsMapWithCountHl(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, suggestionBuilder: SuggestionBuilder[_], suggestQuery: String, highlightedField: List[String], searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
+    val allHits = query(client, indexName, typeName, from, to, sorts, qb, suggestionBuilder, suggestQuery, highlightedField, searchResult, aggs)
     val hits = allHits.getHits
     val cnt = allHits.getTotalHits
     if (hits == null || hits.size == 0) return (cnt, null)
@@ -599,8 +631,8 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @param suggestQuery
     * @return
     */
-  def queryAsMapWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, suggestionBuilder: SuggestionBuilder[_], suggestQuery: String,searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
-    queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, qb, suggestionBuilder, suggestQuery, highlightedField = null,searchResult)
+  def queryAsMapWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, suggestionBuilder: SuggestionBuilder[_], suggestQuery: String, searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, qb, suggestionBuilder, suggestQuery, highlightedField = null, searchResult, aggs)
   }
 
   /**
@@ -617,16 +649,16 @@ private[search] object EsClient extends EsConfiguration with Logging {
     queryAsMap(client, indexName, typeName, from, to, QueryBuilders.matchAllQuery)
   }
 
-  def matchAllQueryWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int,searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
-    queryAsMapWithCount(client, indexName, typeName, from, to, QueryBuilders.matchAllQuery,searchResult)
+  def matchAllQueryWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCount(client, indexName, typeName, from, to, QueryBuilders.matchAllQuery, searchResult, aggs)
   }
 
-  def matchAllQueryWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String],searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
-    queryAsMapWithCount(client, indexName, typeName, from, to, sorts, QueryBuilders.matchAllQuery,searchResult)
+  def matchAllQueryWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCount(client, indexName, typeName, from, to, sorts, QueryBuilders.matchAllQuery, searchResult, aggs)
   }
 
-  def matchAllQueryWithCountHL(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], highlightedField: List[String]): (Long, Array[java.util.Map[String, Object]]) = {
-    queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, QueryBuilders.matchAllQuery, highlightedField)
+  def matchAllQueryWithCountHL(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], highlightedField: List[String], aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, QueryBuilders.matchAllQuery, highlightedField, aggs)
   }
 
   /**
@@ -642,8 +674,8 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @param suggestQuery
     * @return
     */
-  def matchAllQueryWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], suggestionBuilder: SuggestionBuilder[_], suggestQuery: String,searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
-    queryAsMapWithCount(client, indexName, typeName, from, to, sorts, QueryBuilders.matchAllQuery, suggestionBuilder, suggestQuery,searchResult)
+  def matchAllQueryWithCount(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], suggestionBuilder: SuggestionBuilder[_], suggestQuery: String, searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCount(client, indexName, typeName, from, to, sorts, QueryBuilders.matchAllQuery, suggestionBuilder, suggestQuery, searchResult, aggs)
   }
 
   def boolMustQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]] = {
@@ -664,8 +696,8 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @param qb
     * @return
     */
-  def searchQbWithFilterAndSorts(client: Client, indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, highlightedField: List[String],searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
-    searchQbWithFilterAndSorts(client, indexName, typeName, from, to, filter, sorts, qb, suggestionBuilder = null, suggestQuery = null, highlightedField,searchResult)
+  def searchQbWithFilterAndSorts(client: Client, indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, highlightedField: List[String], searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
+    searchQbWithFilterAndSorts(client, indexName, typeName, from, to, filter, sorts, qb, suggestionBuilder = null, suggestQuery = null, highlightedField, searchResult, aggs)
   }
 
   /**
@@ -683,7 +715,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
     * @param suggestQuery
     * @return
     */
-  def searchQbWithFilterAndSorts(client: Client, indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, suggestionBuilder: SuggestionBuilder[_], suggestQuery: String, highlightedField: List[String],searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
+  def searchQbWithFilterAndSorts(client: Client, indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, suggestionBuilder: SuggestionBuilder[_], suggestQuery: String, highlightedField: List[String], searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
     val boolQuery = QueryBuilders.boolQuery
     if (qb != null) boolQuery.must(qb)
     if (filter != null && !filter.isEmpty) {
@@ -706,8 +738,8 @@ private[search] object EsClient extends EsConfiguration with Logging {
         }
       }
     }
-    if (suggestionBuilder == null) queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, boolQuery, highlightedField)
-    else queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, boolQuery, suggestionBuilder, suggestQuery, highlightedField,searchResult)
+    if (suggestionBuilder == null) queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, boolQuery, highlightedField, aggs)
+    else queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, boolQuery, suggestionBuilder, suggestQuery, highlightedField, searchResult, aggs)
   }
 
   /**

@@ -16,6 +16,8 @@ import org.apache.http.HttpEntity
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.utils.{HttpClientUtils, URIUtils, URLEncodedUtils}
 import org.apache.http.util.EntityUtils
+import org.elasticsearch.search.aggregations.AggregationBuilders
+import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import search.common.algorithm.pinyin.PinyinUtils
 import search.common.bloomfilter.mutable.BloomFilter
 import search.common.cache.impl.LocalCache
@@ -115,6 +117,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val timerPeriodScheduleForLoadGraphHotTopicCache = new CloudTimerWorker(name = "timerPeriodScheduleForLoadGraphHotTopicCache", interval = 1000 * 60 * 60 * 22, callback = () => loadTopicToCache())
 
 
+  val timerPeriodScheduleForindexNewsFromMinutes = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromMinutes", interval = 1000 * 60 * 5, callback = () => indexNewsFromMinutes(7))
+
+
+  var indexCalendar = Calendar.getInstance()
   var eventRegexRuleSets = new java.util.HashSet[String]()
 
   def loadEventRegexRule(): Long = {
@@ -170,7 +176,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     timerPeriodScheduleForBloomFilter.startUp()
     timerPeriodScheduleForLoadEventToCache.startUp()
     timerPeriodScheduleForLoadGraphHotTopicCache.startUp()
-    //indexNewsFromMongo()
+    timerPeriodScheduleForindexNewsFromMinutes.startUp()
+    indexNewsFromMongo()
   }
 
   def warpLoadEventRegexToCache(): NiNi = {
@@ -603,6 +610,19 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
+  //index by minutes
+  def indexNewsFromMinutes(minutes: Int): Long = {
+    var min = minutes
+    if (minutes <= 0 || minutes > 60) min = 5
+    val toNowMonth = new Date()
+    indexCalendar.setTime(toNowMonth)
+    calendar.add(Calendar.MINUTE, -min)
+    val formNowMonth = calendar.getTime()
+
+    indexNewsMulti(formNowMonth, toNowMonth)
+    -1
+  }
+
   /**
     * 多线程建立新闻索引
     */
@@ -617,12 +637,16 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       calendar.add(Calendar.MONTH, -i)
       val toNowMonth = calendar.getTime()
       logInfo(s"index top ${(i + 1)} to ${i} month,date:formNowMonth:${formNowMonth},toNowMonth:${toNowMonth}")
-      val news = conf.mongoDataManager.findHotNews(formNowMonth, toNowMonth)
-      val newsMapList = NewsUtil.newsToMapCollection(news)
-      if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
-      Thread.sleep(1000*60*1)
+      indexNewsMulti(formNowMonth, toNowMonth)
+      Thread.sleep(1000 * 60 * 1)
     }
     //NewsUtil.writeAuthToFile(NewsUtil.authSet)
+  }
+
+  private def indexNewsMulti(formNowMonth: Date, toNowMonth: Date): AnyVal = {
+    val news = conf.mongoDataManager.findHotNews(formNowMonth, toNowMonth)
+    val newsMapList = NewsUtil.newsToMapCollection(news)
+    if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
   }
 
   //从pdf分析出的文本文件建立索引
@@ -937,10 +961,14 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //hl
     //val hlList = List("title","summary")
     //val hlList = List("title")
+    val companyAggs = AggregationBuilders.terms("companys").field("companys.companys_string").size(10).order(Terms.Order.count(false))
+    val eventAggs = AggregationBuilders.terms("events").field("events.events_string").size(10).order(Terms.Order.count(false))
+    val topicAggs = AggregationBuilders.terms("topics").field("topics.topics_string").size(10).order(Terms.Order.count(false))
 
+    val aggsSeq = List(companyAggs, eventAggs, topicAggs)
 
     val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
-      from, to, filter, sortF, query, decayField, newsSuggestField, hlList, queryResult,
+      from, to, filter, sortF, query, decayField, newsSuggestField, hlList, queryResult, aggs = aggsSeq,
       title, auth, summary, topics, events, companys)
     queryResult.setCount(Integer.valueOf(count.toString))
     queryResult.setResult(result)
@@ -1746,14 +1774,15 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     // testTrieNode()
 
 
-
     // testSearchQbWithFilterAndSorts()
     //testSearchQbWithFilterAndSortsWithDecayAndSearch
 
     //testDeleteAllIndexData()
 
-    testIndexFromPdf()
+
+   // testIndexFromPdf()
     //testIndexNewsFromMongo()
+    indexNewsFromMinutes(5)
   }
 
   def testIndexFromPdf() = {
@@ -1808,7 +1837,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     sorts = null
 
     val result = client.searchQbWithFilterAndSorts(newsIndexName, newsTypName,
-      0, 10, filter, sorts, query, decayField,
+      0, 10, filter, sorts, query, decayField, aggs = null,
       title, auth, summary, topics, events, companys)
     println(result)
   }

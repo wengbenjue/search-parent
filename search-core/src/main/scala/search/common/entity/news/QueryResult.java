@@ -1,5 +1,9 @@
 package search.common.entity.news;
 
+import scala.Int;
+
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -10,6 +14,7 @@ public class QueryResult {
     private Integer count;
     private java.util.Map<String, Object>[] result;
     private Map<String, List<String>> suggests;
+    private LinkedHashMap<String, LinkedHashMap<String, Long>> wordCounts; //eg: Map(conpanys->Map(工商银行->19093))
 
     public QueryResult() {
     }
@@ -47,5 +52,13 @@ public class QueryResult {
 
     public void setSuggests(Map<String, List<String>> suggests) {
         this.suggests = suggests;
+    }
+
+    public LinkedHashMap<String, LinkedHashMap<String, Long>> getWordCounts() {
+        return wordCounts;
+    }
+
+    public void setWordCounts(LinkedHashMap<String, LinkedHashMap<String, Long>> wordCounts) {
+        this.wordCounts = wordCounts;
     }
 }

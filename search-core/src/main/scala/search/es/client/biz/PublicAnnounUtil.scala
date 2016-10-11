@@ -25,7 +25,7 @@ private[search] object PublicAnnounUtil extends EsConfiguration{
       val mapPdf = loadAnnounceDataFromPdfTxt(f.getAbsolutePath)
       if (!mapPdf.isEmpty) listPdf.add(mapPdf)
       cnt += 1
-      if(cnt>=10) {
+      if(cnt>=2) {
         client.addDocumentsWithMultiThreading(announceIndexName, announceTypeName,listPdf )
         listPdf = new util.ArrayList[java.util.Map[String, Object]]()
         cnt = 0
