@@ -100,6 +100,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val decayField = "create_on"
 
 
+  //hl field for news
   var hlList: List[String] = null
   if (hlFields != null && !hlFields.equalsIgnoreCase("")) {
     val hlArrays = hlFields.split(",")
@@ -626,25 +627,53 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   /**
     * 多线程建立新闻索引
     */
-  def indexNewsFromMongo(topMonth: Int = 9) = {
+  def indexNewsFromMongo(topMonth: Int = 6) = {
     var calendar = Calendar.getInstance()
     for (i <- 0 until topMonth) {
-      calendar.setTime(new Date())
+      val currentDate = new Date()
+      calendar.setTime(currentDate)
       calendar.add(Calendar.MONTH, -(i + 1))
       val formNowMonth = calendar.getTime()
 
-      calendar.setTime(new Date())
+      calendar.setTime(currentDate)
       calendar.add(Calendar.MONTH, -i)
       val toNowMonth = calendar.getTime()
       logInfo(s"index top ${(i + 1)} to ${i} month,date:formNowMonth:${formNowMonth},toNowMonth:${toNowMonth}")
       indexNewsMulti(formNowMonth, toNowMonth)
-      Thread.sleep(1000 * 60 * 1)
+      //Thread.sleep(1000 * 60 * 1)
     }
     //NewsUtil.writeAuthToFile(NewsUtil.authSet)
   }
 
   private def indexNewsMulti(formNowMonth: Date, toNowMonth: Date): AnyVal = {
-    val news = conf.mongoDataManager.findHotNews(formNowMonth, toNowMonth)
+    for (i <- 1 to 8) {
+      calendar.setTime(formNowMonth)
+      calendar.add(Calendar.DAY_OF_MONTH, (i - 1) * 4)
+      val formNowDay = calendar.getTime()
+
+
+      var toNowDay = toNowMonth
+      if (i != 8) {
+        calendar.setTime(formNowMonth)
+        calendar.add(Calendar.DAY_OF_MONTH, i * 4)
+        toNowDay = calendar.getTime()
+      }
+
+      println(s"i=${i}开始时间：${formNowDay},结束时间${toNowDay}")
+
+      val news = conf.mongoDataManager.findHotNews(formNowDay, toNowDay)
+      val newsMapList = NewsUtil.newsToMapCollection(news)
+      if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
+      Thread.sleep(1000 * 60 * 1)
+    }
+
+    /*val news = conf.mongoDataManager.findHotNews(formNowMonth, toNowMonth)
+     val newsMapList = NewsUtil.newsToMapCollection(news)
+     if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)*/
+  }
+
+  private def indexNewsMultiByDate(formNowDay: Date, toNowDay: Date): AnyVal = {
+    val news = conf.mongoDataManager.findHotNews(formNowDay, toNowDay)
     val newsMapList = NewsUtil.newsToMapCollection(news)
     if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
   }
@@ -1780,9 +1809,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //testDeleteAllIndexData()
 
 
-   // testIndexFromPdf()
-    //testIndexNewsFromMongo()
-    indexNewsFromMinutes(5)
+    // testIndexFromPdf()
+    testIndexNewsFromMongo()
+    //indexNewsFromMinutes(5)
   }
 
   def testIndexFromPdf() = {

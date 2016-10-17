@@ -62,7 +62,8 @@ private[search] object NewsUtil extends Logging{
           if (events != null && events.size() > 0) {
             val multFieldList = new util.ArrayList[String]()
             events.foreach{s =>
-              if(LocalCache.eventSet.contains(s.toString))
+              val eS = s.toString.trim.replaceAll("[\\|||]\\S+","")
+              if(LocalCache.eventSet.contains(eS))
               multFieldList.add(s.toString)
             }
             if (multFieldList.size() > 0)
@@ -105,4 +106,12 @@ private[search] object NewsUtil extends Logging{
     println(s"成功写入新闻来源文件个数: ${auths.size}")
   }
 
+}
+
+object TestNewsUtil{
+  def main(args: Array[String]) {
+    val event = "震荡|2"
+    val rEvent = event.replaceAll("[\\|||]\\S+","")
+    println(rEvent)
+  }
 }
