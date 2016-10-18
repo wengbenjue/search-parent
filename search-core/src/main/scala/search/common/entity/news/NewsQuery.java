@@ -12,6 +12,7 @@ public class NewsQuery {
     private Integer leastTopMonth=6;
     private String sort;
     private String order;
+    private Integer needHl=1; //0 false,1 true
     private Map<String, String> sorts;
 
     public NewsQuery() {
@@ -79,5 +80,13 @@ public class NewsQuery {
 
     public void setOrder(String order) {
         this.order = order;
+    }
+
+    public Integer getNeedHl() {
+        return needHl;
+    }
+
+    public void setNeedHl(Integer needHl) {
+        this.needHl = needHl;
     }
 }

@@ -937,9 +937,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param sorts
     * @return
     */
-  def wrapQueryNews(query: String, from: Int, to: Int, leastTopMonth: Int, sort: String, order: String, sorts: java.util.Map[String, String]): NiNi = {
+  def wrapQueryNews(query: String, from: Int, to: Int, leastTopMonth: Int, sort: String, order: String, sorts: java.util.Map[String, String],needHl: Int): NiNi = {
     Util.caculateCostTime {
-      queryNews(query, from, to, leastTopMonth, sort, order, sorts)
+      queryNews(query, from, to, leastTopMonth, sort, order, sorts,needHl)
     }
   }
 
@@ -958,7 +958,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param sorts
     * @return
     */
-  def queryNews(query: String, from: Int, to: Int, leastTopMonth: Int, sort: String, order: String, sorts: java.util.Map[String, String]): QueryResult = {
+  def queryNews(query: String, from: Int, to: Int, leastTopMonth: Int, sort: String, order: String, sorts: java.util.Map[String, String],needHl: Int=0): QueryResult = {
     val queryResult = new QueryResult()
 
     var filter = new mutable.HashMap[String, (Object, Boolean)]()
@@ -996,8 +996,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     val aggsSeq = List(companyAggs, eventAggs, topicAggs)
 
+    var hlFields = hlList
+    if(needHl!=1) hlFields=null
     val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
-      from, to, filter, sortF, query, decayField, newsSuggestField, hlList, queryResult, aggs = aggsSeq,
+      from, to, filter, sortF, query, decayField, newsSuggestField, hlFields, queryResult, aggs = aggsSeq,
       title, auth, summary, topics, events, companys)
     queryResult.setCount(Integer.valueOf(count.toString))
     queryResult.setResult(result)
