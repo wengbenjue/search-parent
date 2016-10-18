@@ -627,7 +627,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   /**
     * 多线程建立新闻索引
     */
-  def indexNewsFromMongo(topMonth: Int = 6) = {
+  def indexNewsFromMongo(topMonth: Int = 9) = {
     var calendar = Calendar.getInstance()
     for (i <- 0 until topMonth) {
       val currentDate = new Date()

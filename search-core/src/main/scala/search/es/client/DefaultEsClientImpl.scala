@@ -407,8 +407,8 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to, sorts,searchResult,aggs=null)
   }
 
-  def matchAllQueryWithCountHl(indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], highlightedField: List[String], aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
-    EsClient.matchAllQueryWithCountHL(EsClient.getClientFromPool(), indexName, typeName, from, to, sorts, highlightedField,aggs)
+  def matchAllQueryWithCountHl(indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], highlightedField: List[String], aggs: Seq[AbstractAggregationBuilder],searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
+    EsClient.matchAllQueryWithCountHL(EsClient.getClientFromPool(), indexName, typeName, from, to, sorts, highlightedField,aggs,searchResult)
   }
 
 
@@ -473,7 +473,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
          , scoreMode = "multiply", boostMode = "multiply",
          Query.multiMatchQuery(query, "and", 0.3f, null, "80%", queryType = "best", fields: _*)))*/
     if (query == null) {
-      return matchAllQueryWithCountHl(indexName, typeName, from, to, sorts, highlightedField,aggs)
+      return matchAllQueryWithCountHl(indexName, typeName, from, to, sorts, highlightedField,aggs,searchResult)
     }
 
     if (suggestField != null) {

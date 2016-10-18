@@ -525,7 +525,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
             }
           }
         }
-        if (!wordCounts.isEmpty) searchResult.setWordCounts(wordCounts)
+        if (wordCounts!=null && !wordCounts.isEmpty) searchResult.setWordCounts(wordCounts)
       }
     }
   }
@@ -580,8 +580,8 @@ private[search] object EsClient extends EsConfiguration with Logging {
     queryAsMapWithCount(client, indexName, typeName, from, to, sorts, qb, null, null, searchResult, aggs)
   }
 
-  def queryAsMapWithCountHl(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, highlightedField: List[String], aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
-    queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, qb, null, null, highlightedField, searchResult = null, aggs)
+  def queryAsMapWithCountHl(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: scala.collection.mutable.Map[String, String], qb: QueryBuilder, highlightedField: List[String], aggs: Seq[AbstractAggregationBuilder],searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, qb, null, null, highlightedField, searchResult, aggs)
   }
 
 
@@ -657,8 +657,8 @@ private[search] object EsClient extends EsConfiguration with Logging {
     queryAsMapWithCount(client, indexName, typeName, from, to, sorts, QueryBuilders.matchAllQuery, searchResult, aggs)
   }
 
-  def matchAllQueryWithCountHL(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], highlightedField: List[String], aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
-    queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, QueryBuilders.matchAllQuery, highlightedField, aggs)
+  def matchAllQueryWithCountHL(client: Client, indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], highlightedField: List[String], aggs: Seq[AbstractAggregationBuilder],searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
+    queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, QueryBuilders.matchAllQuery, highlightedField, aggs,searchResult)
   }
 
   /**
@@ -738,7 +738,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
         }
       }
     }
-    if (suggestionBuilder == null) queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, boolQuery, highlightedField, aggs)
+    if (suggestionBuilder == null) queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, boolQuery, highlightedField, aggs,searchResult)
     else queryAsMapWithCountHl(client, indexName, typeName, from, to, sorts, boolQuery, suggestionBuilder, suggestQuery, highlightedField, searchResult, aggs)
   }
 
