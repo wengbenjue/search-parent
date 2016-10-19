@@ -42,7 +42,10 @@ public class EsSearchController {
     //search and filter by keywords
     @RequestMapping(value = "/search/news", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi searchNews(final NewsQuery newsQuery) {
-            return BizeEsInterface.wrapQueryNews(newsQuery.getQuery(),newsQuery.getFrom(),newsQuery.getTo(),newsQuery.getLeastTopMonth(),newsQuery.getSort(),newsQuery.getOrder(),newsQuery.getSorts(),newsQuery.getNeedHl());
+
+        NiNi result = BizeEsInterface.wrapQueryNews(newsQuery.getQuery(), newsQuery.getFrom(), newsQuery.getTo(), newsQuery.getLeastTopMonth(), newsQuery.getSort(), newsQuery.getOrder(), newsQuery.getSorts(), newsQuery.getNeedHl());
+        SearchInterface.recordSearchLog(newsQuery.getQuery(), request(), getSessionId());
+        return result;
     }
 
 
