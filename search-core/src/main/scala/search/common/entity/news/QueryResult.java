@@ -2,10 +2,7 @@ package search.common.entity.news;
 
 import scala.Int;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by soledede.weng on 2016/9/21.
@@ -14,7 +11,8 @@ public class QueryResult {
     private Integer count;
     private java.util.Map<String, Object>[] result;
     private Map<String, List<String>> suggests;
-    private LinkedHashMap<String, LinkedHashMap<String, Long>> wordCounts; //eg: Map(conpanys->Map(工商银行->19093))
+    private LinkedHashMap<String, LinkedHashMap<String, Double>> wordCounts; //eg: Map(conpanys->Map(工商银行->19093))
+    private Set<String> hlWords;
 
     public QueryResult() {
     }
@@ -54,11 +52,19 @@ public class QueryResult {
         this.suggests = suggests;
     }
 
-    public LinkedHashMap<String, LinkedHashMap<String, Long>> getWordCounts() {
+    public LinkedHashMap<String, LinkedHashMap<String, Double>> getWordCounts() {
         return wordCounts;
     }
 
-    public void setWordCounts(LinkedHashMap<String, LinkedHashMap<String, Long>> wordCounts) {
+    public void setWordCounts(LinkedHashMap<String, LinkedHashMap<String, Double>> wordCounts) {
         this.wordCounts = wordCounts;
+    }
+
+    public Set<String> getHlWords() {
+        return hlWords;
+    }
+
+    public void setHlWords(Set<String> hlWords) {
+        this.hlWords = hlWords;
     }
 }

@@ -509,17 +509,17 @@ private[search] object EsClient extends EsConfiguration with Logging {
     if (res.getAggregations != null) {
       val aggList = res.getAggregations.asMap()
       if (aggList != null && !aggList.isEmpty) {
-        val wordCounts = new java.util.LinkedHashMap[java.lang.String, java.util.LinkedHashMap[java.lang.String, java.lang.Long]]()
+        val wordCounts = new java.util.LinkedHashMap[java.lang.String, java.util.LinkedHashMap[java.lang.String, java.lang.Double]]()
         aggList.foreach { case (k, agg) =>
           if (agg.isInstanceOf[Terms]) {
             val terms = agg.asInstanceOf[Terms]
             val buckets = terms.getBuckets
             if (buckets != null && buckets.size() > 0) {
-              val termMap = new java.util.LinkedHashMap[java.lang.String, java.lang.Long]
+              val termMap = new java.util.LinkedHashMap[java.lang.String, java.lang.Double]
               buckets.foreach { termBucket =>
                 val key = termBucket.getKeyAsString
                 val docCnt = termBucket.getDocCount
-                termMap.put(key.trim, docCnt)
+                termMap.put(key.trim, java.lang.Double.valueOf(docCnt))
               }
               if (!termMap.isEmpty) wordCounts.put(k, termMap)
             }

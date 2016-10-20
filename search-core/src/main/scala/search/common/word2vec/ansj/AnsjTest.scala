@@ -13,7 +13,15 @@ object AnsjTest extends Logging{
   def main(args: Array[String]) {
     //testSegmentWord
    // UserDefineLibrary
-    testSplitWordByToAnalysis
+   testSplitWordByToAnalysis
+    userDefinedCut
+  }
+
+  def userDefinedCut() = {
+    UserDefineLibrary.insertWord("中国电子集团概念板","userDefine",1000)
+    val str = "我测试的概念版本,中国电子集团概念板"
+    val terms = ToAnalysis.parse(str)
+    println(terms)
   }
 
   def testSegmentWord()= {
@@ -32,11 +40,18 @@ object AnsjTest extends Logging{
 
   def testSplitWordByToAnalysis() = {
     logInfo("testSplitWordByToAnalysis")
+    var startTime = System.currentTimeMillis()
     val str = "中国电子集团概念板将很快就死定了房价"
-    val terms = ToAnalysis.parse(str)
+    var terms = ToAnalysis.parse(str)
     println(terms)
-    val keyWords = terms.map(_.getName).filter(_.length>1).toSet
+    var keyWords = terms.map(_.getName).filter(_.length>1).toSet
     println(keyWords)
+    var endTime = System.currentTimeMillis()
+    println("耗时："+(endTime-startTime))
+    terms = ToAnalysis.parse(str)
+    terms.map(_.getName).filter(_.length>1).toSet
+    println("耗时："+(System.currentTimeMillis()-endTime))
+
   }
 
 }

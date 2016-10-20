@@ -417,10 +417,10 @@ private[search] object DataManager {
     //testFindBaseStock
     //testFindByKeyword
     //testSaveOrUpdate
-    //testGetDicFromNewsKeywordDict()
+    testGetDicFromNewsKeywordDict()
     //testGetSynonmDicFromSynonymWords()
     //testFindTopicHot()
-    testFindHotNews()
+    //testFindHotNews()
   }
 
   def testFindHotNews() = {
