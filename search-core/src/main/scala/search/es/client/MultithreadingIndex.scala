@@ -93,7 +93,8 @@ private[search] class MultithreadingIndex() extends Logging {
         if (cnt > 1000 && cnt % 1000 == 0) {
           bulkPostDocumentSubmit(client, request)
           request = Requests.bulkRequest
-          Thread.sleep(1000)
+          request.refresh(true)
+          //Thread.sleep(1000)
         }
       }
       //val response: ActionFuture[BulkResponse] = client.bulk(request)
