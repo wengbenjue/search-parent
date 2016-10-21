@@ -1003,6 +1003,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     var hlFields = hlList
     if (needHl != 1) hlFields = null
+    if(query==null) hlFields = hlList
+    else if(query!=null && needHl==1) hlFields = hlList
+    else hlFields = null
     val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
       from, to, filter, sortF, query, decayField, newsSuggestField, hlFields, queryResult, aggs = aggsSeq,
       title, auth, summary, topics, events, companys)
@@ -1012,61 +1015,77 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     wordCounts(queryResult)
 
     //自定义高亮
-    val terms = ToAnalysis.parse(query)
-    var keyWords = terms.map(_.getName).filter(_.length > 1).toSet
-    if (keyWords != null && keyWords.size > 0)
-      queryResult.setHlWords(keyWords)
+    userHl(query, queryResult)
     queryResult
   }
 
 
-  private def wordCounts(queryResult: QueryResult): Unit = {
-    if (queryResult.getWordCounts != null && !queryResult.getWordCounts.isEmpty) {
-      if (queryResult.getWordCounts.containsKey("companys")) {
-        var companyMap: util.LinkedHashMap[String, java.lang.Double] = queryResult.getWordCounts.get("companys")
-        val newCompanMap = new util.LinkedHashMap[String, java.lang.Double]
-        val sumCnt = companyMap.map(_._2.toInt).sum
-        companyMap.foreach { case (company, count) =>
-          if (LocalCache.baseStockCache.containsKey(company)) {
-            val baseStock = LocalCache.baseStockCache.getOrElse(company, null)
-            if (baseStock != null) {
-              //val code = baseStock.getComCode.replaceAll("_\\S*","")
-              val code = baseStock.getComCode
-              newCompanMap.put(s"${company}|${code}", java.lang.Double.valueOf(new java.text.DecimalFormat("#0.00").format(count / sumCnt)))
-            } else newCompanMap.put(company, count)
-          } else newCompanMap.put(company, count)
+  private def userHl(query: String, queryResult: QueryResult): Unit = {
+    try {
+      if (query != null && !"".equalsIgnoreCase(query)) {
+        val terms = ToAnalysis.parse(query)
+        if (terms != null) {
+          var keyWords = terms.map(_.getName).filter(_.length > 1).toSet
+          if (keyWords != null && keyWords.size > 0)
+            queryResult.setHlWords(keyWords)
         }
-        companyMap = null
-        queryResult.getWordCounts.put("companys", newCompanMap)
       }
+    } catch {
+      case e: Exception => logError("hl failed",e)
+    }
+  }
 
-      if (queryResult.getWordCounts.containsKey("events")) {
-        var eventsMap: util.LinkedHashMap[String, java.lang.Double] = queryResult.getWordCounts.get("events")
-        val sumCnt = eventsMap.map(_._2.toInt).sum
-        val newEventsMap = new util.LinkedHashMap[String, java.lang.Double]
-        eventsMap.foreach { case (event, count) =>
-          val events = event.split("[\\|||]{1}")
-          if (events.length == 2) {
-            val semanticValue = events(1)
-            if (semanticValue.trim.toInt != 0) {
-              //filter neuter Affective index
-              newEventsMap.put(event, java.lang.Double.valueOf(new java.text.DecimalFormat("#0.00").format(count / sumCnt)))
+  private def wordCounts(queryResult: QueryResult): Unit = {
+    try {
+      if (queryResult.getWordCounts != null && !queryResult.getWordCounts.isEmpty) {
+        if (queryResult.getWordCounts.containsKey("companys")) {
+          var companyMap: util.LinkedHashMap[String, java.lang.Double] = queryResult.getWordCounts.get("companys")
+          val newCompanMap = new util.LinkedHashMap[String, java.lang.Double]
+          val sumCnt = companyMap.map(_._2.toInt).sum
+          companyMap.foreach { case (company, count) =>
+            if (LocalCache.baseStockCache.containsKey(company)) {
+              val baseStock = LocalCache.baseStockCache.getOrElse(company, null)
+              if (baseStock != null) {
+                //val code = baseStock.getComCode.replaceAll("_\\S*","")
+                val code = baseStock.getComCode
+                newCompanMap.put(s"${company}|${code}", java.lang.Double.valueOf(new java.text.DecimalFormat("#0.00").format(count / sumCnt)))
+              } else newCompanMap.put(company, count)
+            } else newCompanMap.put(company, count)
+          }
+          companyMap = null
+          queryResult.getWordCounts.put("companys", newCompanMap)
+        }
+
+        if (queryResult.getWordCounts.containsKey("events")) {
+          var eventsMap: util.LinkedHashMap[String, java.lang.Double] = queryResult.getWordCounts.get("events")
+          val sumCnt = eventsMap.map(_._2.toInt).sum
+          val newEventsMap = new util.LinkedHashMap[String, java.lang.Double]
+          eventsMap.foreach { case (event, count) =>
+            val events = event.split("[\\|||]{1}")
+            if (events.length == 2) {
+              val semanticValue = events(1)
+              if (semanticValue.trim.toInt != 0) {
+                //filter neuter Affective index
+                newEventsMap.put(event, java.lang.Double.valueOf(new java.text.DecimalFormat("#0.00").format(count / sumCnt)))
+              }
             }
           }
+          if (!newEventsMap.isEmpty)
+            queryResult.getWordCounts.put("events", newEventsMap)
         }
-        if (!newEventsMap.isEmpty)
-          queryResult.getWordCounts.put("events", newEventsMap)
-      }
-      if (queryResult.getWordCounts.containsKey("topics")) {
-        var topicsMap: util.LinkedHashMap[String, java.lang.Double] = queryResult.getWordCounts.get("topics")
-        val newTopicsMap = new util.LinkedHashMap[String, java.lang.Double]
-        val sumCnt = topicsMap.map(_._2.toInt).sum
-        topicsMap.foreach { case (topic, count) =>
-          newTopicsMap.put(topic, java.lang.Double.valueOf(new java.text.DecimalFormat("#0.00").format(count / sumCnt)))
+        if (queryResult.getWordCounts.containsKey("topics")) {
+          var topicsMap: util.LinkedHashMap[String, java.lang.Double] = queryResult.getWordCounts.get("topics")
+          val newTopicsMap = new util.LinkedHashMap[String, java.lang.Double]
+          val sumCnt = topicsMap.map(_._2.toInt).sum
+          topicsMap.foreach { case (topic, count) =>
+            newTopicsMap.put(topic, java.lang.Double.valueOf(new java.text.DecimalFormat("#0.00").format(count / sumCnt)))
+          }
+          if (!newTopicsMap.isEmpty)
+            queryResult.getWordCounts.put("topics", newTopicsMap)
         }
-        if (!newTopicsMap.isEmpty)
-          queryResult.getWordCounts.put("topics", newTopicsMap)
       }
+    } catch {
+      case e:Exception => logError("word count failed",e)
     }
   }
 
