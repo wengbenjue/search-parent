@@ -122,7 +122,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   val timerPeriodScheduleForindexNewsFromMinutes = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromMinutes", interval = 1000 * 60 * 5, callback = () => indexNewsFromMinutes(8))
 
-  val timerPeriodScheduleForloadDataToDictionary = new CloudTimerWorker(name = "timerPeriodScheduleForloadDataToDictionary", interval = 1000 * 60 * 60 * 24, callback = () => BizUtil.loadDataToDictionary(conf))
+  //val timerPeriodScheduleForloadDataToDictionary = new CloudTimerWorker(name = "timerPeriodScheduleForloadDataToDictionary", interval = 1000 * 60 * 60 * 24, callback = () => BizUtil.loadDataToDictionary(conf))
 
 
   var indexCalendar = Calendar.getInstance()
@@ -183,7 +183,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     timerPeriodScheduleForLoadGraphHotTopicCache.startUp()
     timerPeriodScheduleForindexNewsFromDays.startUp()
     timerPeriodScheduleForindexNewsFromMinutes.startUp()
-    timerPeriodScheduleForloadDataToDictionary.startUp()
+    //timerPeriodScheduleForloadDataToDictionary.startUp()
     BizUtil.loadDataToDictionary(conf)
     // indexNewsFromMongo()
     indexNewsFromDay(1)

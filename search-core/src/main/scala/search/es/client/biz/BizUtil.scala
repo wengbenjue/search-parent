@@ -28,13 +28,13 @@ private[search] object BizUtil extends Logging with EsConfiguration {
 
   def loadDataToDictionary(conf: EsClientConf): Long = {
     getAllFromGraphsToDictionary(graphNodeDataUrl)
-    getDicFromNewsKeywordDictToDictionary(conf)
+    //getDicFromNewsKeywordDictToDictionary(conf)
     -1
   }
 
 
   def getDicFromNewsKeywordDictToDictionary(conf: EsClientConf): Unit = {
-    val dics: java.util.List[DBObject] = conf.mongoDataManager.getDicFromNewsKeywordDict()
+    var dics: java.util.List[DBObject] = conf.mongoDataManager.getDicFromNewsKeywordDict()
     logInfo("start add keywordDic data to dictionary")
     dics.foreach { dic =>
       val word = if (dic.get("word") != null) dic.get("word").toString.trim else null
@@ -43,6 +43,7 @@ private[search] object BizUtil extends Logging with EsConfiguration {
         logInfo(s" keywordDic ${word} have loaded to dictionary")
       }
     }
+    dics =null
     logInfo(s"finished add keywordDic data to dictionary,total number:${dics.size()}")
   }
 
@@ -50,7 +51,7 @@ private[search] object BizUtil extends Logging with EsConfiguration {
   def getAllFromGraphsToDictionary(graphNodeDataUrl: String): Unit = {
     val allNodeJsonObj = requestHttpByURL(graphNodeDataUrl)
     if (allNodeJsonObj != null) {
-      val nodes = allNodeJsonObj.getJSONArray("message")
+      var nodes = allNodeJsonObj.getJSONArray("message")
       if (nodes != null && nodes.size() > 0) {
         logInfo("start add graph data to dictionary")
         nodes.foreach { n =>
@@ -59,6 +60,7 @@ private[search] object BizUtil extends Logging with EsConfiguration {
         }
         logInfo(s"finished add graph data to dictionary,total number:${nodes.size()}")
       }
+      nodes = null
     }
   }
 
