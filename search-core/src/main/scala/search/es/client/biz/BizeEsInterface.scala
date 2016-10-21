@@ -118,7 +118,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val timerPeriodScheduleForLoadGraphHotTopicCache = new CloudTimerWorker(name = "timerPeriodScheduleForLoadGraphHotTopicCache", interval = 1000 * 60 * 60 * 22, callback = () => loadTopicToCache())
 
 
-  val timerPeriodScheduleForindexNewsFromDays = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromDays", interval = 1000 * 60 * 60 * 12, callback = () => indexNewsFromDay(2))
+ // val timerPeriodScheduleForindexNewsFromDays = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromDays", interval = 1000 * 60 * 60 * 24, callback = () => indexNewsFromDay(2))
 
   val timerPeriodScheduleForindexNewsFromMinutes = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromMinutes", interval = 1000 * 60 * 5, callback = () => indexNewsFromMinutes(8))
 
@@ -181,7 +181,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     timerPeriodScheduleForBloomFilter.startUp()
     timerPeriodScheduleForLoadEventToCache.startUp()
     timerPeriodScheduleForLoadGraphHotTopicCache.startUp()
-    timerPeriodScheduleForindexNewsFromDays.startUp()
+    //timerPeriodScheduleForindexNewsFromDays.startUp()
     timerPeriodScheduleForindexNewsFromMinutes.startUp()
     //timerPeriodScheduleForloadDataToDictionary.startUp()
     BizUtil.loadDataToDictionary(conf)
@@ -684,7 +684,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       println(s"i=${i}开始时间：${formNowDay},结束时间${toNowDay}")
 
       findAndIndexNews(formNowDay, toNowDay)
-      Thread.sleep(1000 * 60 * 3)
+      //Thread.sleep(1000 * 60 * 3)
     }
 
     /*val news = conf.mongoDataManager.findHotNews(formNowMonth, toNowMonth)

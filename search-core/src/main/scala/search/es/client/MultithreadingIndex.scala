@@ -78,6 +78,7 @@ private[search] class MultithreadingIndex() extends Logging {
     try {
       var cnt = 0
       var request: BulkRequest = Requests.bulkRequest
+      request.refresh(true)
       for (doc <- docs) {
         cnt += 1
         var id = doc.get("id")
