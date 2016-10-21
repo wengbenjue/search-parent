@@ -1,7 +1,7 @@
 package search.es.client.biz
 
 import java.io.{FileInputStream, FileOutputStream, IOException, PrintWriter}
-import java.net.{ URLEncoder}
+import java.net.{URLEncoder}
 import java.util
 import java.util.{Calendar, Date, UUID}
 import javax.servlet.http.HttpServletRequest
@@ -120,10 +120,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   val timerPeriodScheduleForindexNewsFromDays = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromDays", interval = 1000 * 60 * 60 * 12, callback = () => indexNewsFromDay(2))
 
-  val timerPeriodScheduleForindexNewsFromMinutes = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromMinutes", interval = 1000 * 60 * 5, callback = () => indexNewsFromDay(1))
+  val timerPeriodScheduleForindexNewsFromMinutes = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromMinutes", interval = 1000 * 60 * 5, callback = () => indexNewsFromMinutes(8))
 
-  val timerPeriodScheduleForloadDataToDictionary = new CloudTimerWorker(name = "timerPeriodScheduleForloadDataToDictionary", interval = 1000 * 60 * 60*24, callback = () => BizUtil.loadDataToDictionary(conf))
-
+  val timerPeriodScheduleForloadDataToDictionary = new CloudTimerWorker(name = "timerPeriodScheduleForloadDataToDictionary", interval = 1000 * 60 * 60 * 24, callback = () => BizUtil.loadDataToDictionary(conf))
 
 
   var indexCalendar = Calendar.getInstance()
@@ -186,8 +185,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     timerPeriodScheduleForindexNewsFromMinutes.startUp()
     timerPeriodScheduleForloadDataToDictionary.startUp()
     BizUtil.loadDataToDictionary(conf)
-    indexNewsFromMongo()
-
+    // indexNewsFromMongo()
+    indexNewsFromDay(1)
   }
 
   def warpLoadEventRegexToCache(): NiNi = {
@@ -621,21 +620,21 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   //index by minutes
-  def indexNewsFromMinutes(minutes: Int): Long = {
+  def indexNewsFromMinutes(minutes: Int = 5): Long = {
     var min = minutes
     if (minutes <= 0 || minutes > 60) min = 5
-    val toNowMonth = new Date()
-    indexCalendar.setTime(toNowMonth)
+    val toNowMinutes = new Date()
+    indexCalendar.setTime(toNowMinutes)
     calendar.add(Calendar.MINUTE, -min)
-    val formNowMonth = calendar.getTime()
+    val formNowMinutes = calendar.getTime()
 
-    indexNewsMulti(formNowMonth, toNowMonth)
+    findAndIndexNews(formNowMinutes, toNowMinutes)
     -1
   }
 
 
   //index by days
-  def indexNewsFromDay(days: Int): Long = {
+  def indexNewsFromDay(days: Int = 1): Long = {
     var day = days
     if (days <= 0 || days > 24) day = 2
     val toNowDay = new Date()
@@ -650,7 +649,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   /**
     * 多线程建立新闻索引
     */
-  def indexNewsFromMongo(topMonth: Int = 9) = {
+  def indexNewsFromMongo(topMonth: Int = 1) = {
     var calendar = Calendar.getInstance()
     for (i <- 0 until topMonth) {
       val currentDate = new Date()
@@ -693,8 +692,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
      if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)*/
   }
 
-  private def findAndIndexNews(formNowDay: Date, toNowDay: Date): AnyVal = {
-    val news = conf.mongoDataManager.findHotNews(formNowDay, toNowDay)
+  private def findAndIndexNews(formNowTime: Date, toNowTime: Date): AnyVal = {
+    val news = conf.mongoDataManager.findHotNews(formNowTime, toNowTime)
     val newsMapList = NewsUtil.newsToMapCollection(news)
     if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
   }
@@ -902,7 +901,6 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   def delIndexByKeywords(keywords: java.util.Collection[String]): Boolean = {
     client.decrementIndex(graphIndexName, graphTypName, keywords)
   }
-
 
 
   def requestHttpForSynonym(query: String, reqType: String = "get"): AnyRef = {
@@ -1807,8 +1805,6 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
-
-
   def filterGraphNodes(): GraphNodes = {
     val allNodeJsonObj = BizUtil.requestHttpByURL(graphNodeDataUrl)
     if (allNodeJsonObj != null) {
@@ -1887,7 +1883,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   def testLoadDataToDictionary() = {
-      BizUtil.loadDataToDictionary(conf)
+    BizUtil.loadDataToDictionary(conf)
   }
 
   def testIndexFromPdf() = {
