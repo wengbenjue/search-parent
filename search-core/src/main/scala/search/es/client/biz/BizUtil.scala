@@ -1,6 +1,7 @@
 package search.es.client.biz
 
 import java.io.IOException
+import java.util.{Calendar, Date}
 
 import com.alibaba.fastjson.{JSON, JSONObject}
 import com.mongodb.DBObject
@@ -93,7 +94,44 @@ private[search] object BizUtil extends Logging with EsConfiguration {
   }
 
 
+
+
+  def deleteNewsByRange(client: EsClient): Long = {
+    var calendar = Calendar.getInstance()
+    val currentDate = new Date()
+    calendar.setTime(currentDate)
+    if("year".equalsIgnoreCase(newsDelInc) || "y".equalsIgnoreCase(newsDelInc) || "Y".equalsIgnoreCase(newsDelInc)){
+      calendar.add(Calendar.YEAR, -newsDelPeiord)
+    }else if("month".equalsIgnoreCase(newsDelInc) || "M".equalsIgnoreCase(newsDelInc)){
+      calendar.add(Calendar.MONTH, -(newsDelPeiord + 1))
+    }else if("day".equalsIgnoreCase(newsDelInc) || "d".equalsIgnoreCase(newsDelInc) || "D".equalsIgnoreCase(newsDelInc)){
+      calendar.add(Calendar.DATE, -newsDelPeiord)
+    }
+    val delteDateTime = calendar.getTime
+    logInfo(s"delete news by range,inc: ${newsDelInc},period:${newsDelPeiord},lte date:${delteDateTime}")
+    client.delByRange(newsIndexName,newsTypName,"create_on",null,delteDateTime)
+    -1
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   def main(args: Array[String]) {
-    getAllFromGraphsToDictionary(graphNodeDataUrl)
+    //getAllFromGraphsToDictionary(graphNodeDataUrl)
   }
 }

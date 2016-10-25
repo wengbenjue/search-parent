@@ -118,11 +118,14 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val timerPeriodScheduleForLoadGraphHotTopicCache = new CloudTimerWorker(name = "timerPeriodScheduleForLoadGraphHotTopicCache", interval = 1000 * 60 * 60 * 22, callback = () => loadTopicToCache())
 
 
- // val timerPeriodScheduleForindexNewsFromDays = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromDays", interval = 1000 * 60 * 60 * 24, callback = () => indexNewsFromDay(2))
+  // val timerPeriodScheduleForindexNewsFromDays = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromDays", interval = 1000 * 60 * 60 * 24, callback = () => indexNewsFromDay(2))
 
   val timerPeriodScheduleForindexNewsFromMinutes = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromMinutes", interval = 1000 * 60 * 5, callback = () => indexNewsFromMinutes(8))
 
   //val timerPeriodScheduleForloadDataToDictionary = new CloudTimerWorker(name = "timerPeriodScheduleForloadDataToDictionary", interval = 1000 * 60 * 60 * 24, callback = () => BizUtil.loadDataToDictionary(conf))
+
+  val timerPeriodScheduleFordeleteNewsByRange = new CloudTimerWorker(name = "timerPeriodScheduleFordeleteNewsByRange", interval = 1000 * 60 * 60*24, callback = () => BizUtil.deleteNewsByRange(client))
+
 
 
   var indexCalendar = Calendar.getInstance()
@@ -183,6 +186,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     timerPeriodScheduleForLoadGraphHotTopicCache.startUp()
     //timerPeriodScheduleForindexNewsFromDays.startUp()
     timerPeriodScheduleForindexNewsFromMinutes.startUp()
+    timerPeriodScheduleFordeleteNewsByRange.startUp()
     //timerPeriodScheduleForloadDataToDictionary.startUp()
     BizUtil.loadDataToDictionary(conf)
     // indexNewsFromMongo()
@@ -1004,8 +1008,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     var hlFields = hlList
     if (needHl != 1) hlFields = null
-    if(query==null) hlFields = hlList
-    else if(query!=null && needHl==1) hlFields = hlList
+    if (query == null) hlFields = hlList
+    else if (query != null && needHl == 1) hlFields = hlList
     else hlFields = null
     val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
       from, to, filter, sortF, query, decayField, newsSuggestField, hlFields, queryResult, aggs = aggsSeq,
@@ -1032,7 +1036,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         }
       }
     } catch {
-      case e: Exception => logError("hl failed",e)
+      case e: Exception => logError("hl failed", e)
     }
   }
 
@@ -1086,7 +1090,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         }
       }
     } catch {
-      case e:Exception => logError("word count failed",e)
+      case e: Exception => logError("word count failed", e)
     }
   }
 
@@ -1697,6 +1701,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
+
+
+
   def wrapCleanAllFromMongoAndIndex = {
     Util.caculateCostTime {
       cleanAllFromMongoAndIndex()
@@ -1899,7 +1906,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //indexNewsFromMinutes(5)
 
     //indexNewsFromDay(2)
-    testLoadDataToDictionary
+    //testLoadDataToDictionary
+
+    BizUtil.deleteNewsByRange(client)
   }
 
   def testLoadDataToDictionary() = {

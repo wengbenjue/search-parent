@@ -363,6 +363,10 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
 
+  override def delByRange(indexName: String, typeName: String, field: String, gte: Object, lte: Object): Boolean = {
+    EsClient.delByRange(EsClient.getClientFromPool(),indexName,typeName,field,gte,lte)
+  }
+
   override def delAllData(indexName: String, typeName: String): Boolean = {
     EsClient.delAllData(EsClient.getClientFromPool(), indexName, typeName)
   }
@@ -528,12 +532,13 @@ private[search] class EsIndexRunner(indexName: String, typeName: String, conf: E
 
 class IndexManageProcessrRunner(indexName: String, typeName: String, docs: java.util.Collection[java.util.Map[String, Object]]) extends Runnable {
   override def run(): Unit = {
-    new MultithreadingIndex().bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
+   // new MultithreadingIndex().bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
+    MultithreadingIndex().bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
   }
 }
 
 
-object DefaultEsClientImpl extends EsConfiguration {
+object DefaultEsClientImpl extends EsConfiguration with Logging{
 
 
   var coreThreadsNumber = consumerCoreThreadsNum
@@ -547,6 +552,7 @@ object DefaultEsClientImpl extends EsConfiguration {
 
   val indexProcessThreadPool = Util.newDaemonFixedThreadPool(currentThreadsNum, "index_process_thread_excutor_es")
 
+  logInfo(s"index_process_thread_excutor_es,currentThreadsPool number:${currentThreadsNum} ")
 
   def main(args: Array[String]) {
     //testAddDocuments

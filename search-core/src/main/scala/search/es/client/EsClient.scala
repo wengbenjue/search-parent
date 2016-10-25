@@ -53,6 +53,8 @@ private[search] trait EsClient extends EsConfiguration {
 
   def deleteIndex(indexName: String): Boolean
 
+  def delByRange(indexName: String, typeName: String, field: String, gte: Object,lte: Object): Boolean
+
   def totalIndexRun(indexName: String, typeName: String): Unit
 
   def bulkIndexRun(indexName: String, typeName: String, startDate: Long, endDate: Long): Unit
@@ -207,6 +209,34 @@ private[search] object EsClient extends EsConfiguration with Logging {
     } catch {
       case e: Exception =>
         logError(s"delete index ${indexName} with type ${typeName} failed", e)
+        false
+    }
+  }
+
+  /**
+    * delete by range
+    * @param client
+    * @param indexName
+    * @param typeName
+    * @param field
+    * @param gte
+    * @param lte
+    * @return
+    */
+  def delByRange(client: Client, indexName: String, typeName: String, field: String, gte: Object,lte: Object): Boolean = {
+    try {
+      val query = QueryBuilders.rangeQuery(field)
+      if(gte!=null) query.gte(gte)
+      if(lte!=null) query.lte(lte)
+      val response = new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE)
+        .setIndices(indexName)
+        .setTypes(typeName)
+        .setQuery(query)
+        .execute().actionGet()
+      true
+    } catch {
+      case e: Exception =>
+        logError(s"delete index ${indexName} with type ${typeName} by range query failed,gte:${gte},lte:${lte}", e)
         false
     }
   }

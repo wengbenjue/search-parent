@@ -124,3 +124,19 @@ private[search] class MultithreadingIndex() extends Logging {
 
 
 }
+
+private object MultithreadingIndex {
+
+  var multiIndex: MultithreadingIndex = null
+  val lock = new Object
+
+  def apply(): MultithreadingIndex = {
+    if (multiIndex == null) {
+      lock.synchronized {
+        if (multiIndex == null) multiIndex = new MultithreadingIndex()
+      }
+    }
+    multiIndex
+  }
+
+}
