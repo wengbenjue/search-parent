@@ -191,7 +191,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     BizUtil.loadDataToDictionary(conf)
     // indexNewsFromMongo()
     //indexNewsFromDay(1)
-    indexNewsFromMinutes(30)
+    indexNewsFromMinutes(10)
   }
 
   def warpLoadEventRegexToCache(): NiNi = {

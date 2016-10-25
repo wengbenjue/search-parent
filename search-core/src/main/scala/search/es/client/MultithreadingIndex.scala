@@ -6,6 +6,7 @@ import org.elasticsearch.action.bulk.BulkRequest
 import org.elasticsearch.action.index.IndexResponse
 import org.elasticsearch.client.{Client, Requests}
 import search.common.cache.impl.LocalCache
+import search.common.config.EsConfiguration
 import search.common.entity.bizesinterface.IndexObjEntity
 import search.common.util.Logging
 import search.es.client.util.EsClientConf
@@ -13,7 +14,7 @@ import search.es.client.util.EsClientConf
 /**
   * Created by soledede.weng on 2016/9/20.
   */
-private[search] class MultithreadingIndex() extends Logging {
+private[search] class MultithreadingIndex() extends Logging with EsConfiguration{
   /**
     *
     * @param client
@@ -90,7 +91,7 @@ private[search] class MultithreadingIndex() extends Logging {
         logInfo(s"id ${id} indexed.")
         if (id == null) request.add(Requests.indexRequest(indexName).`type`(typeName).source(doc))
         else request.add(Requests.indexRequest(indexName).`type`(typeName).id(id.toString.trim).source(doc))
-        if (cnt > 1000 && cnt % 1000 == 0) {
+        if (bulkCommitSize != -1 && cnt > bulkCommitSize && cnt % bulkCommitSize == 0) {
           bulkPostDocumentSubmit(client, request)
           request = Requests.bulkRequest
           request.refresh(true)
