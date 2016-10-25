@@ -630,8 +630,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     if (minutes <= 0 || minutes > 60) min = 5
     val toNowMinutes = new Date()
     indexCalendar.setTime(toNowMinutes)
-    calendar.add(Calendar.MINUTE, -min)
-    val formNowMinutes = calendar.getTime()
+    indexCalendar.add(Calendar.MINUTE, -min)
+    val formNowMinutes = indexCalendar.getTime()
 
     findAndIndexNews(formNowMinutes, toNowMinutes)
     -1
@@ -644,8 +644,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     if (days <= 0 || days > 24) day = 2
     val toNowDay = new Date()
     indexCalendar.setTime(toNowDay)
-    calendar.add(Calendar.DATE, -day)
-    val formNowDay = calendar.getTime()
+    indexCalendar.add(Calendar.DATE, -day)
+    val formNowDay = indexCalendar.getTime()
     println(s"fromDay:${formNowDay},toDay:${toNowDay}")
     findAndIndexNews(formNowDay, toNowDay)
     -1
@@ -700,7 +700,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   private def findAndIndexNews(formNowTime: Date, toNowTime: Date): AnyVal = {
     val news = conf.mongoDataManager.findHotNews(formNowTime, toNowTime)
     val newsMapList = NewsUtil.newsToMapCollection(news)
-    if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
+    logInfo(s"total news ${newsMapList.size()} for current batch,formNowTime:${formNowTime},toNowTime:${toNowTime}")
+    if (newsMapList != null && newsMapList.size() > 0) {
+      client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
+    }
   }
 
   private def indexNewsMultiByDate(formNowDay: Date, toNowDay: Date): AnyVal = {

@@ -80,6 +80,7 @@ private[search] class MultithreadingIndex() extends Logging with EsConfiguration
       var cnt = 0
       var request: BulkRequest = Requests.bulkRequest
       request.refresh(true)
+      val size = docs.size()
       for (doc <- docs) {
         cnt += 1
         var id = doc.get("id")
@@ -88,7 +89,7 @@ private[search] class MultithreadingIndex() extends Logging with EsConfiguration
         }
         doc.remove("id")
         doc.remove("_id")
-        logInfo(s"id ${id} indexed.")
+        logInfo(s"id ${id} indexed.total number:${size} for current batch,indexName:${indexName},typeName:${typeName}")
         if (id == null) request.add(Requests.indexRequest(indexName).`type`(typeName).source(doc))
         else request.add(Requests.indexRequest(indexName).`type`(typeName).id(id.toString.trim).source(doc))
         if (bulkCommitSize != -1 && cnt > bulkCommitSize && cnt % bulkCommitSize == 0) {
