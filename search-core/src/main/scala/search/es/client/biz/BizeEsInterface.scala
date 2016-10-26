@@ -120,7 +120,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   // val timerPeriodScheduleForindexNewsFromDays = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromDays", interval = 1000 * 60 * 60 * 24, callback = () => indexNewsFromDay(2))
 
-  val timerPeriodScheduleForindexNewsFromMinutes = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromMinutes", interval = 1000 * 60 * 5, callback = () => indexNewsFromMinutes(8))
+  val timerPeriodScheduleForindexNewsFromMinutes = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromMinutes", interval = 1000 * 60 * 5, callback = () => BizUtil.indexNewsFromMinutes(conf,client,8))
 
   //val timerPeriodScheduleForloadDataToDictionary = new CloudTimerWorker(name = "timerPeriodScheduleForloadDataToDictionary", interval = 1000 * 60 * 60 * 24, callback = () => BizUtil.loadDataToDictionary(conf))
 
@@ -128,7 +128,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
 
-  var indexCalendar = Calendar.getInstance()
+
   var eventRegexRuleSets = new java.util.HashSet[String]()
 
   def loadEventRegexRule(): Long = {
@@ -191,7 +191,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     BizUtil.loadDataToDictionary(conf)
     // indexNewsFromMongo()
     //indexNewsFromDay(1)
-    indexNewsFromMinutes(10)
+    //indexNewsFromMinutes(10)
   }
 
   def warpLoadEventRegexToCache(): NiNi = {
@@ -624,22 +624,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
-  //index by minutes
-  def indexNewsFromMinutes(minutes: Int = 5): Long = {
-    var min = minutes
-    if (minutes <= 0 || minutes > 60) min = 5
-    val toNowMinutes = new Date()
-    indexCalendar.setTime(toNowMinutes)
-    indexCalendar.add(Calendar.MINUTE, -min)
-    val formNowMinutes = indexCalendar.getTime()
 
-    findAndIndexNews(formNowMinutes, toNowMinutes)
-    -1
-  }
 
 
   //index by days
   def indexNewsFromDay(days: Int = 1): Long = {
+    var indexCalendar = Calendar.getInstance()
     var day = days
     if (days <= 0 || days > 24) day = 2
     val toNowDay = new Date()
@@ -647,7 +637,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     indexCalendar.add(Calendar.DATE, -day)
     val formNowDay = indexCalendar.getTime()
     println(s"fromDay:${formNowDay},toDay:${toNowDay}")
-    findAndIndexNews(formNowDay, toNowDay)
+    BizUtil.findAndIndexNews(conf,client,formNowDay, toNowDay)
     -1
   }
 
@@ -688,7 +678,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
       println(s"i=${i}开始时间：${formNowDay},结束时间${toNowDay}")
 
-      findAndIndexNews(formNowDay, toNowDay)
+      BizUtil.findAndIndexNews(conf,client,formNowDay, toNowDay)
       //Thread.sleep(1000 * 60 * 3)
     }
 
@@ -697,17 +687,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
      if (newsMapList != null && newsMapList.size() > 0) client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)*/
   }
 
-  private def findAndIndexNews(formNowTime: Date, toNowTime: Date): AnyVal = {
-    val news = conf.mongoDataManager.findHotNews(formNowTime, toNowTime)
-    val newsMapList = NewsUtil.newsToMapCollection(news)
-    logInfo(s"total news ${newsMapList.size()} for current batch,formNowTime:${formNowTime},toNowTime:${toNowTime}")
-    if (newsMapList != null && newsMapList.size() > 0) {
-      client.addDocumentsWithMultiThreading(newsIndexName, newsTypName, newsMapList)
-    }
-  }
+
 
   private def indexNewsMultiByDate(formNowDay: Date, toNowDay: Date): AnyVal = {
-    findAndIndexNews(formNowDay, toNowDay)
+    println(s"fromDate:${formNowDay},toDate:${toNowDay}")
+    BizUtil.findAndIndexNews(conf,client,formNowDay, toNowDay)
   }
 
   //从pdf分析出的文本文件建立索引
