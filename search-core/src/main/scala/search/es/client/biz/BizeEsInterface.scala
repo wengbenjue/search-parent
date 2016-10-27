@@ -189,7 +189,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     timerPeriodScheduleFordeleteNewsByRange.startUp()
     //timerPeriodScheduleForloadDataToDictionary.startUp()
     BizUtil.loadDataToDictionary(conf)
-    // indexNewsFromMongo()
+    if(needPatchIndex){
+      indexNewsFromMongo(batchMonth)
+    }
+
     //indexNewsFromDay(1)
     //indexNewsFromMinutes(10)
   }
@@ -645,19 +648,23 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * 多线程建立新闻索引
     */
   def indexNewsFromMongo(topMonth: Int = 1) = {
-    var calendar = Calendar.getInstance()
-    for (i <- 0 until topMonth) {
-      val currentDate = new Date()
-      calendar.setTime(currentDate)
-      calendar.add(Calendar.MONTH, -(i + 1))
-      val formNowMonth = calendar.getTime()
+    try {
+      var calendar = Calendar.getInstance()
+      for (i <- 0 until topMonth) {
+        val currentDate = new Date()
+        calendar.setTime(currentDate)
+        calendar.add(Calendar.MONTH, -(i + 1))
+        val formNowMonth = calendar.getTime()
 
-      calendar.setTime(currentDate)
-      calendar.add(Calendar.MONTH, -i)
-      val toNowMonth = calendar.getTime()
-      logInfo(s"index top ${(i + 1)} to ${i} month,date:formNowMonth:${formNowMonth},toNowMonth:${toNowMonth}")
-      indexNewsMulti(formNowMonth, toNowMonth)
-      //Thread.sleep(1000 * 60 * 1)
+        calendar.setTime(currentDate)
+        calendar.add(Calendar.MONTH, -i)
+        val toNowMonth = calendar.getTime()
+        logInfo(s"index top ${(i + 1)} to ${i} month,date:formNowMonth:${formNowMonth},toNowMonth:${toNowMonth}")
+        indexNewsMulti(formNowMonth, toNowMonth)
+        //Thread.sleep(1000 * 60 * 1)
+      }
+    } catch {
+      case e: Exception => logError("index by month failed",e)
     }
     //NewsUtil.writeAuthToFile(NewsUtil.authSet)
   }

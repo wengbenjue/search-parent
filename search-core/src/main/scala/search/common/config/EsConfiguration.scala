@@ -41,6 +41,9 @@ lazy val switchCrawler = Try(esConfig.getString("switch.crawler")).getOrElse("of
   lazy val newsDelInc = Try(esConfig.getString("news.delete.inc")).getOrElse("year")
   lazy val newsDelPeiord = Try(esConfig.getInt("news.delete.keepPeriod")).getOrElse(1)
 
+  lazy val needPatchIndex = Try(esConfig.getBoolean("index.needPatchIndex")).getOrElse(false)
+  lazy val batchMonth = Try(esConfig.getInt("index.batchMonth")).getOrElse(12)
+
   lazy val announceIndexName = Try(esConfig.getString("announce.indexName")).getOrElse("announ")
   lazy val announceTypeName = Try(esConfig.getString("announce.typeName")).getOrElse("announ")
 

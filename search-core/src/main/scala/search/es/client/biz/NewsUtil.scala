@@ -46,7 +46,7 @@ private[search] object NewsUtil extends Logging{
 
           val companys = if (dbObj.get("asw") != null) dbObj.get("asw").asInstanceOf[BasicDBList] else null
           if (companys != null && companys.size() > 0) {
-            val multFieldList = new util.ArrayList[String]()
+            val multFieldList = new util.HashSet[String]()
             companys.foreach { s =>
               val comCode = s.toString
               if (comCode != null && !comCode.trim.equalsIgnoreCase("")) {
@@ -60,7 +60,7 @@ private[search] object NewsUtil extends Logging{
           }
           val events = if (dbObj.get("rule") != null) dbObj.get("rule").asInstanceOf[BasicDBList] else null
           if (events != null && events.size() > 0) {
-            val multFieldList = new util.ArrayList[String]()
+            val multFieldList = new util.HashSet[String]()
             events.foreach{s =>
               val eS = s.toString.trim.replaceAll("[\\|||]\\S+","")
               if(LocalCache.eventSet.contains(eS))
@@ -71,7 +71,7 @@ private[search] object NewsUtil extends Logging{
           }
           val topics = if (dbObj.get("topic") != null) dbObj.get("topic").asInstanceOf[BasicDBList] else null
           if (topics != null && topics.size() > 0) {
-            val multFieldList = new util.ArrayList[String]()
+            val multFieldList = new util.HashSet[String]()
             topics.foreach { s =>
               val dbObj = s.asInstanceOf[DBObject]
               val topic = if (dbObj.get("topic") != null) dbObj.get("topic").toString.trim else null
@@ -84,7 +84,7 @@ private[search] object NewsUtil extends Logging{
 
           val kws = if (dbObj.get("kw") != null) dbObj.get("kw").asInstanceOf[BasicDBList] else null
           if (kws != null && kws.size() > 0) {
-            val multFieldList = new util.ArrayList[String]()
+            val multFieldList = new util.HashSet[String]()
             kws.foreach(s => multFieldList.add(s.toString))
             if (multFieldList.size() > 0)
               map.put("kw", multFieldList)
