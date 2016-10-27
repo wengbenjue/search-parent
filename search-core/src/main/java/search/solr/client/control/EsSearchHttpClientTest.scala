@@ -220,9 +220,10 @@ object EsSearchHttpClientTest {
 
     keywords.add(new IndexObjEntity("中标项目"))
     keywords.add(new IndexObjEntity("业绩下滑"))
-    keywords.add(new IndexObjEntity("筹划并购"))
 
-
+    val indexObj = new IndexObjEntity("筹划并购")
+    indexObj.setNewKeyword("chouhua")
+    keywords.add(indexObj)
 
 
     //keywords.add(new IndexObjEntity(kvN, list))
@@ -241,8 +242,8 @@ object EsSearchHttpClientTest {
   }
 
   def submitIndexDataRwInterval() = {
-    val kvs = getIndexDataFromSerObj()
-    //val kvs = getIndexDataBySet()
+    //val kvs = getIndexDataFromSerObj()
+    val kvs = getIndexDataBySet()
     var cnt = 0
     //val url: String = "http://54.222.222.172:8999/es/index/rws"
     val url: String = "http://localhost:8999/es/index/rws"
@@ -288,8 +289,8 @@ object EsSearchHttpClientTest {
 
 
   def wrapTestIndexByKeywordsWithRw(url: String, keywords: String): Unit = {
-    //val url: String = "http://localhost:8999/es/index/rws"
-    val url: String = "http://54.222.222.172:8999/es/index/rws"
+    val url: String = "http://localhost:8999/es/index/rws"
+    //val url: String = "http://54.222.222.172:8999/es/index/rws"
     val keywords = getIndexDataFromSerObj
     //val keywords = getIndexDataBySet
     testIndexByKeywordsWithRw(url, keywords)

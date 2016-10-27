@@ -145,6 +145,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     data.foreach { k =>
       val keyword = k.getKeyword
       val rvKw = k.getRvkw
+      val newKeyword = k.getNewKeyword
       //val doc = conf.mongoDataManager.queryOneByKeyWord(keyword)
       //val doc = dm.findAndRemove(keyword)
       val doc = dm.findByKeyword(keyword)
@@ -159,7 +160,9 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       val dbObject = new BasicDBObject()
       val currentTime = System.currentTimeMillis()
       dbObject.append("_id", indexId)
-      dbObject.append("keyword", keyword)
+      if (newKeyword != null && !"".equalsIgnoreCase(newKeyword))
+        dbObject.append("keyword", newKeyword)
+      else dbObject.append("keyword", keyword)
       if (rvKw != null && rvKw.size() > 0)
         dbObject.append("relevant_kws", rvKw)
       dbObject.append("updateDate", currentTime)
@@ -169,7 +172,9 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
       val newDoc = new java.util.HashMap[String, Object]()
       newDoc.put("_id", indexId)
-      newDoc.put("keyword", keyword)
+      if (newKeyword != null && !"".equalsIgnoreCase(newKeyword))
+        newDoc.put("keyword", newKeyword)
+      else newDoc.put("keyword", keyword)
       if (rvKw != null && rvKw.size() > 0)
         newDoc.put("relevant_kws", rvKw)
       newDoc.put("updateDate", java.lang.Long.valueOf(currentTime))
@@ -364,7 +369,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
 
   override def delByRange(indexName: String, typeName: String, field: String, gte: Object, lte: Object): Boolean = {
-    EsClient.delByRange(EsClient.getClientFromPool(),indexName,typeName,field,gte,lte)
+    EsClient.delByRange(EsClient.getClientFromPool(), indexName, typeName, field, gte, lte)
   }
 
   override def delAllData(indexName: String, typeName: String): Boolean = {
@@ -404,20 +409,20 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
   override def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int): (Long, Array[java.util.Map[String, Object]]) = {
-    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to,searchResult=null,aggs = null)
+    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to, searchResult = null, aggs = null)
   }
 
-  def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String],searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
-    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to, sorts,searchResult,aggs=null)
+  def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], searchResult: QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
+    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to, sorts, searchResult, aggs = null)
   }
 
-  def matchAllQueryWithCountHl(indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], highlightedField: List[String], aggs: Seq[AbstractAggregationBuilder],searchResult:QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
-    EsClient.matchAllQueryWithCountHL(EsClient.getClientFromPool(), indexName, typeName, from, to, sorts, highlightedField,aggs,searchResult)
+  def matchAllQueryWithCountHl(indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], highlightedField: List[String], aggs: Seq[AbstractAggregationBuilder], searchResult: QueryResult): (Long, Array[java.util.Map[String, Object]]) = {
+    EsClient.matchAllQueryWithCountHL(EsClient.getClientFromPool(), indexName, typeName, from, to, sorts, highlightedField, aggs, searchResult)
   }
 
 
-  def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], suggestionBuilder: SuggestionBuilder[_], suggestQuery: String,searchResult:QueryResult,aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
-    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to, sorts, suggestionBuilder, suggestQuery,searchResult,aggs)
+  def matchAllQueryWithCount(indexName: String, typeName: String, from: Int, to: Int, sorts: mutable.Map[String, String], suggestionBuilder: SuggestionBuilder[_], suggestQuery: String, searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder]): (Long, Array[java.util.Map[String, Object]]) = {
+    EsClient.matchAllQueryWithCount(EsClient.getClientFromPool(), indexName, typeName, from, to, sorts, suggestionBuilder, suggestQuery, searchResult, aggs)
   }
 
 
@@ -434,7 +439,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
   override def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String]): (Long, Array[java.util.Map[String, Object]]) = {
-    EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts, qb = null,highlightedField=null,searchResult = null,aggs=null)
+    EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts, qb = null, highlightedField = null, searchResult = null, aggs = null)
   }
 
   /**
@@ -451,8 +456,8 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     * @param fields
     * @return
     */
-  override def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String,aggs: Seq[AbstractAggregationBuilder], fields: String*): (Long, Array[java.util.Map[String, Object]]) = {
-    searchQbWithFilterAndSortsWithSuggest(indexName, typeName, from, to, filter, sorts, query, decayField, suggestField = null, highlightedField = null,searchResult=null,aggs, fields: _*)
+  override def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, aggs: Seq[AbstractAggregationBuilder], fields: String*): (Long, Array[java.util.Map[String, Object]]) = {
+    searchQbWithFilterAndSortsWithSuggest(indexName, typeName, from, to, filter, sorts, query, decayField, suggestField = null, highlightedField = null, searchResult = null, aggs, fields: _*)
   }
 
 
@@ -471,13 +476,13 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     * @param fields
     * @return
     */
-  override def searchQbWithFilterAndSortsWithSuggest(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, suggestField: String, highlightedField: List[String],searchResult:QueryResult, aggs: Seq[AbstractAggregationBuilder], fields: String*): (Long, Array[java.util.Map[String, Object]]) = {
+  override def searchQbWithFilterAndSortsWithSuggest(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, suggestField: String, highlightedField: List[String], searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder], fields: String*): (Long, Array[java.util.Map[String, Object]]) = {
     /* EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
        Query.functionScoreQuery(Function.gaussDecayFunction(decayField, "120w", "5w", 0.3)
          , scoreMode = "multiply", boostMode = "multiply",
          Query.multiMatchQuery(query, "and", 0.3f, null, "80%", queryType = "best", fields: _*)))*/
     if (query == null) {
-      return matchAllQueryWithCountHl(indexName, typeName, from, to, sorts, highlightedField,aggs,searchResult)
+      return matchAllQueryWithCountHl(indexName, typeName, from, to, sorts, highlightedField, aggs, searchResult)
     }
 
     if (suggestField != null) {
@@ -486,7 +491,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
           , scoreMode = "multiply", boostMode = "multiply",
           Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", fields: _*)),
         Query.suggestPhraseSuggestionQuery(suggestField, query), query,
-        highlightedField,searchResult,
+        highlightedField, searchResult,
         aggs
       )
     } else {
@@ -494,7 +499,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
         Query.functionScoreQuery(Function.gaussDecayFunction(decayField, "120w", "5w", 0.3)
           , scoreMode = "multiply", boostMode = "multiply",
           Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", fields: _*)),
-        highlightedField,searchResult,
+        highlightedField, searchResult,
         aggs)
     }
 
@@ -532,13 +537,13 @@ private[search] class EsIndexRunner(indexName: String, typeName: String, conf: E
 
 class IndexManageProcessrRunner(indexName: String, typeName: String, docs: java.util.Collection[java.util.Map[String, Object]]) extends Runnable {
   override def run(): Unit = {
-   // new MultithreadingIndex().bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
+    // new MultithreadingIndex().bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
     MultithreadingIndex().bulkPostDocument(EsClient.getClientFromPool(), indexName, typeName, docs)
   }
 }
 
 
-object DefaultEsClientImpl extends EsConfiguration with Logging{
+object DefaultEsClientImpl extends EsConfiguration with Logging {
 
 
   var coreThreadsNumber = consumerCoreThreadsNum

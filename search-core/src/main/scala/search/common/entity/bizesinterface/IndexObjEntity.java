@@ -10,6 +10,7 @@ import java.util.List;
 public class IndexObjEntity {
     private String keyword;
     private Collection<String> rvkw;
+    private String newKeyword;
 
     public IndexObjEntity() {
     }
@@ -17,6 +18,7 @@ public class IndexObjEntity {
     public IndexObjEntity(String keyword) {
         this.keyword = keyword;
     }
+
 
     public IndexObjEntity(String keyword, String rvkw) {
         this.keyword = keyword;
@@ -48,5 +50,13 @@ public class IndexObjEntity {
 
     public void setRvkw(Collection<String> rvkw) {
         this.rvkw = rvkw;
+    }
+
+    public String getNewKeyword() {
+        return newKeyword;
+    }
+
+    public void setNewKeyword(String newKeyword) {
+        this.newKeyword = newKeyword;
     }
 }
