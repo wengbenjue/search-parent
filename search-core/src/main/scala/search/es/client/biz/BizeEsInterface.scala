@@ -94,9 +94,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val title = "title^6"
   val auth = "auth^3"
   val summary = "summary"
-  val topics = "topics^5"
-  val events = "events^5"
-  val companys = "companys^5"
+  val topics = "topics^2"
+  val events = "events^2"
+  val companys = "companys^2"
   val decayField = "create_on"
 
 

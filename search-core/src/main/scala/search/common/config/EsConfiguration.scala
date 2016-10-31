@@ -63,6 +63,11 @@ lazy val switchCrawler = Try(esConfig.getString("switch.crawler")).getOrElse("of
   //高亮显示字段
   lazy val hlFields = Try(esConfig.getString("hl.fields")).getOrElse("")
 
+  //新闻根据时间衰减排序
+  lazy val scale = Try(esConfig.getString("news.decays.scale")).getOrElse("120w")
+  lazy val offset = Try(esConfig.getString("news.decays.offset")).getOrElse("1w")
+  lazy val decay = Try(esConfig.getDouble("news.decays.decay")).getOrElse(0.3)
+
   lazy val fetchUrl = Try(esConfig.getString("api.url.crawler")).getOrElse("http://192.168.250.207:8010/api/graph?")
   lazy val graphUrl = Try(esConfig.getString("api.url.graph")).getOrElse("http://192.168.250.207:9000/api/graph/mgra?c=")
   lazy val warmUrl = Try(esConfig.getString("api.url.warmUrl")).getOrElse("http://54.222.222.172:8999/es/search/state/?keyword=")
