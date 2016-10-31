@@ -197,7 +197,7 @@ object EsSearchHttpClientTest {
   def getIndexDataBySet(): java.util.List[IndexObjEntity] = {
     val keywords: java.util.List[IndexObjEntity] = new java.util.ArrayList[IndexObjEntity]
     var list: java.util.List[String] = new java.util.ArrayList[String]()
-    var kvN = "双象股份"
+    /*var kvN = "双象股份"
     list.add("a")
     list.add("abc")
     val i = new IndexObjEntity(kvN)
@@ -219,10 +219,10 @@ object EsSearchHttpClientTest {
     keywords.add(new IndexObjEntity("PPP"))
 
     keywords.add(new IndexObjEntity("中标项目"))
-    keywords.add(new IndexObjEntity("业绩下滑"))
+    keywords.add(new IndexObjEntity("业绩下滑"))*/
 
-    val indexObj = new IndexObjEntity("筹划并购")
-    indexObj.setNewKeyword("chouhua")
+    val indexObj = new IndexObjEntity("养老")
+    indexObj.setNewKeyword("养老产业")
     keywords.add(indexObj)
 
 
@@ -245,8 +245,8 @@ object EsSearchHttpClientTest {
     //val kvs = getIndexDataFromSerObj()
     val kvs = getIndexDataBySet()
     var cnt = 0
-    //val url: String = "http://54.222.222.172:8999/es/index/rws"
-    val url: String = "http://localhost:8999/es/index/rws"
+    val url: String = "http://54.222.222.172:8999/es/index/rws"
+    //val url: String = "http://localhost:8999/es/index/rws"
     var keywords = new java.util.ArrayList[IndexObjEntity]()
     kvs.foreach { obj =>
       if (cnt == 20) {

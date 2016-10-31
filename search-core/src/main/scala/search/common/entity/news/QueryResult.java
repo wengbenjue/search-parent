@@ -1,5 +1,6 @@
 package search.common.entity.news;
 
+import org.apache.commons.collections.map.HashedMap;
 import scala.Int;
 
 import java.util.*;
@@ -12,6 +13,7 @@ public class QueryResult {
     private java.util.Map<String, Object>[] result;
     private Map<String, List<String>> suggests;
     private LinkedHashMap<String, LinkedHashMap<String, Double>> wordCounts; //eg: Map(conpanys->Map(工商银行->19093))
+    private Map<String,List<SortStruct>> rvwSorts = new HashedMap(); // 跟上面wordCounts存储的数据一样，只是变成了列表给前端
     private Set<String> hlWords;
 
     public QueryResult() {
@@ -66,5 +68,13 @@ public class QueryResult {
 
     public void setHlWords(Set<String> hlWords) {
         this.hlWords = hlWords;
+    }
+
+    public Map<String, List<SortStruct>> getRvwSorts() {
+        return rvwSorts;
+    }
+
+    public void setRvwSorts(Map<String, List<SortStruct>> rvwSorts) {
+        this.rvwSorts = rvwSorts;
     }
 }

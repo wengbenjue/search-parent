@@ -1,7 +1,7 @@
 package search.es.client.biz
 
 import java.io.{FileInputStream, FileOutputStream, IOException, PrintWriter}
-import java.net.{URLEncoder}
+import java.net.URLEncoder
 import java.util
 import java.util.{Calendar, Date, UUID}
 import javax.servlet.http.HttpServletRequest
@@ -25,7 +25,7 @@ import search.common.cache.pagecache.ESSearchPageCache
 import search.common.clock.CloudTimerWorker
 import search.common.config.EsConfiguration
 import search.common.entity.bizesinterface.{CompanyStock, Industry, _}
-import search.common.entity.news.{News, QueryResult}
+import search.common.entity.news.{News, QueryResult, SortStruct}
 import search.common.entity.state.ProcessState
 import search.common.http.HttpClientUtil
 import search.common.listener.graph.{Request, UpdateState, WarmCache}
@@ -120,13 +120,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   // val timerPeriodScheduleForindexNewsFromDays = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromDays", interval = 1000 * 60 * 60 * 24, callback = () => indexNewsFromDay(2))
 
-  val timerPeriodScheduleForindexNewsFromMinutes = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromMinutes", interval = 1000 * 60 * 5, callback = () => BizUtil.indexNewsFromMinutes(conf,client,8))
+  val timerPeriodScheduleForindexNewsFromMinutes = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromMinutes", interval = 1000 * 60 * 5, callback = () => BizUtil.indexNewsFromMinutes(conf, client, 8))
 
   //val timerPeriodScheduleForloadDataToDictionary = new CloudTimerWorker(name = "timerPeriodScheduleForloadDataToDictionary", interval = 1000 * 60 * 60 * 24, callback = () => BizUtil.loadDataToDictionary(conf))
 
-  val timerPeriodScheduleFordeleteNewsByRange = new CloudTimerWorker(name = "timerPeriodScheduleFordeleteNewsByRange", interval = 1000 * 60 * 60*24, callback = () => BizUtil.deleteNewsByRange(client))
-
-
+  val timerPeriodScheduleFordeleteNewsByRange = new CloudTimerWorker(name = "timerPeriodScheduleFordeleteNewsByRange", interval = 1000 * 60 * 60 * 24, callback = () => BizUtil.deleteNewsByRange(client))
 
 
   var eventRegexRuleSets = new java.util.HashSet[String]()
@@ -189,7 +187,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     timerPeriodScheduleFordeleteNewsByRange.startUp()
     //timerPeriodScheduleForloadDataToDictionary.startUp()
     BizUtil.loadDataToDictionary(conf)
-    if(needPatchIndex){
+    if (needPatchIndex) {
       indexNewsFromMongo(batchMonth)
     }
 
@@ -627,9 +625,6 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
-
-
-
   //index by days
   def indexNewsFromDay(days: Int = 1): Long = {
     var indexCalendar = Calendar.getInstance()
@@ -640,7 +635,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     indexCalendar.add(Calendar.DATE, -day)
     val formNowDay = indexCalendar.getTime()
     println(s"fromDay:${formNowDay},toDay:${toNowDay}")
-    BizUtil.findAndIndexNews(conf,client,formNowDay, toNowDay)
+    BizUtil.findAndIndexNews(conf, client, formNowDay, toNowDay)
     -1
   }
 
@@ -664,7 +659,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         //Thread.sleep(1000 * 60 * 1)
       }
     } catch {
-      case e: Exception => logError("index by month failed",e)
+      case e: Exception => logError("index by month failed", e)
     }
     //NewsUtil.writeAuthToFile(NewsUtil.authSet)
   }
@@ -685,7 +680,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
       println(s"i=${i}开始时间：${formNowDay},结束时间${toNowDay}")
 
-      BizUtil.findAndIndexNews(conf,client,formNowDay, toNowDay)
+      BizUtil.findAndIndexNews(conf, client, formNowDay, toNowDay)
       //Thread.sleep(1000 * 60 * 3)
     }
 
@@ -695,10 +690,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
-
   private def indexNewsMultiByDate(formNowDay: Date, toNowDay: Date): AnyVal = {
     println(s"fromDate:${formNowDay},toDate:${toNowDay}")
-    BizUtil.findAndIndexNews(conf,client,formNowDay, toNowDay)
+    BizUtil.findAndIndexNews(conf, client, formNowDay, toNowDay)
   }
 
   //从pdf分析出的文本文件建立索引
@@ -1040,6 +1034,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         if (queryResult.getWordCounts.containsKey("companys")) {
           var companyMap: util.LinkedHashMap[String, java.lang.Double] = queryResult.getWordCounts.get("companys")
           val newCompanMap = new util.LinkedHashMap[String, java.lang.Double]
+          val sortCompanys = new util.ArrayList[SortStruct]()
           val sumCnt = companyMap.map(_._2.toInt).sum
           companyMap.foreach { case (company, count) =>
             if (LocalCache.baseStockCache.containsKey(company)) {
@@ -1047,40 +1042,57 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
               if (baseStock != null) {
                 //val code = baseStock.getComCode.replaceAll("_\\S*","")
                 val code = baseStock.getComCode
-                newCompanMap.put(s"${company}|${code}", java.lang.Double.valueOf(new java.text.DecimalFormat("#0.00").format(count / sumCnt)))
-              } else newCompanMap.put(company, count)
-            } else newCompanMap.put(company, count)
+                val newComanyName = s"${company}|${code}"
+                val newCompanyCount = java.lang.Double.valueOf(new java.text.DecimalFormat("#0.00").format(count / sumCnt))
+                newCompanMap.put(newComanyName, newCompanyCount)
+                sortCompanys.add(new SortStruct(newComanyName, newCompanyCount))
+              } else {
+                newCompanMap.put(company, count)
+                sortCompanys.add(new SortStruct(company, count))
+              }
+            } else {
+              newCompanMap.put(company, count)
+              sortCompanys.add(new SortStruct(company, count))
+            }
           }
-          companyMap = null
           queryResult.getWordCounts.put("companys", newCompanMap)
+          queryResult.getRvwSorts.put("companys", sortCompanys)
         }
 
         if (queryResult.getWordCounts.containsKey("events")) {
           var eventsMap: util.LinkedHashMap[String, java.lang.Double] = queryResult.getWordCounts.get("events")
           val sumCnt = eventsMap.map(_._2.toInt).sum
           val newEventsMap = new util.LinkedHashMap[String, java.lang.Double]
+          val sortEvents = new util.ArrayList[SortStruct]()
           eventsMap.foreach { case (event, count) =>
             val events = event.split("[\\|||]{1}")
             if (events.length == 2) {
               val semanticValue = events(1)
               if (semanticValue.trim.toInt != 0) {
                 //filter neuter Affective index
-                newEventsMap.put(event, java.lang.Double.valueOf(new java.text.DecimalFormat("#0.00").format(count / sumCnt)))
+                val eventWeight = java.lang.Double.valueOf(new java.text.DecimalFormat("#0.00").format(count / sumCnt))
+                newEventsMap.put(event, eventWeight)
+                sortEvents.add(new SortStruct(event, eventWeight))
               }
             }
           }
           if (!newEventsMap.isEmpty)
             queryResult.getWordCounts.put("events", newEventsMap)
+          queryResult.getRvwSorts.put("events", sortEvents)
         }
         if (queryResult.getWordCounts.containsKey("topics")) {
           var topicsMap: util.LinkedHashMap[String, java.lang.Double] = queryResult.getWordCounts.get("topics")
           val newTopicsMap = new util.LinkedHashMap[String, java.lang.Double]
+          val sortTopics = new util.ArrayList[SortStruct]()
           val sumCnt = topicsMap.map(_._2.toInt).sum
           topicsMap.foreach { case (topic, count) =>
-            newTopicsMap.put(topic, java.lang.Double.valueOf(new java.text.DecimalFormat("#0.00").format(count / sumCnt)))
+            val topicWeights = java.lang.Double.valueOf(new java.text.DecimalFormat("#0.00").format(count / sumCnt))
+            newTopicsMap.put(topic, topicWeights)
+            sortTopics.add(new SortStruct(topic, topicWeights))
           }
           if (!newTopicsMap.isEmpty)
             queryResult.getWordCounts.put("topics", newTopicsMap)
+          queryResult.getRvwSorts.put("topics", sortTopics)
         }
       }
     } catch {
@@ -1695,9 +1707,6 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
-
-
-
   def wrapCleanAllFromMongoAndIndex = {
     Util.caculateCostTime {
       cleanAllFromMongoAndIndex()
@@ -1896,7 +1905,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
     // testIndexFromPdf()
-    // testIndexNewsFromMongo()
+    testIndexNewsFromMongo()
     //indexNewsFromMinutes(5)
 
     //indexNewsFromDay(2)
