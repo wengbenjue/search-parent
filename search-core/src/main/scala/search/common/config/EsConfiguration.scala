@@ -67,6 +67,7 @@ lazy val switchCrawler = Try(esConfig.getString("switch.crawler")).getOrElse("of
   lazy val scale = Try(esConfig.getString("news.decays.scale")).getOrElse("120w")
   lazy val offset = Try(esConfig.getString("news.decays.offset")).getOrElse("1w")
   lazy val decay = Try(esConfig.getDouble("news.decays.decay")).getOrElse(0.3)
+  lazy val weight: Float = Try(esConfig.getDouble("news.decays.weight").toFloat).getOrElse(1.0f)
 
   lazy val fetchUrl = Try(esConfig.getString("api.url.crawler")).getOrElse("http://192.168.250.207:8010/api/graph?")
   lazy val graphUrl = Try(esConfig.getString("api.url.graph")).getOrElse("http://192.168.250.207:9000/api/graph/mgra?c=")

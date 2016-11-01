@@ -490,6 +490,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
         .setTypes(typeName)
         .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
         .setQuery(qb)
+        //.setExplain(true)
       if (suggestionBuilder != null) {
         search.setSuggestText(suggestQuery)
         search.addSuggestion(suggestionBuilder)
@@ -919,7 +920,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
                                    decayField: String, scale: String, offset: String, decay: Double,
                                    scoreMode: String, boostMode: String,
                                    keyword: String, op: String, tieBreaker: Float, fuzziness: String, minimumShouldMatch: String, queryType: String, fields: String*): Array[java.util.Map[String, Object]] = {
-    functionScoreQuery(client, indexName, typeName, from, to, Function.gaussDecayFunction(decayField, scale, offset, decay), scoreMode, boostMode,
+    functionScoreQuery(client, indexName, typeName, from, to, Function.gaussDecayFunction(decayField,origin = new java.util.Date(), scale, offset, decay,weight), scoreMode, boostMode,
       Query.multiMatchQuery(keyword, op, tieBreaker, fuzziness, minimumShouldMatch, queryType, fields: _*))
   }
 

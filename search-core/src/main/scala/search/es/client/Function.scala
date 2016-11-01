@@ -21,10 +21,11 @@ private[search] object Function extends Logging {
     * @param decay  衰减速率
     * @return
     */
-  def gaussDecayFunction(field: String, scale: String = "1w", offset: String, decay: Double): GaussDecayFunctionBuilder = {
-    val gaussDecayFunction = ScoreFunctionBuilders.gaussDecayFunction(field, scale)
+  def gaussDecayFunction(field: String,origin: java.util.Date = new java.util.Date(), scale: String = "1w", offset: String, decay: Double,weight: Float): GaussDecayFunctionBuilder = {
+    val gaussDecayFunction = ScoreFunctionBuilders.gaussDecayFunction(field, origin,scale)
     if (offset != null && !offset.isEmpty) gaussDecayFunction.setOffset(offset)
     if (decay != null && decay > 0) gaussDecayFunction.setDecay(decay)
+    if(weight>0) gaussDecayFunction.setWeight(weight)
     gaussDecayFunction
   }
 

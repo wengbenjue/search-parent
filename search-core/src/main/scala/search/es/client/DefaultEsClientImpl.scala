@@ -487,8 +487,8 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
     if (suggestField != null) {
       EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
-        Query.functionScoreQuery(Function.gaussDecayFunction(decayField,scale , offset, decay)
-          , scoreMode = "multiply", boostMode = "multiply",
+        Query.functionScoreQuery(Function.gaussDecayFunction(decayField,origin = new java.util.Date(),scale , offset, decay,weight)
+          , scoreMode = "multiply", boostMode = "sum",
           Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", fields: _*)),
         Query.suggestPhraseSuggestionQuery(suggestField, query), query,
         highlightedField, searchResult,
@@ -496,8 +496,8 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       )
     } else {
       EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
-        Query.functionScoreQuery(Function.gaussDecayFunction(decayField, scale , offset, decay)
-          , scoreMode = "multiply", boostMode = "multiply",
+        Query.functionScoreQuery(Function.gaussDecayFunction(decayField,origin = new java.util.Date(), scale , offset, decay,weight)
+          , scoreMode = "multiply", boostMode = "sum",
           Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", fields: _*)),
         highlightedField, searchResult,
         aggs)
