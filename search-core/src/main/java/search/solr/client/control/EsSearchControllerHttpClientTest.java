@@ -127,11 +127,11 @@ public class EsSearchControllerHttpClientTest {
     }
 
     public static void testDelIndexByKeywords() {
-        String url = "http://localhost:8999/es/delete/keywords";
+        String url = "http://54.222.222.172:8999/es/delete/keywords";
 
         IndexKeywordsParameter obj = new IndexKeywordsParameter();
         List keywords = new ArrayList<String>();
-        keywords.add("利达光电a");
+        keywords.add("融资融券");
         obj.setKeywords(keywords);
 
         Map headers = new java.util.HashMap<String, String>();

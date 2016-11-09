@@ -115,7 +115,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val timerPeriodScheduleForLoadEventToCache = new CloudTimerWorker(name = "timerPeriodScheduleForLoadEventToCache", interval = 1000 * 60 * 60 * 22, callback = () => loadEventToCache())
 
 
-  val timerPeriodScheduleForLoadGraphHotTopicCache = new CloudTimerWorker(name = "timerPeriodScheduleForLoadGraphHotTopicCache", interval = 1000 * 60 * 60 * 22, callback = () => loadTopicToCache())
+  val timerPeriodScheduleForLoadGraphHotTopicCache = new CloudTimerWorker(name = "timerPeriodScheduleForLoadGraphHotTopicCache", interval = 1000 * 60 * 30, callback = () => loadTopicToCache())
 
 
   // val timerPeriodScheduleForindexNewsFromDays = new CloudTimerWorker(name = "timerPeriodScheduleForindexNewsFromDays", interval = 1000 * 60 * 60 * 24, callback = () => indexNewsFromDay(2))
@@ -178,6 +178,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     cleanRedisByNamespace(cleanNameSpace)
     //indexCatOfKeywords
     loadEventRegexToCache()
+    loadTopicToCache()
     timerPeriodSchedule.startUp()
     timerPeriodScheduleForBloomFilter.startUp()
     timerPeriodScheduleForLoadEventToCache.startUp()

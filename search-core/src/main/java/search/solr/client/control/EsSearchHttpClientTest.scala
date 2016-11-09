@@ -221,8 +221,8 @@ object EsSearchHttpClientTest {
     keywords.add(new IndexObjEntity("中标项目"))
     keywords.add(new IndexObjEntity("业绩下滑"))*/
 
-    val indexObj = new IndexObjEntity("养老")
-    indexObj.setNewKeyword("养老产业")
+    val indexObj = new IndexObjEntity("美国大选")
+    //indexObj.setNewKeyword("养老产业")
     keywords.add(indexObj)
 
 
