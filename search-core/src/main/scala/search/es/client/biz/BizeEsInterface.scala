@@ -194,6 +194,13 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     //indexNewsFromDay(1)
     //indexNewsFromMinutes(10)
+
+    //将公司信息写入文本文件
+    BizeEsInterfaceUtils.writeCompanyToDiskByText()
+    //将主题信息写入文本文件
+    BizeEsInterfaceUtils.writeTopicToDiskByText()
+    //将行业信息写入文本文件
+    BizeEsInterfaceUtils.writeIndustryToDiskByText()
   }
 
   def warpLoadEventRegexToCache(): NiNi = {
@@ -373,6 +380,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           }
           LocalCache.topicCache(id) = topic
           conf.dictionary.add(topicName, id)
+          logInfo(s"添加Topic到前缀树，topicName:${topicName}")
         }
       }
     }

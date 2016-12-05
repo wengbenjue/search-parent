@@ -72,7 +72,7 @@ private[search] object Util extends Logging {
   }
 
 
-  def convertBean(bean: Object): java.util.Map[String,Object] = {
+  def convertBean(bean: Object): java.util.Map[String, Object] = {
     val clazz = bean.getClass()
     val returnMap = new java.util.HashMap[String, Object]()
     val beanInfo = Introspector.getBeanInfo(clazz)
@@ -463,6 +463,26 @@ private[search] object Util extends Logging {
       else return ""
     }
   }
+
+  def writeSeqToDisk(seq: Seq[String], path: String): Unit = {
+    if (seq != null && seq.size > 0) {
+      val writer = new FileWriter(path)
+      try {
+        seq.foreach { s =>
+          writer.write(s)
+          writer.write("\n")
+        }
+      } catch {
+        case e: Exception =>
+          logError(s"写入文件${path}出错!", e)
+      } finally {
+        writer.close()
+      }
+    }
+
+
+  }
+
 }
 
 object testUtil {

@@ -262,7 +262,7 @@ public class Word2VEC {
         //word2VEC.loadModel("D:/workspace/search/word2vec/newsfinal11.bin");
        // word2VEC.loadModel(in);
         word2VEC.loadModel("D:/workspace/search/word2vec/hotnews_2016.bin");
-        Set<WordEntry> persononVectory = word2VEC.distance("智能家居");
+        Set<WordEntry> persononVectory = word2VEC.distance("工行");
         System.out.println(persononVectory);
        long startTime = System.currentTimeMillis();
         Set<WordEntry> persononVectory1 = word2VEC.distance("黄山旅游");

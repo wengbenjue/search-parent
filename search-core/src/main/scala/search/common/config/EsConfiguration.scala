@@ -77,4 +77,15 @@ lazy val switchCrawler = Try(esConfig.getString("switch.crawler")).getOrElse("of
   lazy val graphNodeDataUrl = Try(esConfig.getString("api.url.graphNodeDataUrl")).getOrElse("http://54.222.222.172:9000/api/news/allnode")
   lazy val companyWeightUrl = Try(esConfig.getString("api.url.companyWeightUrl")).getOrElse("http://54.222.222.172:9000/api/news/comw")
   lazy val industryWeightUrl = Try(esConfig.getString("api.url.industryWeightUrl")).getOrElse("http://54.222.222.172:9000/api/news/indw")
+
+
+  /**
+    * dump到磁盘的文本文件路径
+    */
+  lazy val stockPath = Try(esConfig.getString("disk.path.stock")).getOrElse(null)
+
+  lazy val topicPath = Try(esConfig.getString("disk.path.topic")).getOrElse(null)
+
+  lazy val industryPath = Try(esConfig.getString("disk.path.industry")).getOrElse(null)
+
 }

@@ -69,7 +69,7 @@ private[search] class EsClientConf(loadDefaults: Boolean) extends Cloneable with
 
   if (loadDefaults) {
     // Load any solr.client.* system properties
-    for ((k, v) <- System.getProperties.asScala if k.startsWith("solr.client.")) {
+    for ((k, v) <- System.getProperties.asScala if k.startsWith("es.")) {
       settings(k) = v
     }
   }
