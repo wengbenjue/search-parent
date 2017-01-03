@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import search.common.entity.bizesinterface.BaseStock;
 import search.common.entity.bizesinterface.GraphNodes;
 import search.common.entity.bizesinterface.IndexObjEntity;
 import search.common.entity.news.News;
@@ -221,23 +222,53 @@ public class EsSearchController {
         return result;
     }
 
+    /**
+     * index
+     *
+     * @return
+     */
     @RequestMapping(value = "/search/index/cat/load", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi indexCatOfKeywords() {
         NiNi result = BizeEsInterface.warpIndexCatOfKeywords();
         return result;
     }
 
+    /**
+     * load event rules
+     *
+     * @return
+     */
     @RequestMapping(value = "/search/event/rule/load", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi loadEventRegexToCache() {
         NiNi result = BizeEsInterface.warpLoadEventRegexToCache();
         return result;
     }
 
-
+    /**
+     * show allnode from graph
+     *
+     * @return
+     */
     @RequestMapping(value = "/search/graph/allnode", method = {RequestMethod.POST, RequestMethod.GET})
     public GraphNodes filterGraphNodes() {
         GraphNodes result = BizeEsInterface.filterGraphNodes();
         return result;
+    }
+
+    /**
+     * pull stock to cache realtime
+     *
+     * @return
+     */
+    @RequestMapping(value = "/stock/sync", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi syncStock() {
+        NiNi nini = new NiNi();
+        nini.setCode(0);
+        BizeEsInterface.loadCacheFromCom();
+        nini.setData(true);
+        return nini;
+
+
     }
 
 

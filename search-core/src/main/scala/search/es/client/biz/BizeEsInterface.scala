@@ -126,6 +126,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   val timerPeriodScheduleFordeleteNewsByRange = new CloudTimerWorker(name = "timerPeriodScheduleFordeleteNewsByRange", interval = 1000 * 60 * 60 * 24, callback = () => BizUtil.deleteNewsByRange(client))
 
+  //自动更新上市公司
+  val timerPeriodScheduleForUpdateStockCache = new CloudTimerWorker(name = "timerPeriodScheduleForUpdateStockCache", interval = 1000 * 60 * 60 * 30, callback = () => wrapLoadCacheFromCom())
+
 
   var eventRegexRuleSets = new java.util.HashSet[String]()
 
@@ -187,6 +190,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     timerPeriodScheduleForindexNewsFromMinutes.startUp()
     timerPeriodScheduleFordeleteNewsByRange.startUp()
     //timerPeriodScheduleForloadDataToDictionary.startUp()
+    timerPeriodScheduleForUpdateStockCache.startUp()
+
+
     BizUtil.loadDataToDictionary(conf)
     if (needPatchIndex) {
       indexNewsFromMongo(batchMonth)
@@ -201,6 +207,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     BizeEsInterfaceUtils.writeTopicToDiskByText()
     //将行业信息写入文本文件
     BizeEsInterfaceUtils.writeIndustryToDiskByText()
+
+
+
+
   }
 
   def warpLoadEventRegexToCache(): NiNi = {
@@ -272,6 +282,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     conf.dictionary.add(word.trim.toUpperCase(), id)
   }
 
+  def addWordToGraphTrieNode(word: String, id: String): Unit = {
+    conf.graphDictionary.add(word.trim.toUpperCase(), id)
+  }
+
   def loadCompanyWeightCache() = {
     val comJsonObj = BizUtil.requestHttpByURL(companyWeightUrl)
     val comanyArray: JSONArray = comJsonObj.getJSONArray("message")
@@ -314,6 +328,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     -1
   }
 
+  def wrapLoadCacheFromCom(): Long = {
+    loadCacheFromCom()
+    -1
+  }
+
   def loadCacheFromCom(): String = {
     val stocks = conf.mongoDataManager.findCompanyCode()
     if (stocks != null && stocks.size() > 0) {
@@ -336,10 +355,17 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
             addWordToTrieNode(simPy, id)
           }*/
 
+          //将拼音添加到自动提示
+          addWordToGraphTrieNode(simPy,id)
+          //将公司简称添加到自动提示
+          addWordToGraphTrieNode(comSim,id)
+
         }
         if (comSim != null && comCode != null) {
           LocalCache.baseStockCache(comSim) = new BaseStock(comSim, comCode)
           LocalCache.codeToCompanyNameCache(comCode) = comSim
+          //将公司代码添加到自动提示
+          addWordToGraphTrieNode(comCode,id)
         }
 
       }
@@ -719,6 +745,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     }
   }
+
 
 
   def wrapCleanRedisByNamespace(namespace: String): NiNi = {
