@@ -364,6 +364,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         if (comSim != null && comCode != null) {
           LocalCache.baseStockCache(comSim) = new BaseStock(comSim, comCode)
           LocalCache.codeToCompanyNameCache(comCode) = comSim
+          //LocalCache.stockNameToCodeCache(comSim) = comCode
           //将公司代码添加到自动提示
           addWordToGraphTrieNode(comCode,id)
         }
@@ -399,6 +400,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       topicConps.map { m =>
         val topicName: String = if (m.get("w") != null) m.get("w").toString.trim else null
         val id: String = if (m.get("_id") != null) m.get("_id").toString.trim else null
+        val codeSet: BasicDBList = if (m.get("code") != null) m.get("code").asInstanceOf[BasicDBList] else null
+
         if (topicName != null && !topicName.equalsIgnoreCase("")) {
           val topic = new GraphTopic(id, topicName, 0.0)
           if (LocalCache.topicHotWeightCache.containsKey(topicName)) {
@@ -407,6 +410,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           LocalCache.topicCache(id) = topic
           conf.dictionary.add(topicName, id)
           logInfo(s"添加Topic到前缀树，topicName:${topicName}")
+          //添加code到topip集合的缓存映射
+          if(codeSet!=null && codeSet.size()>0){
+            BizeEsInterfaceUtils.cacheTopicSetBystockCode(codeSet.map(_.toString),topicName)
+          }
         }
       }
     }

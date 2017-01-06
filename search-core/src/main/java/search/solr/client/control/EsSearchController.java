@@ -13,6 +13,7 @@ import search.common.entity.news.NewsQuery;
 import search.es.client.biz.BizeEsInterface;
 import search.common.entity.searchinterface.NiNi;
 import search.common.entity.searchinterface.parameter.*;
+import search.es.client.biz.RecommendInterface;
 import search.es.client.biz.Wraps;
 import search.solr.client.searchInterface.SearchInterface;
 
@@ -90,6 +91,11 @@ public class EsSearchController {
             return BizeEsInterface.indexByKeywords(null, originQuery, keywords);
     }
 
+    /**
+     * 对关键词建立索引，并添加到前缀树
+     * @param keyword
+     * @return
+     */
     @RequestMapping(value = "/index/kw", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi indexByKeyword(final String keyword) {
         if (keyword == null) {
@@ -105,6 +111,11 @@ public class EsSearchController {
     }
 
 
+    /**
+     * 对关键词集合建立索引，并添加到前缀树
+     * @param keywords
+     * @return
+     */
     @RequestMapping(value = "/index/rws", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi indexByKeywordsWithKw(@RequestBody final Collection<IndexObjEntity> keywords) {
         if (keywords == null) {
@@ -267,8 +278,27 @@ public class EsSearchController {
         BizeEsInterface.loadCacheFromCom();
         nini.setData(true);
         return nini;
+    }
 
-
+    /**
+     * recommend topic set by keyword,such as stock name or news keyword
+     *
+     * @param keyword
+     * @param num
+     * @return
+     */
+    @RequestMapping(value = "/recommend/topics", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi recommendTopics(@RequestParam(value = "keyword", required = true) String keyword,
+                                @RequestParam(value = "num", required = false, defaultValue = "10") Integer num
+    ) {
+        if (keyword == null) {
+            NiNi nini = new NiNi();
+            nini.setCode(-1);
+            nini.setMsg("keyword  null!");
+            return nini;
+        }
+        NiNi result = RecommendInterface.wrapTopicRecommendByKeyword(keyword, num);
+        return result;
     }
 
 

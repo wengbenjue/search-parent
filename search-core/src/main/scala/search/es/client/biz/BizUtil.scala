@@ -133,6 +133,10 @@ private[search] object BizUtil extends Logging with EsConfiguration {
   }
 
 
+
+
+
+
   def main(args: Array[String]) {
     //getAllFromGraphsToDictionary(graphNodeDataUrl)
     indexNewsFromMinutes(null,null,8)

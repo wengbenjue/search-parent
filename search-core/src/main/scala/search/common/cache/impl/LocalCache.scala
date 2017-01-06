@@ -62,8 +62,23 @@ object LocalCache extends RedisConfiguration {
 
   val stateCacheManager = CacheBuilder.newBuilder().expireAfterWrite(expireTime, TimeUnit.MINUTES).build(stateCacheLoader)
 
+
+  /**
+    * Map(code->Set(topic1,topic2....))
+    */
+  final val codeToTopicSet = new mutable.HashMap[String, mutable.HashSet[String]]()
+
+  /**
+    * cache stock code mapping to stock name
+    */
   final val codeToCompanyNameCache = new mutable.HashMap[String, String]()
 
+  /**
+    * cache stock name mapping to stock code
+    */
+  final val stockNameToCodeCache = new mutable.HashMap[String, String]()
+
+  //cache Map(stockName->stockEntity)
   final val baseStockCache = new mutable.HashMap[String, BaseStock]()
 
   //cache Map(id->CompanyStock)

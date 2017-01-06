@@ -11,6 +11,7 @@ import search.common.util.{Logging, Util}
 import search.es.client.util.EsClientConf
 import search.solr.client.SolrClientConf
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 /**
@@ -18,6 +19,26 @@ import scala.collection.mutable.ListBuffer
   */
 private[search] object BizeEsInterfaceUtils extends Logging with EsConfiguration {
 
+
+  /**
+    * cache topics by stock code
+    * Map(code->Set(topic1,topic2....))
+    *
+    * @param sotckCodes
+    * @param topic
+    */
+  def cacheTopicSetBystockCode(sotckCodes: Seq[String], topic: String): Unit = {
+    if (sotckCodes != null && topic != null && !"".equalsIgnoreCase(topic.trim) && sotckCodes.size > 0) {
+      sotckCodes.foreach { code =>
+        if (!LocalCache.codeToTopicSet.contains(code)) {
+          val topicSet = new mutable.HashSet[String]()
+          LocalCache.codeToTopicSet(code) = topicSet
+        }
+        LocalCache.codeToTopicSet(code) += topic
+        logInfo(s"cache Map(${code}-> ${topic}) success!")
+      }
+    }
+  }
 
   /**
     * dump索引到磁盘
@@ -152,7 +173,7 @@ private[search] object BizeEsInterfaceUtils extends Logging with EsConfiguration
         if (com != null) stringBuilder.append(com)
         listString += stringBuilder.toString()
       }
-      if(listString.size>0) Util.writeSeqToDisk(listString,stockPath)
+      if (listString.size > 0) Util.writeSeqToDisk(listString, stockPath)
     }
   }
 
@@ -167,7 +188,7 @@ private[search] object BizeEsInterfaceUtils extends Logging with EsConfiguration
         if (topicName != null) stringBuilder.append(topicName)
         listString += stringBuilder.toString()
       }
-      if(listString.size>0) Util.writeSeqToDisk(listString,topicPath)
+      if (listString.size > 0) Util.writeSeqToDisk(listString, topicPath)
     }
   }
 
@@ -182,7 +203,7 @@ private[search] object BizeEsInterfaceUtils extends Logging with EsConfiguration
         if (industryName != null) stringBuilder.append(industryName)
         listString += stringBuilder.toString()
       }
-      if(listString.size>0) Util.writeSeqToDisk(listString,industryPath)
+      if (listString.size > 0) Util.writeSeqToDisk(listString, industryPath)
     }
   }
 

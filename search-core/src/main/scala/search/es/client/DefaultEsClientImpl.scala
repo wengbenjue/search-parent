@@ -128,6 +128,12 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       indexGraphNlp(indexName, typeName, data, typeChoose)
   }
 
+  /**
+    * 只将图谱中有的节点添加到自动填充中
+    *
+    * @param word
+    * @param id
+    */
   private def addGraphWordToTrieNode(word: String, id: String): Unit = {
     val item = word.trim.toUpperCase()
     conf.graphDictionary.add(item, id)
@@ -249,6 +255,12 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
   }
 
 
+  /**
+    * add keyword of graph to trie tree for auto-complete
+    *
+    * @param keyword
+    * @param rvKw
+    */
   def triePluginForAutoComplete(keyword: String, rvKw: java.util.Collection[String]): Unit = {
     //add keyword of graph to trie tree for auto-complete
     val id = conf.dictionary.findWithId(keyword)
@@ -285,6 +297,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
         }
         relevantKvToTrieGraph(rvKw, id)
       } else if (LocalCache.topicCache.containsKey(id.trim)) {
+        //对主题以及主题对应的同义词添加自动填充
         // search from topic cache
         val topic = LocalCache.topicCache(id.trim)
         if (topic.getName != null && !topic.getName.isEmpty) {
@@ -487,7 +500,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
     if (suggestField != null) {
       EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
-        Query.functionScoreQuery(Function.gaussDecayFunction(decayField,origin = new java.util.Date(),scale , offset, decay,weight)
+        Query.functionScoreQuery(Function.gaussDecayFunction(decayField, origin = new java.util.Date(), scale, offset, decay, weight)
           , scoreMode = "multiply", boostMode = "sum",
           Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", fields: _*)),
         Query.suggestPhraseSuggestionQuery(suggestField, query), query,
@@ -496,7 +509,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       )
     } else {
       EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
-        Query.functionScoreQuery(Function.gaussDecayFunction(decayField,origin = new java.util.Date(), scale , offset, decay,weight)
+        Query.functionScoreQuery(Function.gaussDecayFunction(decayField, origin = new java.util.Date(), scale, offset, decay, weight)
           , scoreMode = "multiply", boostMode = "sum",
           Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", fields: _*)),
         highlightedField, searchResult,
