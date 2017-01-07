@@ -14,11 +14,56 @@ import scala.collection.JavaConversions._
   * 推荐
   * Created by soledede.weng on 2017-01-06.
   */
-object RecommendInterface {
+private[search] object RecommendInterface {
 
 
+  BizeEsInterface.init()
+
+  /**
+    * 根据主题获取主题相关的股票列表
+    *
+    * @param topic
+    * @param num
+    * @return
+    */
+  def wrapstockRecommendByTopic(topic: String, num: Int = -1): NiNi = {
+    Util.caculateCostTime {
+      stockRecommendByTopic(topic, num)
+    }
+  }
+
+  /**
+    * 根据主题获取主题相关的股票列表
+    * @param topic
+    * @param num
+    * @return
+    */
+
+  def stockRecommendByTopic(topic: String, num: Int = -1): java.util.Collection[BaseStock] = {
+    val list = new util.ArrayList[BaseStock]()
+    if (topic == null || topic.trim.equalsIgnoreCase(""))
+      return list
+    if (!LocalCache.topic2StockCodesCache.contains(topic.trim)) return list
+    //获取该概念对应的股票code列表
+    val relevantCodes = LocalCache.topic2StockCodesCache(topic.trim)
+    val baseStockList = relevantCodes.map { code =>
+      val stockName = LocalCache.codeToCompanyNameCache(code)
+      LocalCache.baseStockCache(stockName)
+    }
+
+    if (num <= 0) return baseStockList
+    //查询所有
+    baseStockList.take(num)
+  }
 
 
+  /**
+    * 根据关键词（股票中文名或者新闻关键词）推荐概念
+    *
+    * @param keyword
+    * @param num
+    * @return
+    */
   def wrapTopicRecommendByKeyword(keyword: String, num: Int = 10): NiNi = {
     Util.caculateCostTime {
       topicRecommendByKeyword(keyword, num)
@@ -78,8 +123,14 @@ object RecommendInterface {
   }
 
   def main(args: Array[String]) {
-    testTopicRecommendByKeyword
+    //testTopicRecommendByKeyword
+    teststockRecommendByTopic
   }
+
+def teststockRecommendByTopic() = {
+  val result = stockRecommendByTopic("虚拟现实")
+  println(result)
+}
 
   def testTopicRecommendByKeyword() = {
     val result = topicRecommendByKeyword("云计算", 10)
@@ -87,8 +138,6 @@ object RecommendInterface {
     val result1 = topicRecommendByKeyword("露天煤业", 10)
     println(result1)
   }
-
-
 
 
 }

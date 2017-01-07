@@ -64,6 +64,10 @@ object LocalCache extends RedisConfiguration {
 
 
   /**
+    * Map(topic->Set(code1,code2...)) //cache codes
+    */
+  final val topic2StockCodesCache = new mutable.HashMap[String, mutable.Seq[String]]()
+  /**
     * Map(code->Set(topic1,topic2....))
     */
   final val codeToTopicSet = new mutable.HashMap[String, mutable.HashSet[String]]()

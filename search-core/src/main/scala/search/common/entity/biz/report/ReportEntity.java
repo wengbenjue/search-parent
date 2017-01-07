@@ -1,4 +1,4 @@
-package search.common.entity.report;
+package search.common.entity.biz.report;
 
 /**
  * 研报实体

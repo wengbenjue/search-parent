@@ -26,7 +26,7 @@ import search.common.clock.CloudTimerWorker
 import search.common.config.EsConfiguration
 import search.common.entity.bizesinterface.{CompanyStock, Industry, _}
 import search.common.entity.news.{News, QueryResult, SortStruct}
-import search.common.entity.report.ReportEntity
+import search.common.entity.biz.report.{ReportEntity, ResearchReport}
 import search.common.entity.state.ProcessState
 import search.common.http.HttpClientUtil
 import search.common.listener.graph.{Request, UpdateState, WarmCache}
@@ -50,6 +50,8 @@ import scala.util.control.Breaks._
 private[search] object BizeEsInterface extends Logging with EsConfiguration {
   var conf: EsClientConf = _
   var client: EsClient = _
+
+  var isInited = false
 
   var calendar = Calendar.getInstance()
 
@@ -154,25 +156,31 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   init()
 
   def init() = {
-    this.conf = new EsClientConf()
-    this.conf.init()
-    this.client = conf.esClient
-    //load company weight cache
-    loadCompanyWeightCache()
-    loadTopicToCache()
-    loadIndexIndustryToCache()
-    loadEventToCache()
-    loadCache
-    loadCacheFromCom
-    loadStart
+    if(!isInited){
+      isInited = true
 
-    /**
-      * Trie Node
-      */
-    val timerPeriodScheduleForDumpTrie = new CloudTimerWorker(name = "timerPeriodScheduleForDumpTrie", interval = 1000 * 60 * 30, callback = () => BizeEsInterfaceUtils.dumpTrieToDisk(conf))
-    timerPeriodScheduleForDumpTrie.startUp()
-    BizeEsInterfaceUtils.readDumpTrieFromDisk(conf)
-    BizeEsInterfaceUtils.dumpTrieToDisk(conf)
+      this.conf = new EsClientConf()
+      this.conf.init()
+      this.client = conf.esClient
+      //load company weight cache
+      loadCompanyWeightCache()
+      loadTopicToCache()
+      loadIndexIndustryToCache()
+      loadEventToCache()
+      loadCache
+      loadCacheFromCom
+      loadStart
+
+      /**
+        * Trie Node
+        */
+      val timerPeriodScheduleForDumpTrie = new CloudTimerWorker(name = "timerPeriodScheduleForDumpTrie", interval = 1000 * 60 * 30, callback = () => BizeEsInterfaceUtils.dumpTrieToDisk(conf))
+      timerPeriodScheduleForDumpTrie.startUp()
+      BizeEsInterfaceUtils.readDumpTrieFromDisk(conf)
+      BizeEsInterfaceUtils.dumpTrieToDisk(conf)
+    }
+
+
   }
 
 
@@ -411,7 +419,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           logInfo(s"添加Topic到前缀树，topicName:${topicName}")
           //添加code到topip集合的缓存映射
           if (codeSet != null && codeSet.size() > 0) {
-            BizeEsInterfaceUtils.cacheTopicSetBystockCode(codeSet.map(_.toString), topicName)
+            BizeEsInterfaceUtils.cacheTopicSetBystockCodeAndCachStocksByTopic(codeSet.map(_.toString), topicName)
           }
         }
       }
@@ -644,6 +652,24 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     Util.caculateCostTime {
       indexDataWithRw(keywords)
     }
+  }
+
+
+  def wrapIndexByReportsText(docs: java.util.Collection[ResearchReport]): NiNi = {
+    Util.caculateCostTime {
+      indexReportText(docs)
+    }
+  }
+
+  /**
+    * 研报
+    *
+    * @return
+    */
+  def indexReportText(docs: java.util.Collection[ResearchReport]): Boolean = {
+    if (docs != null && docs.size() > 0) {
+      client.addDocumentsWithMultiThreading(research_report_index_name, research_report_type_name, docs.map(Util.convertBean(_)) )
+    } else false
   }
 
 

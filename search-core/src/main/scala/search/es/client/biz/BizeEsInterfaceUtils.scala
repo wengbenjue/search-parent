@@ -22,19 +22,26 @@ private[search] object BizeEsInterfaceUtils extends Logging with EsConfiguration
 
   /**
     * cache topics by stock code
-    * Map(code->Set(topic1,topic2....))
+    * Map(code->Set(topic1,topic2....)) //cache topics
+    * Map(topic->Set(code1,code2...)) //cache codes
     *
     * @param sotckCodes
     * @param topic
     */
-  def cacheTopicSetBystockCode(sotckCodes: Seq[String], topic: String): Unit = {
+  def cacheTopicSetBystockCodeAndCachStocksByTopic(sotckCodes: mutable.Seq[String], topic: String): Unit = {
     if (sotckCodes != null && topic != null && !"".equalsIgnoreCase(topic.trim) && sotckCodes.size > 0) {
+
+      //Map(topic->Set(code1,code2...)) //cache codes
+      LocalCache.topic2StockCodesCache(topic.trim) = sotckCodes
+
+
+
       sotckCodes.foreach { code =>
-        if (!LocalCache.codeToTopicSet.contains(code)) {
+        if (!LocalCache.codeToTopicSet.contains(code.trim)) {
           val topicSet = new mutable.HashSet[String]()
-          LocalCache.codeToTopicSet(code) = topicSet
+          LocalCache.codeToTopicSet(code.trim) = topicSet
         }
-        LocalCache.codeToTopicSet(code) += topic
+        LocalCache.codeToTopicSet(code.trim) += topic
         logInfo(s"cache Map(${code}-> ${topic}) success!")
       }
     }

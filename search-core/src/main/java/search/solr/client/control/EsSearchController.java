@@ -5,11 +5,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import search.common.entity.bizesinterface.BaseStock;
 import search.common.entity.bizesinterface.GraphNodes;
 import search.common.entity.bizesinterface.IndexObjEntity;
 import search.common.entity.news.News;
 import search.common.entity.news.NewsQuery;
+import search.common.entity.biz.report.ResearchReport;
 import search.es.client.biz.BizeEsInterface;
 import search.common.entity.searchinterface.NiNi;
 import search.common.entity.searchinterface.parameter.*;
@@ -52,15 +52,15 @@ public class EsSearchController {
 
     /**
      * 搜索研报
+     *
      * @param reportQuery
      * @return
      */
     @RequestMapping(value = "/search/report", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi searchResearchReport(final NewsQuery reportQuery) {
-        NiNi result = BizeEsInterface.wrapQueryResearchReport(reportQuery.getQuery(),reportQuery.getFrom(),reportQuery.getOffset());
+        NiNi result = BizeEsInterface.wrapQueryResearchReport(reportQuery.getQuery(), reportQuery.getFrom(), reportQuery.getOffset());
         return result;
     }
-
 
 
     //search and filter by keywords
@@ -105,6 +105,7 @@ public class EsSearchController {
 
     /**
      * 对关键词建立索引，并添加到前缀树
+     *
      * @param keyword
      * @return
      */
@@ -125,6 +126,7 @@ public class EsSearchController {
 
     /**
      * 对关键词集合建立索引，并添加到前缀树
+     *
      * @param keywords
      * @return
      */
@@ -139,8 +141,25 @@ public class EsSearchController {
             return BizeEsInterface.wrapIndexByKeywords(keywords);
     }
 
+    /**
+     * 对研报建索引
+     *
+     * @param docs
+     * @return
+     */
+    @RequestMapping(value = "/index/reports_text", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi indexByReportsEntity(@RequestBody final Collection<ResearchReport> docs) {
+        if (docs == null) {
+            NiNi nini = new NiNi();
+            nini.setCode(-1);
+            nini.setMsg("docs  null!");
+            return nini;
+        } else
+            return BizeEsInterface.wrapIndexByReportsText(docs);
+    }
+
     @RequestMapping(value = "/index/reports", method = {RequestMethod.POST, RequestMethod.GET})
-    public NiNi indexByReports(@RequestBody final Collection<java.util.Map<String,Object>> docs,final String sa) {
+    public NiNi indexByReports(@RequestBody final Collection<java.util.Map<String, Object>> docs) {
         if (docs == null) {
             NiNi nini = new NiNi();
             nini.setCode(-1);
@@ -303,6 +322,9 @@ public class EsSearchController {
         return nini;
     }
 
+
+    /**************************************************************************************************************/
+
     /**
      * recommend topic set by keyword,such as stock name or news keyword
      *
@@ -321,6 +343,26 @@ public class EsSearchController {
             return nini;
         }
         NiNi result = RecommendInterface.wrapTopicRecommendByKeyword(keyword, num);
+        return result;
+    }
+
+    /**
+     * recommend stocks by topic
+     *
+     * @param topic
+     * @param num
+     * @return
+     */
+    @RequestMapping(value = "/recommend/stocks", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi stockRecommendByTopic(@RequestParam(value = "topic", required = true) String topic,
+                                      @RequestParam(value = "num", required = false, defaultValue = "10") Integer num) {
+        if (topic == null) {
+            NiNi nini = new NiNi();
+            nini.setCode(-1);
+            nini.setMsg("topic  null!");
+            return nini;
+        }
+        NiNi result = RecommendInterface.wrapstockRecommendByTopic(topic, num);
         return result;
     }
 
