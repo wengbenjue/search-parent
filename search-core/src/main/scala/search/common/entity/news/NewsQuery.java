@@ -9,6 +9,7 @@ public class NewsQuery {
     private String query;
     private Integer from=0;
     private Integer to=10;
+    private Integer offset=10;
     private Integer leastTopMonth=6;
     private String sort;
     private String order;
@@ -24,6 +25,14 @@ public class NewsQuery {
         this.to = to;
         this.leastTopMonth = leastTopMonth;
         this.sorts = sorts;
+    }
+
+    public Integer getOffset() {
+        return offset;
+    }
+
+    public void setOffset(Integer offset) {
+        this.offset = offset;
     }
 
     public String getQuery() {

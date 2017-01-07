@@ -50,6 +50,18 @@ public class EsSearchController {
         return result;
     }
 
+    /**
+     * 搜索研报
+     * @param reportQuery
+     * @return
+     */
+    @RequestMapping(value = "/search/report", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi searchResearchReport(final NewsQuery reportQuery) {
+        NiNi result = BizeEsInterface.wrapQueryResearchReport(reportQuery.getQuery(),reportQuery.getFrom(),reportQuery.getOffset());
+        return result;
+    }
+
+
 
     //search and filter by keywords
     @RequestMapping(value = "/search/keywords", method = {RequestMethod.POST, RequestMethod.GET})
@@ -125,6 +137,17 @@ public class EsSearchController {
             return nini;
         } else
             return BizeEsInterface.wrapIndexByKeywords(keywords);
+    }
+
+    @RequestMapping(value = "/index/reports", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi indexByReports(@RequestBody final Collection<java.util.Map<String,Object>> docs,final String sa) {
+        if (docs == null) {
+            NiNi nini = new NiNi();
+            nini.setCode(-1);
+            nini.setMsg("docs  null!");
+            return nini;
+        } else
+            return BizeEsInterface.wrapIndexByReports(docs);
     }
 
 
