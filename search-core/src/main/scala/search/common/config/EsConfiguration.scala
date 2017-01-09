@@ -91,4 +91,26 @@ lazy val switchCrawler = Try(esConfig.getString("switch.crawler")).getOrElse("of
 
   lazy val industryPath = Try(esConfig.getString("disk.path.industry")).getOrElse(null)
 
+
+  /**
+    * 概念查询url
+    */
+  lazy val concept_Url = Try(esConfig.getString("api.url.concept")).getOrElse(null)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

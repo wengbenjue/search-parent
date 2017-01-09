@@ -1,11 +1,11 @@
 package search.common.http
 
+import com.alibaba.fastjson.{JSON, JSONObject}
 import org.apache.http.client.entity.UrlEncodedFormEntity
-import org.apache.http.client.methods.{HttpEntityEnclosingRequestBase, HttpUriRequest, CloseableHttpResponse}
+import org.apache.http.client.methods.{CloseableHttpResponse, HttpEntityEnclosingRequestBase, HttpUriRequest}
 import org.apache.http.entity.StringEntity
 import org.apache.http.message.BasicNameValuePair
 import org.apache.http.protocol.HttpContext
-import org.apache.http.concurrent.FutureCallback
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.client.utils.HttpClientUtils
@@ -19,11 +19,9 @@ import org.apache.http.HttpResponse
 import org.codehaus.jackson.JsonNode
 import org.codehaus.jackson.map.ObjectMapper
 import search.common.entity.enumeration.HttpRequestMethodType
-import search.solr.client.index.manager.IndexManagerRunner
 import search.common.util.Logging
-import scala.collection.JavaConversions._
 
-import scala.collection.mutable
+import scala.collection.JavaConversions._
 
 class HttpClientUtil private extends Logging {
 
@@ -75,7 +73,7 @@ class HttpClientUtil private extends Logging {
 
 }
 
-object HttpClientUtil {
+object HttpClientUtil extends Logging{
 
   private val httpClient: CloseableHttpClient = HttpClients.createDefault();
 
@@ -219,6 +217,56 @@ object HttpClientUtil {
 
     }
     HttpClientUtil.getInstance().execute(request, context, callback)
+  }
+
+
+  //get请求URl并返回JsonObject,如果作为httpClient内核可以去掉该方法
+  def requestHttpByURL(url: String): JSONObject = {
+    requestHttpByURLWithHeader(url,headers = null)
+  }
+
+  //Get请求
+  def requestHttpSynGet(url: String): CloseableHttpResponse = {
+    requestHttpSyn(url, HttpRequestMethodType.GET, null, null, null, null)
+  }
+
+  //Get请求 带Header
+  /**
+    *
+    * @param url
+    * @param headers
+    * @return
+    */
+  def requestHttpSynGet(url: String,headers: java.util.Map[String, String]): CloseableHttpResponse = {
+    requestHttpSyn(url, HttpRequestMethodType.GET, paremeters = null, obj = null, headers, null)
+  }
+
+  //带Headers
+  def requestHttpByURLWithHeader(url: String,headers: java.util.Map[String, String]): JSONObject = {
+    var httpResp: CloseableHttpResponse = null
+    try {
+      if(headers==null || headers.isEmpty)
+        httpResp = HttpClientUtil.requestHttpSynGet(url)
+      else  httpResp = HttpClientUtil.requestHttpSynGet(url,headers)
+      if (httpResp != null) {
+        val entity: HttpEntity = httpResp.getEntity
+        if (entity != null) {
+          val sResponse: String = EntityUtils.toString(entity,"UTF-8")
+          val jsonObj = JSON.parseObject(sResponse)
+          jsonObj
+        } else null
+      } else null
+    }
+    catch {
+      case e: Exception => {
+        logError(s"request url:[${url}] failed!", e)
+        null
+      }
+    } finally {
+      if (httpResp != null)
+        HttpClientUtils.closeQuietly(httpResp)
+    }
+
   }
 }
 

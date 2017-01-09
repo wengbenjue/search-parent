@@ -326,6 +326,7 @@ public class EsSearchController {
     /**************************************************************************************************************/
 
     /**
+     * 主题
      * recommend topic set by keyword,such as stock name or news keyword
      *
      * @param keyword
@@ -334,7 +335,7 @@ public class EsSearchController {
      */
     @RequestMapping(value = "/recommend/topics", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi recommendTopics(@RequestParam(value = "keyword", required = true) String keyword,
-                                @RequestParam(value = "num", required = false, defaultValue = "10") Integer num
+                                @RequestParam(value = "num", required = false, defaultValue = "-1") Integer num
     ) {
         if (keyword == null) {
             NiNi nini = new NiNi();
