@@ -120,6 +120,7 @@ private[search] class MultithreadingIndex() extends Logging with EsConfiguration
       true
     } catch {
       case e: Exception =>
+        logError("index failed",e)
         false
     }
   }
