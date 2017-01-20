@@ -1,5 +1,6 @@
 package search.es.client
 
+import java.util
 import java.util.concurrent.{LinkedBlockingQueue, TimeUnit}
 
 import com.mongodb.{BasicDBObject, DBCursor, DBObject}
@@ -345,6 +346,22 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     else false
   }
 
+
+  override def delByIds(indexName: String, typeName: String, ids: java.util.Collection[String]): Boolean = {
+    var isDel = false
+    if(ids!=null && ids.size()>0){
+      val delIds = ids.filter{id=>
+       val dFlag= EsClient.delIndexById(EsClient.getClientFromPool(), indexName, typeName, id)
+        logInfo(s"deleted id: ${id}")
+        dFlag
+      }
+        if(ids.size()==delIds) isDel = true
+        else {
+          logError("some ids can't be deleted,you can request del again")
+        }
+    }
+    isDel
+  }
 
   override def addDocument[T: ClassTag](indexName: String, typeName: String, id: String, doc: T): Boolean = {
     EsClient.postDocument(EsClient.getClientFromPool(), indexName, typeName, id, mapper.writeValueAsBytes(doc))

@@ -139,7 +139,7 @@ object HttpClientUtil extends Logging{
     val mapper = new ObjectMapper()
     var jStirng: String = null
     if (paremeters != null && !paremeters.isEmpty) {
-      jStirng = mapper.writeValueAsString(paremeters)
+     // jStirng = mapper.writeValueAsString(paremeters)
     } else if (obj != null) {
       jStirng = mapper.writeValueAsString(obj)
     }

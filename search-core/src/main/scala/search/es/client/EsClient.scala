@@ -69,6 +69,8 @@ private[search] trait EsClient extends EsConfiguration {
 
   def decrementIndex(indexName: String, typeName: String, data: java.util.Collection[String]): Boolean
 
+  def delByIds(indexName: String, typeName: String,ids: java.util.Collection[String]) : Boolean
+
   def addDocument(indexName: String, typeName: String, doc: java.util.Map[String, Object]): Boolean
 
   def addDocument[T: ClassTag](indexName: String, typeName: String, id: String, doc: T): Boolean

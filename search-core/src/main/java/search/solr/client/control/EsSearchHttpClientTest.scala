@@ -35,8 +35,12 @@ object EsSearchHttpClientTest {
     // testCleanBySet
     //testIndexNews
     //testSearchNews
-    testIndexBReportsWithRw
+    //testIndexBReportsWithRw
+    delReportByIds()
   }
+
+
+
 
   def testSearchNews() = {
     val url = "http://localhost:8999/es/search/news"
@@ -303,6 +307,35 @@ object EsSearchHttpClientTest {
     val js = JSON.parseArray(r)
     println(js)
   }
+
+
+  /**
+    * 删除研报
+    */
+  def delReportByIds() = {
+    val url: String = "http://localhost:8999/es/del/reports/ids"
+    //val url: String = "http://192.168.250.207:8999/es/del/reports/ids"
+
+    val reportIds = new util.ArrayList[String]()
+    reportIds.add("AP201609060017504111")
+
+    val obj = new util.HashMap[String,Object]()
+    obj.put("ids",reportIds)
+    val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", obj, null)
+    try {
+      val entity: HttpEntity = httpResp.getEntity
+      val sResponse: String = EntityUtils.toString(entity)
+      System.out.println(sResponse)
+    }
+    catch {
+      case e: IOException => {
+        e.printStackTrace
+      }
+    } finally {
+      HttpClientUtils.closeQuietly(httpResp)
+    }
+  }
+
 
   def testIndexBReportsWithRw() {
     val headers: java.util.Map[String, String] = new java.util.HashMap[String, String]

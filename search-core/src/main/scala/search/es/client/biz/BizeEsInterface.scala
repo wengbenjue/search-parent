@@ -991,6 +991,38 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
+  /**
+    * 研报删除
+    * @param ids
+    * @return
+    */
+  def wrapDelReportByIds(ids: java.util.Collection[String]): NiNi = {
+    Util.caculateCostTime {
+      delReportByIds(ids)
+    }
+  }
+
+  /**
+    * 研报删除
+    * @param ids
+    * @return
+    */
+  def delReportByIds(ids: java.util.Collection[String]): Boolean = {
+    delByIds(research_report_index_name,research_report_type_name,ids)
+  }
+
+  /**
+    * del by ids
+    * @param indexName
+    * @param typeName
+    * @param ids
+    * @return
+    */
+  def delByIds(indexName: String, typeName: String,ids: java.util.Collection[String]): Boolean = {
+    client.delByIds(indexName,typeName,ids)
+  }
+
+
   def requestHttpForSynonym(query: String, reqType: String = "get"): AnyRef = {
     reqType match {
       case "get" =>

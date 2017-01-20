@@ -158,6 +158,23 @@ public class EsSearchController {
             return BizeEsInterface.wrapIndexByReportsText(docs);
     }
 
+    /**
+     *研报删除
+     * @param ids
+     * @return
+     */
+    @RequestMapping(value = "/del/reports/ids", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi delReportsByIds(@RequestParam("ids") final Collection<String> ids) {
+        if (ids == null || ids.size()==0) {
+            NiNi nini = new NiNi();
+            nini.setCode(-1);
+            nini.setMsg("ids  null!");
+            return nini;
+        } else
+            return BizeEsInterface.wrapDelReportByIds(ids);
+    }
+
+
     @RequestMapping(value = "/index/reports", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi indexByReports(@RequestBody final Collection<java.util.Map<String, Object>> docs) {
         if (docs == null) {
