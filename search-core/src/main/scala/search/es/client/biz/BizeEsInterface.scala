@@ -110,6 +110,15 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     if (hlArrays != null && hlArrays.length > 0) hlList = hlArrays.toList
   }
 
+  //report_fields
+
+  var reportFieldsList: List[String] = null
+  if (report_fields != null && !report_fields.equalsIgnoreCase("")) {
+    val reportFieldsArrays = report_fields.split(",")
+    if (reportFieldsArrays != null && reportFieldsArrays.length > 0) reportFieldsList = reportFieldsArrays.toList
+  }
+
+
   val timerPeriodSchedule = new CloudTimerWorker(name = "timerPeriodSchedule", interval = 1000 * 60 * 60 * 24, callback = () => loadEventRegexRule())
 
   val timerPeriodScheduleForBloomFilter = new CloudTimerWorker(name = "timerPeriodScheduleForBloomFilter", interval = 1000 * 60 * 15, callback = () => addBloomFilterFromGraph())
@@ -156,7 +165,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   init()
 
   def init() = {
-    if(!isInited){
+    if (!isInited) {
       isInited = true
 
       this.conf = new EsClientConf()
@@ -668,7 +677,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     */
   def indexReportText(docs: java.util.Collection[ResearchReport]): Boolean = {
     if (docs != null && docs.size() > 0) {
-      client.addDocumentsWithMultiThreading(research_report_index_name, research_report_type_name, docs.map(Util.convertBean(_)) )
+      client.addDocumentsWithMultiThreading(research_report_index_name, research_report_type_name, docs.map(Util.convertBean(_)))
     } else false
   }
 
@@ -1045,8 +1054,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       val resultAll = new ReportEntity(all._2, all._1)
       return resultAll
     }
+    //"id", "imgpath", "upt", "image_p", "image_dec", "image_t", "image_n","image_url","image_img_id"
     val result = client.multiMatchQuery(research_report_index_name, research_report_type_name,
-      from, offset, query, "id", "imgpath", "upt", "image_p", "image_dec", "image_t", "image_n","image_url","image_img_id")
+      from, offset, query, reportFieldsList: _*)
     val cnt = client.count(research_report_index_name, research_report_type_name)
     client.matchAllQueryWithCount(research_report_index_name, research_report_type_name,
       from, offset)
@@ -2046,7 +2056,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     //BizUtil.deleteNewsByRange(client)
 
-    testIndexReport
+    //testIndexReport
 
     testQueryResearchReport
   }

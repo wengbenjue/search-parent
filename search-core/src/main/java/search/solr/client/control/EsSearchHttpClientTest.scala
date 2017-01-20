@@ -314,7 +314,7 @@ object EsSearchHttpClientTest {
     val reportList = new util.ArrayList[java.util.Map[String, Object]]()
     val map = new util.HashMap[String, Object]()
     map.put("id", "2")
-    map.put("imgpath", "test1")
+    map.put("dec", "test1")
     reportList.add(map)
     val r = "[{\"image.n\": \"img-0066.png\", \"image.p\": \"4\", \"imgpath\": [], \"image.dec\": \"sfd\", \"upt\": \"20170106225514\", \"id\": \"AP201609060017504111\"}]"
     val r1= "{\"_id\" : {\"$oid\" : \"5865fbb92fac156d3522058f\"} , \"reportdate\" : \"20160101\" , \"authorlist\" : [ { \"authcode\" : \"11000172059\" , \"authprizeinfo\" : \"第十四届新财富金融工程最佳分析师第5名<br/>第十三届新财富金融工程最佳分析师第5名\" , \"auth\" : \"任瞳\"} , { \"authcode\" : \"11000193420\" , \"authprizeinfo\" : \"第十三届新财富金融工程最佳分析师第5名\" , \"auth\" : \"麦元勋\"}] , \"text\" : \"\" , \"rate\" : \"\" , \"code\" : \"\" , \"sratingname\" : \"\" , \"date\" : \"2016-01-05 11:29\" , \"org\" : \"兴业证券\" , \"kname\" : \"\" , \"change\" : \"\" , \"rtypecode\" : \"002013003\" , \"industrycode\" : \"\" , \"ktype\" : \"\" , \"orgprizeinfo\" : \"第十四届新财富本土最佳研究团队第5名<br/>第十四届新财富最具影响力研究机构第5名<br/>第十三届新财富最佳新三板研究机构第3名<br/>第十三届新财富本土最佳研究团队第4名<br/>第十三届新财富最具影响力研究机构第6名<br/>第十二届新财富进步最快研究机构第2名<br/>第十二届新财富本土最佳研究团队第6名<br/>第十二届新财富最具影响力的研究机构第7名\" , \"rtype\" : \"量化分析\" , \"kcode\" : \"\" , \"attach\" : { \"pagenum\" : \"1\" , \"name\" : \"20160101-兴业证券-OA量化择时周报.xlsx\" , \"seq\" : 1 , \"url\" : \"http://pdf.dfcfw.com/pdf/H301_AP201601050012700139_1.xlsx\" , \"filetype\" : \"2\" , \"ext\" : \"xlsx\" , \"path\" : \"\\\\\\\\192.168.100.25\\\\pm\\\\PDF\\\\新财富\\\\兴业证券\\\\20160101\\\\H301_AP201601050012700139_1.xlsx\" , \"filesize\" : \"560K\"} , \"orgcode\" : \"80000067\" , \"title\" : \"OA量化择时周报\" , \"codename\" : \"\" , \"industry\" : \"\" , \"conp\" : [ ] , \"sam_ind\" : { } , \"kw\" : [ ] , \"ph\" : [ \"量化周报\"] , \"event\" : { \"pos\" : [ ] , \"rule\" : [ ]} , \"coms\" : [ ] , \"id\" : \"AP201601050012700139\"}"
@@ -325,8 +325,8 @@ object EsSearchHttpClientTest {
     val js = JSON.parseArray(r)
     for (i <- 0 until js.size()) {
       val obj = js.getJSONObject(i)
-      val image_n = obj.getString("image_n")
-      map.put("image_n", image_n)
+      val image_n = obj.getString("authprizeinfo")
+      map.put("desc", image_n)
       val id = obj.getString("id")
       map.put("id", id)
 
