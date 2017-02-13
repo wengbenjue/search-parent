@@ -313,8 +313,8 @@ object EsSearchHttpClientTest {
     * 删除研报
     */
   def delReportByIds() = {
-    val url: String = "http://localhost:8999/es/del/reports/ids"
-    //val url: String = "http://192.168.250.207:8999/es/del/reports/ids"
+    //val url: String = "http://localhost:8999/es/del/reports/ids"
+    val url: String = "http://192.168.250.207:8999/es/del/reports/ids"
 
     val reportIds = new util.ArrayList[String]()
     reportIds.add("AP201609060017504111")

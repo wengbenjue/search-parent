@@ -176,7 +176,7 @@ public class PinyinUtils {
 	}
 
 	public static void main(String[] args) {
-		String str = "便宜坊";
+		String str = "*ST车体";
 
 		try {
 			System.out.println(str + " pyf="

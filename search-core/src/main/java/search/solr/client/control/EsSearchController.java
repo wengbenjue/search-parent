@@ -373,7 +373,7 @@ public class EsSearchController {
      */
     @RequestMapping(value = "/recommend/stocks", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi stockRecommendByTopic(@RequestParam(value = "topic", required = true) String topic,
-                                      @RequestParam(value = "num", required = false, defaultValue = "10") Integer num) {
+                                      @RequestParam(value = "num", required = false, defaultValue = "-1") Integer num) {
         if (topic == null) {
             NiNi nini = new NiNi();
             nini.setCode(-1);
