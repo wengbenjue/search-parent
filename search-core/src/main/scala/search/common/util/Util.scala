@@ -464,6 +464,27 @@ private[search] object Util extends Logging {
     }
   }
 
+  /**
+    * 追加写字符串到文件
+    *
+    * @param input
+    * @param path
+    */
+  def writeStrToDiskAppend(input: String, path: String): Unit = {
+    if (input != null) {
+      val writer = new FileWriter(path, true)
+      try {
+        writer.write(input)
+        logInfo(s"写入:${input}")
+      } catch {
+        case e: Exception =>
+          logError(s"写入文件${path}出错!", e)
+      } finally {
+        writer.close()
+      }
+    }
+  }
+
   def writeSeqToDisk(seq: Seq[String], path: String): Unit = {
     if (seq != null && seq.size > 0) {
       val writer = new FileWriter(path)

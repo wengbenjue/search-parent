@@ -514,7 +514,6 @@ private[search] object EsClient extends EsConfiguration with Logging {
           }
         }
       }
-
       //add aggs
       if (aggs != null && aggs.size > 0) {
         aggs.foreach(search.addAggregation(_))

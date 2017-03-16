@@ -27,6 +27,15 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     getCollection(MongoTableConstants.NEWS_SEARCH_LOGS)
   }
 
+  /**
+    * 研图搜索
+    *
+    * @return
+    */
+  def getResearchImagesCollection: DBCollection = {
+    getCollection(MongoTableConstants.RESEARCG_IMAGES)
+  }
+
   def getStockCollection: DBCollection = {
     getCollection(MongoTableConstants.ADA_BASE_STOCK)
   }
@@ -148,6 +157,21 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     projection.put("w", Integer.valueOf(1))
     val query = new BasicDBObject()
     val dbCurson = getGraphTopicConpCollection.find(query, projection)
+    if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
+    val result = dbCurson.toArray
+    result
+  }
+
+  /**
+    * 研图搜索
+    *
+    * @return
+    */
+  def findRearchImagesKw(): java.util.List[DBObject] = {
+    val projection = new BasicDBObject()
+    projection.put("kw", Integer.valueOf(1))
+    val query = new BasicDBObject()
+    val dbCurson = getResearchImagesCollection.find(query, projection)
     if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
     val result = dbCurson.toArray
     result
@@ -417,10 +441,26 @@ private[search] object DataManager {
     //testFindBaseStock
     //testFindByKeyword
     //testSaveOrUpdate
-    testGetDicFromNewsKeywordDict()
+    //testGetDicFromNewsKeywordDict()
     //testGetSynonmDicFromSynonymWords()
     //testFindTopicHot()
     //testFindHotNews()
+    testGetRearchImagesKw
+  }
+
+
+  def testGetRearchImagesKw() = {
+    val dm = new DataManager(new EsClientConf())
+    val result = dm.findRearchImagesKw()
+    result.foreach{dbObj=>
+      val kws = if (dbObj.get("kw") != null) dbObj.get("kw").asInstanceOf[BasicDBList] else null
+      if(kws!=null && kws.size()>0){
+       val strResult =  kws.map(_.toString).mkString(" ")
+        Util.writeStrToDiskAppend(strResult+" ", "D:\\research_images\\kw.txt")
+      }
+
+    }
+    println(result)
   }
 
   def testFindHotNews() = {

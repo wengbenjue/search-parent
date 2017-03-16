@@ -313,14 +313,15 @@ object EsSearchHttpClientTest {
     * 删除研报
     */
   def delReportByIds() = {
-    //val url: String = "http://localhost:8999/es/del/reports/ids"
-    val url: String = "http://192.168.250.207:8999/es/del/reports/ids"
+    val url: String = "http://localhost:8999/es/del/reports/ids"
+   // val url: String = "http://54.222.222.172:8999/es/del/reports/ids"
+   // val url: String = "http://192.168.250.207:8999/es/del/reports/ids"
 
     val reportIds = new util.ArrayList[String]()
-    reportIds.add("AP201609060017504111")
+    reportIds.add("5184f8c73892aeec286813372ff2bc4f")
 
     val obj = new util.HashMap[String,Object]()
-    obj.put("ids",reportIds)
+    obj.put("ids","5184f8c73892aeec286813372ff2bc4fsd\\',\\'f,5184f8c73892aeec286813372ff2bc4f1")
     val httpResp: CloseableHttpResponse = HttpClientUtil.requestHttpSyn(url, "post", obj, null)
     try {
       val entity: HttpEntity = httpResp.getEntity

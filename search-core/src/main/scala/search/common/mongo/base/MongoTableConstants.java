@@ -10,6 +10,10 @@ public class MongoTableConstants extends Constants{
     public static final String NEWS_GRAPH_KEYWORDS = "graph.graph_keywords";
     public static final String NEWS_GRAPH_CAT_NLP = "graph.graph_cat_nlp";
 
+    /**
+     * 研图搜索
+     */
+    public static final String RESEARCG_IMAGES = "xcf.research_images";
 
     public static final String NEWS_SEARCH_LOGS = "graph.search_logs";
 

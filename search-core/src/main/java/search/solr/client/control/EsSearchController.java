@@ -174,7 +174,11 @@ public class EsSearchController {
             return BizeEsInterface.wrapDelReportByIds(ids);
     }
 
-
+    /**
+     * 对研报及任何建索引
+     * @param docs
+     * @return
+     */
     @RequestMapping(value = "/index/reports", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi indexByReports(@RequestBody final Collection<java.util.Map<String, Object>> docs) {
         if (docs == null) {
