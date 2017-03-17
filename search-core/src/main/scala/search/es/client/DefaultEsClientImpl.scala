@@ -349,16 +349,16 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
 
   override def delByIds(indexName: String, typeName: String, ids: java.util.Collection[String]): Boolean = {
     var isDel = false
-    if(ids!=null && ids.size()>0){
-      val delIds = ids.filter{id=>
-       val dFlag= EsClient.delIndexById(EsClient.getClientFromPool(), indexName, typeName, id)
+    if (ids != null && ids.size() > 0) {
+      val delIds = ids.filter { id =>
+        val dFlag = EsClient.delIndexById(EsClient.getClientFromPool(), indexName, typeName, id)
         logInfo(s"deleted id: ${id}")
         dFlag
       }
-        if(ids.size()==delIds) isDel = true
-        else {
-          logError("some ids can't be deleted,you can request del again")
-        }
+      if (ids.size() == delIds) isDel = true
+      else {
+        logError("some ids can't be deleted,you can request del again")
+      }
     }
     isDel
   }
@@ -419,9 +419,12 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     EsClient.prefixQuery(EsClient.getClientFromPool(), indexName, typeName, from, to, field, preffix)
   }
 
-  override def multiMatchQuery(indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]] = {
+  override def multiMatchQuery(indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, analyzer: String, fields: String*): Array[java.util.Map[String, Object]] = {
+    val queryBuilder = QueryBuilders.multiMatchQuery(keyWords, fields: _*)
+    if (analyzer != null && !"".equalsIgnoreCase(analyzer.trim))
+      queryBuilder.analyzer(analyzer)
     EsClient.queryAsMap(EsClient.getClientFromPool(), indexName, typeName, from, to,
-      QueryBuilders.multiMatchQuery(keyWords, fields: _*)
+      queryBuilder
     )
   }
 
@@ -487,7 +490,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     * @return
     */
   override def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, aggs: Seq[AbstractAggregationBuilder], fields: String*): (Long, Array[java.util.Map[String, Object]]) = {
-    searchQbWithFilterAndSortsWithSuggest(indexName, typeName, from, to, filter, sorts, query, decayField, suggestField = null, highlightedField = null, searchResult = null, aggs,analyzer = null,fields: _*)
+    searchQbWithFilterAndSortsWithSuggest(indexName, typeName, from, to, filter, sorts, query, decayField, suggestField = null, highlightedField = null, searchResult = null, aggs, analyzer = null, fields: _*)
   }
 
 
@@ -506,7 +509,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
     * @param fields
     * @return
     */
-  override def searchQbWithFilterAndSortsWithSuggest(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, suggestField: String, highlightedField: List[String], searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder], analyzer: String,fields: String*): (Long, Array[java.util.Map[String, Object]]) = {
+  override def searchQbWithFilterAndSortsWithSuggest(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, suggestField: String, highlightedField: List[String], searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder], analyzer: String, fields: String*): (Long, Array[java.util.Map[String, Object]]) = {
     /* EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
        Query.functionScoreQuery(Function.gaussDecayFunction(decayField, "120w", "5w", 0.3)
          , scoreMode = "multiply", boostMode = "multiply",
@@ -519,7 +522,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
         Query.functionScoreQuery(Function.gaussDecayFunction(decayField, origin = new java.util.Date(), scale, offset, decay, weight)
           , scoreMode = "multiply", boostMode = "sum",
-          Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best",analyzer, fields: _*)),
+          Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", analyzer, fields: _*)),
         Query.suggestPhraseSuggestionQuery(suggestField, query), query,
         highlightedField, searchResult,
         aggs
@@ -528,7 +531,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
       EsClient.searchQbWithFilterAndSorts(EsClient.getClientFromPool(), indexName, typeName, from, to, filter, sorts,
         Query.functionScoreQuery(Function.gaussDecayFunction(decayField, origin = new java.util.Date(), scale, offset, decay, weight)
           , scoreMode = "multiply", boostMode = "sum",
-          Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", analyzer,fields: _*)),
+          Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", analyzer, fields: _*)),
         highlightedField, searchResult,
         aggs)
     }

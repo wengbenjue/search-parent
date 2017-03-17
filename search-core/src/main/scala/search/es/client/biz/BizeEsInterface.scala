@@ -1063,9 +1063,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param offset
     * @return
     */
-  def wrapQueryResearchReport(query: String, from: Int, offset: Int): NiNi = {
+  def wrapQueryResearchReport(query: String, from: Int, offset: Int, analyzer: String): NiNi = {
     Util.caculateCostTime {
-      queryResearchReport(query, from, offset)
+      queryResearchReport(query, from, offset,analyzer)
     }
   }
 
@@ -1075,9 +1075,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param query
     * @param from
     * @param offset
+    * @param analyzer
     * @return
     */
-  def queryResearchReport(query: String, from: Int, offset: Int): ReportEntity = {
+  def queryResearchReport(query: String, from: Int, offset: Int, analyzer: String): ReportEntity = {
     /* val queryResult = new QueryResult()
      val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(research_report_index_name, research_report_type_name,
        from, offset, null, null, query, null, null, null, queryResult, aggs = null,"id","imgpath","upt","image.p","image.dec","image.t","image.n")
@@ -1091,7 +1092,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
     //"id", "imgpath", "upt", "image_p", "image_dec", "image_t", "image_n","image_url","image_img_id"
     val result = client.multiMatchQuery(research_report_index_name, research_report_type_name,
-      from, offset, query, reportFieldsList: _*)
+      from, offset, query,analyzer, reportFieldsList: _*)
     val cnt = client.count(research_report_index_name, research_report_type_name)
     client.matchAllQueryWithCount(research_report_index_name, research_report_type_name,
       from, offset)
@@ -1121,7 +1122,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   def queryNews(query: String, from: Int, to: Int, leastTopMonth: Int): QueryResult = {
-    queryNews(query, from, to, leastTopMonth, sort = null, order = null, sorts = null,analyzer = null)
+    queryNews(query, from, to, leastTopMonth, sort = null, order = null, sorts = null, analyzer = null)
   }
 
   /**
@@ -1179,7 +1180,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     else if (query != null && needHl == 1) hlFields = hlList
     else hlFields = null
     val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
-      from, to, filter, sortF, query, decayField, newsSuggestField,hlFields, queryResult, aggs = aggsSeq, analyzer,
+      from, to, filter, sortF, query, decayField, newsSuggestField, hlFields, queryResult, aggs = aggsSeq, analyzer,
       title, auth, summary, topics, events, companys)
     queryResult.setCount(Integer.valueOf(count.toString))
     queryResult.setResult(result)
@@ -2099,7 +2100,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   def testQueryResearchReport(): Unit = {
-    var result = queryResearchReport("test", 0, 10)
+    var result = queryResearchReport("test", 0, 10,"ik")
     println(result)
   }
 

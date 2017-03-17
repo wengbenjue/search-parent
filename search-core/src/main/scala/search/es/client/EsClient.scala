@@ -93,7 +93,7 @@ private[search] trait EsClient extends EsConfiguration {
 
   def delAllData(indexName: String, typeName: String): Boolean
 
-  def multiMatchQuery(indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, fields: String*): Array[java.util.Map[String, Object]]
+  def multiMatchQuery(indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, analyzer: String,fields: String*): Array[java.util.Map[String, Object]]
 
   def boolMustQuery(indexName: String, typeName: String, from: Int, to: Int, field: String, keyWords: Object): Array[java.util.Map[String, Object]]
 

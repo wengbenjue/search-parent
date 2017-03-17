@@ -58,7 +58,7 @@ public class EsSearchController {
      */
     @RequestMapping(value = "/search/report", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi searchResearchReport(final NewsQuery reportQuery) {
-        NiNi result = BizeEsInterface.wrapQueryResearchReport(reportQuery.getQuery(), reportQuery.getFrom(), reportQuery.getOffset());
+        NiNi result = BizeEsInterface.wrapQueryResearchReport(reportQuery.getQuery(), reportQuery.getFrom(), reportQuery.getOffset(),reportQuery.getAnalyzer());
         return result;
     }
 
