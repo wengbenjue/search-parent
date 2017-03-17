@@ -12,8 +12,8 @@ import org.elasticsearch.search.suggest.phrase.PhraseSuggestionBuilder
 private[search] object Query {
 
 
-  def suggestPhraseSuggestionQuery(field: String, query: String): SuggestionBuilder[_] = {
-    suggestPhraseSuggestionQuery(field, 5, query, 0.95f, 0.5f, 1, "always", 1)
+  def suggestPhraseSuggestionQuery(field: String, query: String, analyzer: String): SuggestionBuilder[_] = {
+    suggestPhraseSuggestionQuery(field, 5, query, 0.95f, 0.5f, 1, "always", 1,analyzer)
   }
 
   /**
@@ -28,8 +28,10 @@ private[search] object Query {
     * @param suggestMode
     * @return
     */
-  def suggestPhraseSuggestionQuery(field: String, size: Int = 5, query: String, realWordErrorLikelihood: Float = 0.95f, maxErrors: Float = 0.5f, gramSize: Int = 3, suggestMode: String = "always", minWordLength: Int = 1): SuggestionBuilder[_] = {
+  def suggestPhraseSuggestionQuery(field: String, size: Int = 5, query: String, realWordErrorLikelihood: Float = 0.95f, maxErrors: Float = 0.5f, gramSize: Int = 3, suggestMode: String = "always", minWordLength: Int = 1, analyzer: String): SuggestionBuilder[_] = {
     val suggest = new PhraseSuggestionBuilder("suggest")
+    if(analyzer!=null && !"".equalsIgnoreCase(analyzer.trim))
+      suggest.analyzer(analyzer)
     suggest.field(field).size(size).text(query).
       realWordErrorLikelihood(realWordErrorLikelihood).maxErrors(maxErrors)
       .gramSize(gramSize)

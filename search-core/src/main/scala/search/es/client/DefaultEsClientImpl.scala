@@ -523,7 +523,7 @@ private[search] class DefaultEsClientImpl(conf: EsClientConf) extends EsClient w
         Query.functionScoreQuery(Function.gaussDecayFunction(decayField, origin = new java.util.Date(), scale, offset, decay, weight)
           , scoreMode = "multiply", boostMode = "sum",
           Query.multiMatchQuery(query, "and", -1, null, null, queryType = "best", analyzer, fields: _*)),
-        Query.suggestPhraseSuggestionQuery(suggestField, query), query,
+        Query.suggestPhraseSuggestionQuery(suggestField, query,analyzer), query,
         highlightedField, searchResult,
         aggs
       )
