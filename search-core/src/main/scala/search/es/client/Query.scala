@@ -73,10 +73,12 @@ private[search] object Query {
     * @param fields
     * @return
     */
-  def multiMatchQuery(query: Object, op: String, tieBreaker: Float, fuzziness: String, minimumShouldMatch: String, queryType: String, fields: String*): QueryBuilder = {
+  def multiMatchQuery(query: Object, op: String, tieBreaker: Float, fuzziness: String, minimumShouldMatch: String, queryType: String, analyzer: String, fields: String*): QueryBuilder = {
     if (query == null) return QueryBuilders.matchAllQuery()
 
     val multiMatchQuery = QueryBuilders.multiMatchQuery(query, fields: _*)
+    if (analyzer != null && !analyzer.trim.equalsIgnoreCase(""))
+      multiMatchQuery.analyzer(analyzer)
 
     if (fuzziness != null && !fuzziness.isEmpty) multiMatchQuery.fuzziness(fuzziness)
 

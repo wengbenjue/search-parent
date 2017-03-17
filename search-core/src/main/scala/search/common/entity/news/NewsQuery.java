@@ -13,6 +13,7 @@ public class NewsQuery {
     private Integer leastTopMonth=6;
     private String sort;
     private String order;
+    private String analyzer="ik_smart";
     private Integer needHl=1; //0 false,1 true
     private Map<String, String> sorts;
 
@@ -97,5 +98,13 @@ public class NewsQuery {
 
     public void setNeedHl(Integer needHl) {
         this.needHl = needHl;
+    }
+
+    public String getAnalyzer() {
+        return analyzer;
+    }
+
+    public void setAnalyzer(String analyzer) {
+        this.analyzer = analyzer;
     }
 }

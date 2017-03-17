@@ -993,6 +993,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   /**
     * 研报删除
+    *
     * @param ids
     * @return
     */
@@ -1004,22 +1005,24 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   /**
     * 研报删除
+    *
     * @param ids
     * @return
     */
   def delReportByIds(ids: java.util.Collection[String]): Boolean = {
-    delByIds(research_report_index_name,research_report_type_name,ids)
+    delByIds(research_report_index_name, research_report_type_name, ids)
   }
 
   /**
     * del by ids
+    *
     * @param indexName
     * @param typeName
     * @param ids
     * @return
     */
-  def delByIds(indexName: String, typeName: String,ids: java.util.Collection[String]): Boolean = {
-    client.delByIds(indexName,typeName,ids)
+  def delByIds(indexName: String, typeName: String, ids: java.util.Collection[String]): Boolean = {
+    client.delByIds(indexName, typeName, ids)
   }
 
 
@@ -1110,15 +1113,15 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param sorts
     * @return
     */
-  def wrapQueryNews(query: String, from: Int, to: Int, leastTopMonth: Int, sort: String, order: String, sorts: java.util.Map[String, String], needHl: Int): NiNi = {
+  def wrapQueryNews(query: String, from: Int, to: Int, leastTopMonth: Int, sort: String, order: String, sorts: java.util.Map[String, String], needHl: Int, analyzer: String): NiNi = {
     Util.caculateCostTime {
-      queryNews(query, from, to, leastTopMonth, sort, order, sorts, needHl)
+      queryNews(query, from, to, leastTopMonth, sort, order, sorts, needHl, analyzer)
     }
   }
 
 
   def queryNews(query: String, from: Int, to: Int, leastTopMonth: Int): QueryResult = {
-    queryNews(query, from, to, leastTopMonth, sort = null, order = null, sorts = null)
+    queryNews(query, from, to, leastTopMonth, sort = null, order = null, sorts = null,analyzer = null)
   }
 
   /**
@@ -1129,9 +1132,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     * @param to
     * @param leastTopMonth
     * @param sorts
+    * @param analyzer
     * @return
     */
-  def queryNews(query: String, from: Int, to: Int, leastTopMonth: Int, sort: String, order: String, sorts: java.util.Map[String, String], needHl: Int = 0): QueryResult = {
+  def queryNews(query: String, from: Int, to: Int, leastTopMonth: Int, sort: String, order: String, sorts: java.util.Map[String, String], needHl: Int = 0, analyzer: String): QueryResult = {
     val queryResult = new QueryResult()
 
     var filter = new mutable.HashMap[String, (Object, Boolean)]()
@@ -1175,7 +1179,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     else if (query != null && needHl == 1) hlFields = hlList
     else hlFields = null
     val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
-      from, to, filter, sortF, query, decayField, newsSuggestField, hlFields, queryResult, aggs = aggsSeq,
+      from, to, filter, sortF, query, decayField, newsSuggestField,hlFields, queryResult, aggs = aggsSeq, analyzer,
       title, auth, summary, topics, events, companys)
     queryResult.setCount(Integer.valueOf(count.toString))
     queryResult.setResult(result)

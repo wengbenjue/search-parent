@@ -110,7 +110,7 @@ private[search] trait EsClient extends EsConfiguration {
 
   def searchQbWithFilterAndSorts(indexName: String, typeName: String, from: Int, to: Int, filter: scala.collection.mutable.Map[String, (Object, Boolean)], sorts: scala.collection.mutable.Map[String, String], query: String, decayField: String, aggs: Seq[AbstractAggregationBuilder], fields: String*): (Long, Array[java.util.Map[String, Object]])
 
-  def searchQbWithFilterAndSortsWithSuggest(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, suggestField: String, highlightedField: List[String], searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder], fields: String*): (Long, Array[java.util.Map[String, Object]])
+  def searchQbWithFilterAndSortsWithSuggest(indexName: String, typeName: String, from: Int, to: Int, filter: mutable.Map[String, (Object, Boolean)], sorts: mutable.Map[String, String], query: String, decayField: String, suggestField: String, highlightedField: List[String], searchResult: QueryResult, aggs: Seq[AbstractAggregationBuilder], analyzer: String, fields: String*): (Long, Array[java.util.Map[String, Object]])
 
 }
 
@@ -816,7 +816,7 @@ private[search] object EsClient extends EsConfiguration with Logging {
   }
 
   private def multiMatchQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int, keyWords: Object, op: String, tieBreaker: Float, fuzziness: String, minimumShouldMatch: String, queryType: String, fields: String*): Array[java.util.Map[String, Object]] = {
-    queryAsMap(client, indexName, typeName, from, to, Query.multiMatchQuery(keyWords, op, tieBreaker, fuzziness, minimumShouldMatch, queryType, fields: _*))
+    queryAsMap(client, indexName, typeName, from, to, Query.multiMatchQuery(keyWords, op, tieBreaker, fuzziness, minimumShouldMatch, queryType,analyzer = null ,fields: _*))
   }
 
   /**
@@ -920,9 +920,9 @@ private[search] object EsClient extends EsConfiguration with Logging {
   def multiMatchFunctionScoreQuery(client: Client, indexName: String, typeName: String, from: Int, to: Int,
                                    decayField: String, scale: String, offset: String, decay: Double,
                                    scoreMode: String, boostMode: String,
-                                   keyword: String, op: String, tieBreaker: Float, fuzziness: String, minimumShouldMatch: String, queryType: String, fields: String*): Array[java.util.Map[String, Object]] = {
+                                   keyword: String, op: String, tieBreaker: Float, fuzziness: String, minimumShouldMatch: String, queryType: String,analyzer: String, fields: String*): Array[java.util.Map[String, Object]] = {
     functionScoreQuery(client, indexName, typeName, from, to, Function.gaussDecayFunction(decayField,origin = new java.util.Date(), scale, offset, decay,weight), scoreMode, boostMode,
-      Query.multiMatchQuery(keyword, op, tieBreaker, fuzziness, minimumShouldMatch, queryType, fields: _*))
+      Query.multiMatchQuery(keyword, op, tieBreaker, fuzziness, minimumShouldMatch, queryType,analyzer, fields: _*))
   }
 
 
