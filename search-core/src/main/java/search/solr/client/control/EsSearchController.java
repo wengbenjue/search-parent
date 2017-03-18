@@ -90,6 +90,16 @@ public class EsSearchController {
             return BizeEsInterface.wrapDelIndexByKeywords(keywords);
     }
 
+    /**
+     * 清除研报所有数据
+     * @return
+     */
+    @RequestMapping(value = "/research_report/clean", method = {RequestMethod.POST, RequestMethod.GET})
+    public NiNi cleanResearchReport() {
+            return BizeEsInterface.warmpCleanResearchReport();
+    }
+
+
     @RequestMapping(value = "/index/keywords", method = {RequestMethod.POST, RequestMethod.GET})
     public NiNi indexByKeywords(@RequestBody final IndexKeywordsParameter indexKeywordsParameter) {
         Collection<String> keywords = indexKeywordsParameter.getKeywords();

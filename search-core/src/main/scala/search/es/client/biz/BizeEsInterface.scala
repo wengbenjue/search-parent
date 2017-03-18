@@ -1877,8 +1877,35 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
+  /**
+    * 删除指定索引type
+    * @return
+    */
+  def warmpDeleteAllData(index: String,typeName: String): NiNi = {
+    Util.caculateCostTime {
+      delAllDataByType(index,typeName)
+    }
+  }
+
+  /**
+    * 清除研报所有数据
+    * @return
+    */
+  def warmpCleanResearchReport(): NiNi = {
+    Util.caculateCostTime {
+      cleanResearchReport
+    }
+  }
+  def cleanResearchReport(): Boolean={
+    delAllDataByType(research_report_index_name,research_report_type_name)
+  }
+
   def delAllData(): Boolean = {
     conf.graphDictionary.clear()
+    client.delAllData(graphIndexName, graphTypName)
+  }
+
+  def delAllDataByType(index: String,typeName: String): Boolean = {
     client.delAllData(graphIndexName, graphTypName)
   }
 
