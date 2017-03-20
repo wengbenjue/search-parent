@@ -1906,7 +1906,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
   def delAllDataByType(index: String,typeName: String): Boolean = {
-    client.delAllData(graphIndexName, graphTypName)
+    client.delAllData(index, typeName)
   }
 
   def deleIndex(indexName: String, graphTypeName: String): Boolean = {
