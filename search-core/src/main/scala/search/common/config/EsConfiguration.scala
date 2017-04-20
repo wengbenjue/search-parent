@@ -74,6 +74,8 @@ lazy val switchCrawler = Try(esConfig.getString("switch.crawler")).getOrElse("of
 
   lazy val report_fields = Try(esConfig.getString("report.field")).getOrElse(null)
 
+  lazy val news_fields =  Try(esConfig.getString("news.field")).getOrElse(null)
+
 
   lazy val fetchUrl = Try(esConfig.getString("api.url.crawler")).getOrElse("http://192.168.250.207:8010/api/graph?")
   lazy val graphUrl = Try(esConfig.getString("api.url.graph")).getOrElse("http://192.168.250.207:9000/api/graph/mgra?c=")

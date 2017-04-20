@@ -93,14 +93,23 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   //=========================================================================
-  //news
-  val title = "title^6"
+  //news field
+ /* val title = "title^6"
   val auth = "auth^3"
   val summary = "summary"
   val topics = "topics^2"
   val events = "events^2"
-  val companys = "companys^2"
+  val companys = "companys^2"*/
   val decayField = "create_on"
+
+  /**
+    * 新闻可供搜索的字段
+    */
+  var newsFieldsList: List[String] = null
+  if (news_fields != null && !news_fields.equalsIgnoreCase("")) {
+    val newsFieldsArrays = news_fields.split(",")
+    if (newsFieldsArrays != null && newsFieldsArrays.length > 0) newsFieldsList = newsFieldsArrays.toList
+  }
 
 
   //hl field for news
@@ -1179,9 +1188,13 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     if (query == null) hlFields = hlList
     else if (query != null && needHl == 1) hlFields = hlList
     else hlFields = null
-    val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
+   /* val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
       from, to, filter, sortF, query, decayField, newsSuggestField, hlFields, queryResult, aggs = aggsSeq, analyzer,
-      title, auth, summary, topics, events, companys)
+      title, auth, summary, topics, events, companys)*/
+
+    val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
+      from, to, filter, sortF, query, decayField, newsSuggestField, hlFields, queryResult, aggs = aggsSeq, analyzer,newsFieldsList :_*)
+
     queryResult.setCount(Integer.valueOf(count.toString))
     queryResult.setResult(result)
 
