@@ -1102,6 +1102,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     //"id", "imgpath", "upt", "image_p", "image_dec", "image_t", "image_n","image_url","image_img_id"
     val result = client.multiMatchQuery(research_report_index_name, research_report_type_name,
       from, offset, query,analyzer, reportFieldsList: _*)
+
     val cnt = client.count(research_report_index_name, research_report_type_name)
     client.matchAllQueryWithCount(research_report_index_name, research_report_type_name,
       from, offset)
