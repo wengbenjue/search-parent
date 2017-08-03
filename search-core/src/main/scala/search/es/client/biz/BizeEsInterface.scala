@@ -275,6 +275,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
     val returnS = s"event regex rule load to cache successfully,total number:${eventRegexRuleSets.size()}"
     logInfo(returnS)
+    if(eventRegexRuleSets.size()>0){
+      import scala.collection.JavaConverters
+      Util.writeSeqToDisk(eventRegexRuleSets.toList,eventPath)
+    }
     returnS
   }
 

@@ -96,6 +96,7 @@ lazy val switchCrawler = Try(esConfig.getString("switch.crawler")).getOrElse("of
 
   lazy val industryPath = Try(esConfig.getString("disk.path.industry")).getOrElse(null)
 
+  lazy val eventPath = Try(esConfig.getString("event.rule.path")).getOrElse("event.txt")
 
   /**
     * 概念查询url
