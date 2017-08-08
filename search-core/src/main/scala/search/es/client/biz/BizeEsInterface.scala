@@ -148,7 +148,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   val timerPeriodScheduleFordeleteNewsByRange = new CloudTimerWorker(name = "timerPeriodScheduleFordeleteNewsByRange", interval = 1000 * 60 * 60 * 24, callback = () => BizUtil.deleteNewsByRange(client))
 
   //自动更新上市公司
-  val timerPeriodScheduleForUpdateStockCache = new CloudTimerWorker(name = "timerPeriodScheduleForUpdateStockCache", interval = 1000 * 60 * 60 * 30, callback = () => wrapLoadCacheFromCom())
+  val timerPeriodScheduleForUpdateStockCache = new CloudTimerWorker(name = "timerPeriodScheduleForUpdateStockCache", interval = 1000 * 60 * 60, callback = () => wrapLoadCacheFromCom())
 
 
   var eventRegexRuleSets = new java.util.HashSet[String]()
@@ -357,6 +357,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     -1
   }
 
+  //TODO
   def wrapLoadCacheFromCom(): Long = {
     loadCacheFromCom()
     -1
