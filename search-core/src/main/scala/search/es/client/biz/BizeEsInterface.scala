@@ -94,12 +94,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   //=========================================================================
   //news field
- /* val title = "title^6"
-  val auth = "auth^3"
-  val summary = "summary"
-  val topics = "topics^2"
-  val events = "events^2"
-  val companys = "companys^2"*/
+  /* val title = "title^6"
+   val auth = "auth^3"
+   val summary = "summary"
+   val topics = "topics^2"
+   val events = "events^2"
+   val companys = "companys^2"*/
   val decayField = "create_on"
 
   /**
@@ -275,9 +275,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
     val returnS = s"event regex rule load to cache successfully,total number:${eventRegexRuleSets.size()}"
     logInfo(returnS)
-    if(eventRegexRuleSets.size()>0){
+    if (eventRegexRuleSets.size() > 0) {
       import scala.collection.JavaConverters
-      Util.writeSeqToDisk(eventRegexRuleSets.toList,eventPath)
+      Util.writeSeqToDisk(eventRegexRuleSets.toList, eventPath)
     }
     returnS
   }
@@ -313,6 +313,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   def addWordToGraphTrieNode(word: String, id: String): Unit = {
     conf.graphDictionary.add(word.trim.toUpperCase(), id)
+  }
+
+
+  def removeWordFromGraphTrieNode(word: String): Unit = {
+    conf.graphDictionary.remove(word.trim.toUpperCase)
   }
 
   def loadCompanyWeightCache() = {
@@ -366,6 +371,31 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   def loadCacheFromCom(): String = {
     val stocks = conf.mongoDataManager.findCompanyCode()
     if (stocks != null && stocks.size() > 0) {
+
+
+      try {
+        //clean all old companys
+        if (LocalCache.baseStockCache != null && LocalCache.baseStockCache.size > 0) {
+          LocalCache.baseStockCache.foreach { case (name, stock) =>
+            val simPy = PinyinUtils.getPinYin(name, false)
+            val comCode = stock.getComCode
+            removeWordFromGraphTrieNode(comCode)
+            removeWordFromGraphTrieNode(name)
+            removeWordFromGraphTrieNode(simPy)
+
+            if (LocalCache.baseStockCache.contains(name))
+              LocalCache.baseStockCache.remove(name)
+            if (LocalCache.codeToCompanyNameCache.contains(comCode))
+              LocalCache.codeToCompanyNameCache.remove(comCode)
+          }
+          logInfo("clean all company cache successful")
+        }
+      } catch {
+        case e: Exception => {
+          logError("clean cache failed!", e)
+        }
+      }
+
       stocks.foreach { dbobj =>
         var comSim: String = null
         comSim = if (dbobj.get("w") != null) dbobj.get("w").toString else null
@@ -404,6 +434,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
     "comoany stock cached in local cache"
   }
+
 
   def loadEventToCache(): Long = {
     val events = conf.mongoDataManager.findEvent()
@@ -1079,7 +1110,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     */
   def wrapQueryResearchReport(query: String, from: Int, offset: Int, analyzer: String): NiNi = {
     Util.caculateCostTime {
-      queryResearchReport(query, from, offset,analyzer)
+      queryResearchReport(query, from, offset, analyzer)
     }
   }
 
@@ -1106,7 +1137,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     }
     //"id", "imgpath", "upt", "image_p", "image_dec", "image_t", "image_n","image_url","image_img_id"
     val result = client.multiMatchQuery(research_report_index_name, research_report_type_name,
-      from, offset, query,analyzer, reportFieldsList: _*)
+      from, offset, query, analyzer, reportFieldsList: _*)
 
     val cnt = client.count(research_report_index_name, research_report_type_name)
     client.matchAllQueryWithCount(research_report_index_name, research_report_type_name,
@@ -1194,12 +1225,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     if (query == null) hlFields = hlList
     else if (query != null && needHl == 1) hlFields = hlList
     else hlFields = null
-   /* val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
-      from, to, filter, sortF, query, decayField, newsSuggestField, hlFields, queryResult, aggs = aggsSeq, analyzer,
-      title, auth, summary, topics, events, companys)*/
+    /* val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
+       from, to, filter, sortF, query, decayField, newsSuggestField, hlFields, queryResult, aggs = aggsSeq, analyzer,
+       title, auth, summary, topics, events, companys)*/
 
     val (count, result) = client.searchQbWithFilterAndSortsWithSuggest(newsIndexName, newsTypName,
-      from, to, filter, sortF, query, decayField, newsSuggestField, hlFields, queryResult, aggs = aggsSeq, analyzer,newsFieldsList :_*)
+      from, to, filter, sortF, query, decayField, newsSuggestField, hlFields, queryResult, aggs = aggsSeq, analyzer, newsFieldsList: _*)
 
     queryResult.setCount(Integer.valueOf(count.toString))
     queryResult.setResult(result)
@@ -1898,16 +1929,18 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
   /**
     * 删除指定索引type
+    *
     * @return
     */
-  def warmpDeleteAllData(index: String,typeName: String): NiNi = {
+  def warmpDeleteAllData(index: String, typeName: String): NiNi = {
     Util.caculateCostTime {
-      delAllDataByType(index,typeName)
+      delAllDataByType(index, typeName)
     }
   }
 
   /**
     * 清除研报所有数据
+    *
     * @return
     */
   def warmpCleanResearchReport(): NiNi = {
@@ -1915,8 +1948,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       cleanResearchReport
     }
   }
-  def cleanResearchReport(): Boolean={
-    delAllDataByType(research_report_index_name,research_report_type_name)
+
+  def cleanResearchReport(): Boolean = {
+    delAllDataByType(research_report_index_name, research_report_type_name)
   }
 
   def delAllData(): Boolean = {
@@ -1924,7 +1958,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     client.delAllData(graphIndexName, graphTypName)
   }
 
-  def delAllDataByType(index: String,typeName: String): Boolean = {
+  def delAllDataByType(index: String, typeName: String): Boolean = {
     client.delAllData(index, typeName)
   }
 
@@ -2146,7 +2180,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
 
   def testQueryResearchReport(): Unit = {
-    var result = queryResearchReport("test", 0, 10,"ik")
+    var result = queryResearchReport("test", 0, 10, "ik")
     println(result)
   }
 
