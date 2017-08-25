@@ -1,0 +1,2420 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tasks>
+	<!-- 
+	<task type="equity">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 15 ? * 1-7</cron>
+		<description>增量导入巨潮A股股价(巨潮下午17:30更新完股价数据)。
+		如果需要补缺，可以手工触发，需要加上如下参数 &lt;br&gt;
+		&lt;b&gt;pars=dateFrom:2015-02-03;dateTo:2015-02-06&lt;/b&gt; 
+		</description>
+		<delay>300</delay>
+		<env>dp,mgt,ec2,sh</env>
+	</task>
+	 -->
+	<task type="equity_price">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 10,15,17,18 ? * 1-7</cron>
+		<description>增量导入巨潮A股股价和大盘股价(巨潮下午17:30更新完股价数据)。
+		如果需要补缺，可以手工触发，需要加上如下参数 &lt;br&gt;
+		&lt;b&gt;pars=dateFrom:2015-02-03;dateTo:2015-02-06&lt;/b&gt; 
+		</description>
+		<delay>300</delay>
+		<env>dp,mgt,ec2,sh</env>
+	</task>
+	<task type="equity_split">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 15,17,18 ? * 1-7</cron>
+		<description>增量导入巨潮A股拆股系数(正式表，仅仅用于亚马逊环境)(巨潮下午17:30更新完股价数据)。
+		如果需要补缺，可以手工触发，需要加上如下参数 &lt;br&gt;
+		&lt;b&gt;pars=dateFrom:2015-02-03;dateTo:2015-02-06&lt;/b&gt; 
+		</description>
+		<delay>300</delay>
+		<env>ec2</env>
+	</task>
+	<task type="equity_split_jc">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 15,17,18 ? * 1-7</cron>
+		<description>增量导入巨潮A股拆股系数(比对表，仅仅用于上海环境)(巨潮下午17:30更新完股价数据)。
+		如果需要补缺，可以手工触发，需要加上如下参数 &lt;br&gt;
+		&lt;b&gt;pars=dateFrom:2015-02-03;dateTo:2015-02-06&lt;/b&gt; 
+		</description>
+		<delay>300</delay>
+		<env>sh</env>
+	</task>
+	
+	<task type="equity_new_company">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<description>从巨潮导入公司历史股价. e.g., &lt;br&gt;
+			pars=secus:300282_SZ_EQ,300268_SZ_EQ
+		</description>
+		<delay>300</delay>
+		<env>qa,dp,mgt,ec2,sh</env>
+	</task>
+
+	<task type="baseInfoDelta_rs">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<!-- <cron>0 0 18 ? * SAT</cron> -->
+		<env>qa,dp,mgt</env>
+		<description>Import fund, excutive, share vary and shareholder from juchao: &lt;br&gt;
+			1. delta import, e.g.,
+			&lt;b&gt;pars=type:delta;date:2014-01-07&lt;/b&gt; &lt;br&gt;
+			2. specific companies' historical data, e.g., &lt;br&gt;
+			&lt;b&gt;pars=type:history;secus:601398_SH_EQ,600617_SH_EQ&lt;/b&gt; </description>
+	</task>
+	<!-- <task type="baseOrgDelta"> <maxHandleTime>1000</maxHandleTime> <maxRepeat>1</maxRepeat> <description>import mybatis
+		base_org_pool table increasedly manually</description> </task> <task type="basePeopleDelta"> <maxHandleTime>1000</maxHandleTime> 
+		<maxRepeat>1</maxRepeat> <description>import mybatis base_people_pool table increasedly manually.(MUST RUNNING AFTER baseorgDelta)</description>
+		</task> <task type="baseExecutiveDelta"> <maxHandleTime>1000</maxHandleTime> <maxRepeat>1</maxRepeat> <description>import 
+		mybatis base_executive table increasedly manually.(MUST RUNNING AFTER basePeopleDelta)</description> <env>dp</env> </task>
+		<task type="shareHolder"> <maxHandleTime>1000</maxHandleTime> <maxRepeat>1</maxRepeat> <description>import mybatis shareholder,
+		stock price increasedly manually</description> <env>dp</env> </task> -->
+		
+		<task type="baseExecutiveDelta"> 
+			<maxHandleTime>1000</maxHandleTime> 
+			<maxRepeat>1</maxRepeat> 
+			<cron>0 30 1,7 ? * 1-7</cron>
+			<description>import juchao base_executive table increasedly manually.</description> 
+			<env>qa,dp,mgt</env> 
+		</task> 
+
+	<task type="rptDelta">
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 2,3,5,7,9,11 * * ?</cron>
+		<env>qa,dp,mgt</env>
+		<description>import research report</description>
+	</task>
+
+	<task type="research">
+		<maxRepeat>1</maxRepeat>
+		<!-- <preType>rptDelta</preType> -->
+		<pars>indexer:research;isfullindexed:false</pars>
+		<description>create index of research report</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="finRptDelta">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 45 0,1,2,4,6,8,10,12,14,19 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<description>
+			从巨潮抓取最近1天的财务数据到fin_rpt_asrep，然后计算ext的4张表，以及tpl的4张表。
+			抓取规则是：如果某条数据已经存在于fin_rpt_asrep中，则拒绝数据再次接入，也不会计算后面8张表；
+			如果fin_rpt_asrep中的表数据丢失，那么将抓取巨潮数据，并重算覆盖所有9表。
+			程序2小时执行1次（早上频率是1小时一次），但是单次执行时间大约要1小时。不建议手动触发。
+			如果必须手动补数据，填写参数dateFrom，程序将抓取该参数日期至今的所有数据。具体调用方式为：&lt;br&gt;
+			&lt;b&gt;pars=dateFrom:2015-04-24&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="finRptCompany">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<env>qa,dp,mgt</env>
+		<pars>type:company</pars>
+		<description>从巨潮导入某些公司一年的财务数据&lt;br&gt;
+			&lt;b&gt;pars=type:company;secuy:2013;secus:601398_SH_EQ,600617_SH_EQ&lt;/b&gt; </description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="news_robot_start">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0/3 1-7 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:start</pars>
+		<description>
+			新闻机器人，盘中定时分析计算。周期暂定1分钟一次。可手动触发。
+			&lt;b&gt;pars=type:start&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="news_robot_clear">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 9 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:clear</pars>
+		<description>
+			新闻机器人，盘后日度数据清理。仅仅允许在收盘并完成新闻机器人的当天所有工作之后才能触发。可以手动触发。
+			&lt;b&gt;pars=type:clear&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	
+	<task type="time_share_week">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 8 ? * 1-7</cron>
+		<env>sh</env>
+		<description>
+			股票5日行情调用计算接口，然后存储到redis。可手动触发。无参数。
+			暂定每日下午16:30执行。
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<!-- 新闻公告每小时跑 -->
+	<task type="news">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 10 * ? * 1-7</cron>
+		<description>import news increasedly，running at 20 minutes of every hours</description>
+		<delay>300</delay>
+		<env>qa,dp,ec2,sh</env>
+	</task>
+	<task type="announcementStock">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 */10 * ? * 1-7</cron>
+		<pars>type:delta</pars>
+		<description>
+			每十分钟执行&lt;br&gt;
+			导入A股公告和新三板公告&lt;br&gt;
+		</description>
+		<delay>300</delay>
+		<env>dp,mgt</env>
+	</task>
+	<task type="announcement_check">
+		<description>1. 检查数据库和索引的一致性，如果索引不存在，重建缺失的索引（mkt可选值:A,HK,US,HKZ）&lt;br&gt;
+			&lt;b&gt;pars=type:check;from:2014-01-01;to:2014-06-30;mkt:A&lt;/b&gt;&lt;br&gt;
+			手工调用之前最好跟IT确认当前是不是配置为创建全文索引，需要忽略全文，否则非常慢。&lt;br&gt;
+			2. 对于CSF平台还没有覆盖的公司的公告，等公司配上sid后需要补上这些公告的secu字段&lt;br&gt;
+			&lt;b&gt;pars=type:attach_secu;from:2014-05-01;to:2014-06-30&lt;/b&gt;&lt;br&gt;
+			这个操作只在MGT环境调用&lt;br&gt;
+			3. 删除重复公告（MongoDB和索引）&lt;br&gt;
+			&lt;b&gt;pars=type:remove_duplicate;from:2014-01-01;to:2014-06-30&lt;/b&gt;&lt;br&gt;
+			4. 检查定期报告文件是否存在（mkt可选值:A,HK,US）&lt;br&gt;
+			&lt;b&gt;pars=type:check_file_exists;from:2014-01-01;to:2014-06-30;mkt:A&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+		<env>qa,dp,mgt,sh,ec2</env>
+	</task>
+
+	<task type="indexer_news">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<pars>indexer:news;isfullindexed:false</pars>
+		<description>creat news indexer</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="indexer_announce">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<pars>indexer:announce;isfullindexed:false</pars>
+		<description>creat announce indexer</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="newscrawl">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<!-- <cron>0 0 */2 ? * *</cron> -->
+		<env>dev,qa</env>
+		<pars>C3</pars>
+		<description>crwal news of HK/US stock</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="usannouncement">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<env>dp</env>
+		<cron>0 20 0,5,7,15 ? * 1-7</cron>
+		<description>crwal announce of US stock, running at 8:20, 13:20, 15:20 and 23:20 &lt;br&gt;
+			导入公司历史公告(如果不设secus,则导入所有公司公告) &lt;br&gt;
+			&lt;b&gt;pars=type:history;from:2015-07-01;to:2015-07-10;secus:XRX_NY_EQ,WFC_NY_EQ&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="announce_stat_analyse">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<env>qa,dp,mgt,sh</env>
+		<cron>0 10 19 ? * 1-7</cron>
+		<description>
+			根据公告分析出公告对应的涨跌幅情况 &lt;br&gt;
+			&lt;b&gt;&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="hkannouncement">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<env>dp</env>
+		<cron>0 0 0,5,7,15 ? * 1-7</cron>
+		<description>crwal announce of HK stock, running at 8:00, 13:00, 15:00 and 23:00 &lt;br&gt;
+			导入公司历史公告(如果不设secus,则导入所有公司公告) &lt;br&gt;
+			&lt;b&gt;pars=type:history;from:2015-07-01;to:2015-07-10;secus:08207_HK_EQ,08037_HK_EQ&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="mail_announce">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<env>dp,mgt</env>
+		<cron>0 10 1,6,8 ? * 1-7</cron>
+		<description>Send mail of annouce to GAF, running at 9:10, 14:10, 16:10</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="newfin">
+		<maxRepeat>1</maxRepeat>
+		<description>create new company</description>
+	</task>
+
+	<task type="finRptCatalog">
+		<maxRepeat>1</maxRepeat>
+		<pars>types:all</pars>
+		<cron>0 0 22 ? * SUN</cron>
+		<description>生成公司菜单选项(fin_rpt_catlog), e.g., &lt;br&gt;
+			pars=types:2,3,4 or pars=types:all
+		</description>
+		<env>qa,dp,mgt,ec2,sh</env>
+	</task>
+
+	<task type="screener_daily_hk">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<pars>mkt:hk</pars>
+		<cron>0 0 20 ? * 1-7</cron>
+		<description>screener daily data, 20:00(4:00 CST) for HK</description>
+		<delay>300</delay>
+		<env>dp,mgt,qa</env>
+	</task>
+	
+	<task type="screener_daily_us">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<pars>mkt:us</pars>
+		<cron>0 0 2,4 ? * 1-7</cron>
+		<description>screener daily data, 2:00(10:00 CST) for US, 4:00(12:00 CST) for OTC</description>
+		<delay>300</delay>
+		<env>dp,mgt,qa</env>
+	</task>
+
+	<task type="screener_daily_sh">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<pars>mkt:sh</pars>
+		<cron>0 30 17 ? * 1-7</cron>
+		<description>screener daily data, 17:30(01:30 CST) for SH/SZ</description>
+		<delay>300</delay>
+		<env>dp,mgt,qa</env>
+	</task>
+
+	<task type="screener_quarter">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 1 ? * 1-7</cron>
+		<description>screener quarter data</description>
+		<delay>300</delay>
+		<env>dp,mgt,qa</env>
+	</task>
+
+	<task type="screener_daily_company">
+		<maxRepeat>1</maxRepeat>
+		<description>pars=from:2014-03-01;to:2014-03-01;secus:601398_SH_EQ</description>
+	</task>
+
+	<task type="sharevary">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 * ? * 2-6</cron>
+		<description>Import share vary and index from juchao and publish to production.</description>
+		<delay>300</delay>
+		<env>qa,dp,mgt</env>
+	</task>
+	<task type="sharevaryweek">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 1 ? * SUN</cron>
+		<description>Import share vary and index from juchao and publish to production.</description>
+		<delay>300</delay>
+		<env>qa,dp,mgt</env>
+	</task>
+	<task type="shareholder">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 50 8,13 ? * *</cron>
+		<env>qa,dp,mgt</env>
+		<description>从巨潮抓取股东和基金信息，参数如下（secus选填，默认为全量；mincrt选填，表示数据更新时间的起点，如果secus为空，那么默认往前7天，否则默认全量。minedt选填，表示数据更新时间的起点，默认全量）： &lt;br&gt;
+			&lt;b&gt;pars=mincrt:2013-06-30;minedt:2014-05-05;secus:601398_SH_EQ,000001_SZ_EQ&lt;/b&gt; &lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="shareholderRatio">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<description>重新计算报告期间内的所有公司持股比列： &lt;br&gt;
+			&lt;b&gt;pars=from:2013-06-30;to:2014-03-30&lt;/b&gt; &lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+
+    <task type="security">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 19 ? * 1-7</cron>
+		<description>import base bond</description>
+		<env>qa,dp,mgt</env>
+	</task>
+
+	<task type="indexer_ced_suggest">
+		<cron>0 0 22 ? * SAT</cron>
+		<maxRepeat>1</maxRepeat>
+		<pars>indexer:ced_suggest;isfullindexed:true</pars>
+		<description>full index for ced suggest word (get keyword from indicator name or ced proudct name)&lt;br&gt;
+			pars=indexer:ced_suggest;isfullindexed:true
+		</description>
+		<env>dp,mgt,ec2,sh</env>
+	</task>
+	
+	<task type="sam_analysis_daily">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 15,22 ? * 1-7</cron>
+		<env>qa,dp,mgt,ec2,sh</env>
+		<description>refresh sam analysis daily data (for A and HK only)&lt;br&gt;
+		1. 巨潮需要等equity任务完成后再运行该job &lt;br&gt;
+		2. 港股凌晨3点更新，job 凌晨6:30点开始运行
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="sam_analysis_daily_realtime">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 1 ? * 2-6</cron> 
+		<env>qa,dp,mgt,ec2,sh</env>
+		<pars>type:realtime</pars>
+		<description>实时运算SAM雷达行情数据(for A and HK only)&lt;br&gt;
+		如果手工触发，需要加上如下参数 &lt;br&gt;
+		&lt;b&gt;pars=type:realtime&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="sam_analysis_us_daily_realtime">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 13 ? * 2-6</cron> 
+		<env>qa,dp,mgt,ec2,sh</env>
+		<pars>type:realtime_us</pars>
+		<description>实时运算SAM雷达行情数据(for US only)&lt;br&gt;
+		如果手工触发，需要加上如下参数 &lt;br&gt;
+		&lt;b&gt;pars=type:realtime_us&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="refresh_sam_weekly_data">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 18 ? * SAT</cron> 
+		<env>qa,dp,mgt,ec2,sh</env>
+		<pars>type:refreshweeklydata</pars>
+		<description>刷新指定时间段内每周或者每月的数据&lt;br&gt;
+		如果手工触发，需要加上如下参数 &lt;br&gt;
+		&lt;b&gt;pars=type:refreshweeklydata&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="refresh_secu">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<env>qa,dp,mgt,ec2,sh</env>
+		<description>把IPO前的临时证券代码替换为正式的证券代码，运行该job会更新八张财务报表、corp_nature和fin_rpt_catlog表，参数如下：&lt;br&gt;
+		&lt;b&gt;pars=from:000069_TEMP_EQ;to:999969_SZ_EQ&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="csf_index">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 21 ? * 1-7</cron>
+		<env>qa,dp,mgt</env>
+		<description>计算每天的行业指数
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="csf_index_realtime_startup">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 25 1 ? * 1-7</cron>
+		<env>sh</env>
+		<pars>act:startup</pars>
+		<description>
+			默认每天早上9:25，实时指数启动计算。
+			如需手动操作，有如下3种方式：&lt;br&gt;
+			启动： &lt;b&gt;pars=act:startup&lt;/b&gt; &lt;br&gt;
+			停止：&lt;b&gt;pars=act:shutdown&lt;/b&gt; &lt;br&gt;
+			强制收盘：&lt;b&gt;pars=act:closed&lt;/b&gt; 
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="csf_index_realtime_closed">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 15 7 ? * 1-7</cron>
+		<env>sh</env>
+		<pars>act:closed</pars>
+		<description>
+			默认每天下午15:15，实时指数强制收盘。
+			如需手动操作，有如下3种方式：&lt;br&gt;
+			启动： &lt;b&gt;pars=act:startup&lt;/b&gt; &lt;br&gt;
+			停止：&lt;b&gt;pars=act:shutdown&lt;/b&gt; &lt;br&gt;
+			强制收盘：&lt;b&gt;pars=act:closed&lt;/b&gt; 
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="csf_index_daily">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 7 ? * 1-7</cron>
+		<env>sh</env>
+		<description>
+			默认每天下午15:30，每日指数启动计算。
+			如需手动操作，有如下2种方式：&lt;br&gt;
+			启动： &lt;b&gt;pars=act:startup;startDt:2015-01-01;endDt:2015-01-30;idxcds:AAA,AAB&lt;/b&gt; &lt;br&gt;
+			停止：&lt;b&gt;pars=act:shutdown&lt;/b&gt; &lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="announcement_affairs">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 55 7,8,9 ? * 1-7</cron>
+		<env>sh</env>
+		<description>
+			默认每天下午15:55,16:55,17:55，事件驱动的每日数据结算存储。
+			可以多次手动操作，直接运行即可。
+			历史数据无法补回。
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="combinationDaily">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 15 01 ? * 1-7</cron>
+		<env>mobi</env>
+		<description>组合-每日：更新T0，T1；重算昨日净值；完成拆股。
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="combinationRealTime">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00,15,30,33,36,45 * ? * 1-7</cron>
+		<env>mobi</env>
+		<description>组合-实时：重算实时净值
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="strategy_anno">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,00,01 ? * 1-7</cron>
+		<env>mobi</env>
+		<pars>typ:1</pars>
+		<description>策略：根据 公告 进行计算&lt;br&gt;
+		&lt;b&gt;pars=typ:1&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="strategy_nirpt">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 17 ? * 1-7</cron>
+		<env>mobi</env>
+		<pars>typ:2</pars>
+		<description>策略：根据 新智能研报 进行计算&lt;br&gt;
+		&lt;b&gt;pars=typ:2&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="strategy_nrpt">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 17 ? * 1-7</cron>
+		<env>mobi</env>
+		<pars>typ:3</pars>
+		<description>策略：根据 新财富研报 进行计算&lt;br&gt;
+		&lt;b&gt;pars=typ:3&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="strategy_ep">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 23 ? * 1-7</cron>
+		<env>mobi</env>
+		<pars>typ:4</pars>
+		<description>策略：根据 业绩预告 进行计算&lt;br&gt;
+		&lt;b&gt;pars=typ:4&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="strategy_rt">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00,30,33,36 * ? * 1-7</cron>
+		<env>mobi</env>
+		<pars>typ:realtime</pars>
+		<description>策略：伪实时计算策略的累计收益。（半小时一次）参数如下：&lt;br&gt;
+		&lt;b&gt;pars=typ:realtime&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="forecast">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 1,2,3,8,9 ? * 1-7</cron>
+		<env>mobi</env>
+		<description>
+		跟投（短线宝）：每天9点，10点，11点，16点，17点进行统计。根据股票的买/卖建议进行买卖，并计算收益率。
+		数据源：买卖建议由song.lu提供；结果：存入mongo，由智投使用。
+		计算半年数据，耗时约5分钟。计算单日数据，耗时1分钟之内。因为涉及用户表，随着用户表剧增，速度可能会明显下降。后期注意保护跟踪。
+		参数如下：&lt;br&gt;
+		&lt;b&gt;pars=startDt:2015-01-01;endDt:2015-01-31&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="top_ten_shareholder_update_hid">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 3,7,23 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<description>
+		十大（流通）股东，自动匹配hid，实现标准化。
+		每天7:15，11:15, 15:15点执行。默认更新upt为最近3天的数据的hid。可以手动设置upt日期。
+		参数如下：&lt;br&gt;
+		&lt;b&gt;pars=startDt:1900-01-01;endDt:2020-01-31&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="commIdxPro">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 12 ? * 1-7</cron>
+		<env>sh,dp,mgt</env>
+		<description>
+			计算常用行情指标到comm_idx_price及其历史表comm_idx_price_his_a。重复执行，会进行update覆盖操作。
+			默认计算当天的行情指标(每日20点执行，保证股价数据OK)。但支持补算历史数据，使用参数如下：&lt;br&gt;
+			&lt;b&gt;pars=from:2014-01-01;to:2014-01-03&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="commIdxFin">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 05 12 ? * 1-7</cron>
+		<env>dp,mgt,sh</env>
+        <pars>cycle:LTM,YTD</pars>
+		<description>计算常用财务指标到comm_idx_fin及其历史表。重复执行，会进行update覆盖操作
+		计算时间：每天早20：05保证每天添加的财务披露日期均可以包括在内
+		默认参数计算最近2年所有季度的指标，也可以自定义重算某个特定季度。默认计算LTM指标,也可以通过cycle : "LTM"或"YTD"
+			指定计算YTD或者LTM指标参数如下：&lt;br&gt;
+		&lt;b&gt;pars=fp:2014,2015;q:Q1,Q2,Q3,Q4;cycle:LTM&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="commIdxQuant">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 10 12 ? * 1-7</cron>
+		<env>dp,mgt,sh</env>
+		<description>每天20:10计算量化相关的财务因子:所有参数有多个时以逗号分割,当前：indice取值范围:f1-f62,csr,cur, eamig, gpm, lda, lde, npm, patmig, qr, revg, roaa
+			,roae, tag, p25, p26, p27, p28, p29, p30, rto, pto, ito, epsg, dde&lt;br&gt;
+			&lt;b&gt;pars=fp:2014,2015;q:Q1,Q2,Q3,Q4;finType:LTM,YTD;stock:601398_SH_EQ,601298_SH_EQ;indice:f49,f50&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="commIdxTech">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 12 12 ? * 1-7</cron>
+		<env>dp,mgt,sh</env>
+		<description>量化技术因子, 每天20:12,手动执行 pars=date:2015-01-01
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="industryClassification">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 01 ? * 1-7</cron>
+		<env>dp,mgt,mobi</env>
+		<description>全量计算行业占比，将结果存入industry_classification
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="finRptDeclarDay">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 20 23 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<description>从巨潮抓取财务公告日期到fin_rpt_declar_day。重复执行，会进行update覆盖操作。
+		默认参数抓取最近7天插入和更新的数据，也可以自定义重算某个时间段，参数如下：&lt;br&gt;
+		&lt;b&gt;pars=sdt:2014-01-01;sdt:2014-12-31&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="price_analysis">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 15 17 ? * 1-7</cron>
+		<env>qa,dp,mgt,sh</env>
+		<description>从mysql中抽取前1个月和之前第六个月的 每天的 当天股价/前一天股价/后一天股价/后7天股价/后30天股价/后半年股价。存储到mongo中
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="earnings_preanno">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 * ? * 1-7</cron>
+		<env>qa,dp,mgt</env>
+		<description>业绩预告，从巨潮全量更新。数据量约4w。耗时5分钟之内。
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="equity_bonus">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 05 0,9 ? * 1-7</cron>
+		<env>sh</env>
+		<description>
+		分红转增，从巨潮全量更新。数据量约1.5w。耗时5分钟之内。&lt;br&gt;
+		以secu和exrdt为唯一性主键。&lt;br&gt;
+		插入/更新动作： equity_bonus_jc 所有字段。&lt;br&gt;
+		插入动作： equity_bonus 所有字段。&lt;br&gt;
+		更新动作： equity_bonus 除givsr和bns之外的所有字段。
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="rights_issue">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 05 0,9 ? * 1-7</cron>
+		<env>sh</env>
+		<description>
+		公司配股实施方案，从巨潮全量更新。数据量约1500。耗时5分钟之内。&lt;br&gt;
+		以secu和exrdt为唯一性主键。&lt;br&gt;
+		插入/更新动作： rights_issue_jc 所有字段。&lt;br&gt;
+		插入动作： rights_issue 所有字段。&lt;br&gt;
+		更新动作： rights_issue 除allopr和allop之外的所有字段。
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	
+	<task type="announce_stat">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 17 ? * 1-7</cron>
+		<env>dp,mgt,sh</env>
+		<description>更新计算当月的announce_stat表
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="comm_stock_style">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 00 1 * ?</cron>
+		<env>dp,mgt</env>
+		<description>
+		计算当日的股票风格。每月的1日自动执行。&lt;br&gt;
+		或者手动执行，参数： &lt;br&gt;
+		&lt;b&gt;pars=dt:2015-11-01&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="idx_specimen_stock_style">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<env>dp,mgt,sh</env>
+		<description>
+		计算当日的指数样本股风格。仅提供手动执行。&lt;br&gt;
+		参数： pars=dt:2015-11-01&lt;br&gt;
+		或者&lt;br&gt;
+		参数： pars=sdt:2007-11-01;edt:2015-11-01&lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<!-- 
+	<task type="csf_analysis">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 23 ? * 1-7</cron>
+		<env>qa,dp,mgt,sh</env>
+		<description>refresh csf analysis daily data (for A only)&lt;br&gt;
+			 港股凌晨3点更新，job 凌晨07:00点开始运行
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="csf_analysis_realtime">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 5 1,5 ? * 2-6</cron>
+		<env>qa,dp,mgt,sh</env>
+		<pars>type:csf_realtime</pars>
+		<description>
+			refresh csf analysis daily data (for A only)&lt;br&gt;
+			手机app实时行业排名，pars=type:csf_realtime
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="announce_ret_daily">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 23 ? * 1-5</cron>
+		<env>qa,dp,mgt,sh</env>
+		<description>
+			每天7点更新announce_ret表
+		</description>
+		<delay>300</delay>
+	</task>
+	 -->
+	<task type="baseHouseholds">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 * ? * 1-7</cron>
+		<env>qa,dp,mgt</env>
+		<description>
+			每天整点更新base_households表
+			如需手动操作，执行：&lt;br&gt;
+			&lt;b&gt;pars=dateFrom:2015-01-01;dateTo:2015-01-08&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="suspension_resumption">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 45 21 ? * 1-7</cron>
+		<pars>type:delta</pars>
+		<env>dp,mgt,sh</env>
+		<description>
+			每天05:45点更新suspension_resumption表
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="researcher_accuracy_new">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 14 ? * SUN</cron>
+		<pars>type:new</pars>
+		<env>qa,dp,mgt,sh</env>
+		<description>
+			每周日重新计算分析师的准确率
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="researcher_accuracy">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 14 ? * *</cron>
+		<env>qa,dp,mgt,sh</env>
+		<description>
+			每天重新计算分析师的准确率
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<!-- <task type="app_notification_secu">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 12 ? * *</cron>
+		<env>qa,dp,mgt,sh</env>
+		<pars>type:1</pars>
+		<description>
+			每天晚上20:00 通知收藏了股票且该股票5个交易日涨幅在20%以上的用户 &lt;br&gt;
+			手机app 消息推送服务 pars=type:1
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="app_notification_report">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 5 0 ? * *</cron>
+		<env>qa,dp,mgt,sh</env>
+		<pars>type:2</pars>
+		<description>
+			每天早上08:00 通知收藏了分析师且该分析师发布了新研报的用户 &lt;br&gt;
+			手机app 消息推送服务 pars=type:2
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="app_notification_announcement">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 0 ? * *</cron>
+		<env>qa,dp,mgt,sh</env>
+		<pars>type:3</pars>
+		<description>
+			每天早上08:30 通知收藏了股票且该股票的发布了新公告的用户 &lt;br&gt;
+			手机app 消息推送服务 pars=type:3
+		</description>
+		<delay>300</delay>
+	</task> -->
+	
+	<task type="app_notification_outline">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 1 ? * *</cron>
+		<env>qa,sh</env>
+		<pars>type:4</pars>
+		<description>
+			每天早上09:00 通知连续7天没有登录的用户 &lt;br&gt;
+			手机app 消息推送服务 pars=type:4
+		</description>
+		<delay>300</delay>
+	</task>	
+	
+	<task type="mobile_user_message">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 5 0 ? * *</cron>
+		<env>qa,sh</env>
+		<description>
+			每天早上08:00  执行job &lt;br&gt;
+			手机用户的消息列表
+		</description>
+		<delay>300</delay>
+	</task>
+		
+	<!--  <task type="app_message_combination">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 7 ? * *</cron>
+		<env>qa,dp,mgt,sh</env>
+		<pars>type:combination</pars>
+		<description>
+			每天下午15:30  执行job &lt;br&gt;
+			获取7日收益率最高的组合
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="app_message_secu">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 0 ? * MON</cron>
+		<env>qa,dp,mgt,sh</env>
+		<pars>type:secu</pars>
+		<description>
+			每周一早上08:30  执行job &lt;br&gt;
+			获取公司评分最高的公司
+		</description>
+		<delay>300</delay>
+	</task> 
+	
+	<task type="app_message_earnings">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 11,23 ? * 1-7</cron>
+		<pars>type:earnings</pars>
+		<env>qa,sh</env>
+		<description>业绩预告通知,该job放在业绩预告之后一个小时触发</description>
+		<delay>300</delay>
+	</task>
+	-->
+	
+	<!-- <task type="app_message_ratio">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 5/35 1-7 ? * 1-7</cron>
+		<pars>type:ratio</pars>
+		<env>qa,dp,mgt,sh</env>
+		<description>股票涨跌幅消息：当股票当前交易日内上涨或下跌超过7% 股票推送通知&lt;br&gt; job每半小时run一次</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="wechat_message_ratio">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0/30 1-7 ? * 1-7</cron>
+		<pars>type:ratio</pars>
+		<env>qa,dp,mgt,sh</env>
+		<description>微信模板消息推送，股票涨跌幅消息：当股票当前交易日内上涨或下跌超过7% 股票推送通知&lt;br&gt; job每半小时run一次</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="wechat_message_announce">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 10 1 ? * *</cron>
+		<pars>type:announce</pars>
+		<env>qa,dp,mgt,sh</env>
+		<description>
+			每天早上09:10  执行job &lt;br&gt;
+			推送微信公告模板消息
+		</description>
+		<delay>300</delay>
+	</task>  -->
+	
+	<task type="company_assess">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 40 21 ? * *</cron>
+		<env>dp,mgt,sh</env>
+		<description>
+			每天早上05:40  执行job &lt;br&gt;
+			A股上市公司测评, 手动执行时,当前日期减2天
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="company_assess_user">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 20 23 ? * *</cron>
+		<env>dp,mobi</env>
+		<description>
+			每天早上06:20  执行job &lt;br&gt;
+			自选A股上市公司测评
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<!-- fund transport start -->
+	<task type="base_fund_update_JDtyp">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 1 * * ?</cron>
+		<env>dp,mgt</env>
+		<pars>type:update;table:base_fund</pars>
+		<description>
+			每天早上9:30执行job &lt;br&gt;
+		</description>
+	</task>
+	
+	<task type="fund_net_value_chg_rank">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 0,1 * * ?</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_net_value_chg_rank</pars>
+		<description>
+			每天早上8：30，9:30执行job &lt;br&gt;
+			JD基金绝对收益排名fund_net_value_chg_rank &lt;br&gt;
+			&lt;b&gt;pars=edt:2014-12-31&lt;/b&gt;
+		</description>
+	</task>
+	<task type="fund_net_value_chg_rank_csf">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 0,1 * * ?</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_net_value_chg_rank_csf</pars>
+		<description>
+			每天早上8：30，9:30执行job &lt;br&gt;
+			智投基金绝对收益排名fund_net_value_chg_rank_csf &lt;br&gt;
+			&lt;b&gt;pars=edt:2014-12-31&lt;/b&gt;
+		</description>
+	</task>
+	
+	<task type="base_fund_manager_term">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 20 0,3 * * ?</cron>
+		<env>dp,mgt</env>
+		<description>
+			每天早上8:20,11:20 执行job  &lt;br&gt;
+			基金经理时限base_fund_manager_term&lt;br&gt;
+		</description>
+	</task>
+	
+	<task type="base_fund">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 16,1,4 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:base_fund</pars>
+		<description>
+			每天早上00:00,09:00,12:00  执行job &lt;br&gt;
+			基金数据 base_fund&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="base_fund_raise">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 1,4 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:base_fund_raise</pars>
+		<description>
+			每天早上09:00,12:00  执行job &lt;br&gt;
+			基金数据 base_fund_raise&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="base_fund_share">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 19,2 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:base_fund_share</pars>
+		<description>
+			每天早上03:00,10:00  执行job &lt;br&gt;
+			基金数据 base_fund_share&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="base_fund_manager">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 0,3 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:base_fund_manager</pars>
+		<description>
+			每天早上08:00,11:00  执行job &lt;br&gt;
+			基金数据 base_fund_manager&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="fund_dividend">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 18,1 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_dividend</pars>
+		<description>
+			每天早上02:00,09:00  执行job &lt;br&gt;
+			基金数据 fund_dividend&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="base_eft_purchase_redemption">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 20,2 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:base_eft_purchase_redemption</pars>
+		<description>
+			每天早上04:00,10:00  执行job &lt;br&gt;
+			基金数据 base_eft_purchase_redemption&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="fund_bond_portfolio">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 21,7 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_bond_portfolio</pars>
+		<description>
+			每天早上05:00,15:00  执行job &lt;br&gt;
+			基金数据 fund_bond_portfolio&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="fund_asset_combination">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 0,4 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_asset_combination</pars>
+		<description>
+			每天早上08:00,12:00  执行job &lt;br&gt;
+			基金数据 fund_asset_combination&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="fund_top_five_bond">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 21,7 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_top_five_bond</pars>
+		<description>
+			每天早上05:00,15:00  执行job &lt;br&gt;
+			基金数据 fund_top_five_bond&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="fund_top_ten_stock">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 3 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_top_ten_stock</pars>
+		<description>
+			每天早上11:30  执行job &lt;br&gt;
+			基金数据 fund_top_ten_stock&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="fund_stock_detail">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 19 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_stock_detail</pars>
+		<description>
+			每天早上03:00  执行job &lt;br&gt;
+			基金数据 fund_stock_detail &lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task> 
+	<task type="base_etf_component">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 18,1 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:base_etf_component</pars>
+		<description>
+			每天早上02:00,09:00  执行job &lt;br&gt;
+			基金数据 base_etf_component &lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task> 
+	<task type="fund_net_value">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 0,1,2,9 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_net_value</pars>
+		<description>
+			每天早上08:00,09:00,10:00,17:00  执行job &lt;br&gt;
+			基金数据 fund_net_value &lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task> 
+	<task type="fund_earning_daily">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 0,1,2,9 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_earning_daily</pars>
+		<description>
+			每天早上08:00,09:00,10:00,17:00  执行job &lt;br&gt;
+			基金数据 fund_earning_daily &lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task> 
+	<!-- fund transport end -->
+
+	<task type="fin_analysis_pe_temp">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 40 22 ? * *</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fin_analysis_pe_temp</pars>
+		<description>
+			每天早上06:40  执行job &lt;br&gt;
+			市盈率 fin_analysis_pe_temp
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="pre_disclosure_time">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 0,3,6 ? * *</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:pre_disclosure_time</pars>
+		<description>
+			每天早上08:00,11:00,14:00  执行job &lt;br&gt;
+			定期报告预披露时间 pre_disclosure_time
+			从巨潮抓取定期报告预披露时间到pre_disclosure_time。重复执行，会进行update覆盖操作。
+		默认参数抓取最近7天插入和更新的数据，也可以自定义重算某个是简单，参数如下：&lt;br&gt;
+		&lt;b&gt;pars=sdt:2014-01-01;edt:2014-12-31&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="guessIndex">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 8 ? * 1-7</cron>
+		<env>sh,dp,mgt,mobi</env>
+		<description>
+			每天下午４点判断用户猜盘结果(手动执行时,当前日期减1天)：&lt;br&gt;
+			&lt;b&gt;pars=date:2015-07-07&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="commIdx_day">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 13 ? * 1-7</cron>
+		<env>sh</env>
+		<pars>typ:day</pars>
+		<description>
+		          指数指标(日)：根据 行情和财务相关数据进行计算到comm_idx_number及历史表comm_idx_number_his，
+		          。默认计算当天的指数日指标(每日21点执行，保证行情数据OK)。但支持补算历史数据，使用参数如下
+		     &lt;br&gt;&lt;b&gt;pars=from:2010-01-10;to:2014-01-10;typ:day;index:AAA,BBB&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="commIdx_grail">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 14 ? * 1-7</cron>
+		<env>qa,sh,dp,mgt</env>
+		<pars>typ:grail</pars>
+		<description>
+			指数指标(大盘)：根据mysql hq_index进行计算到comm_idx_number及历史表comm_idx_number_his，
+			。默认计算当天的指数(每日22点执行，保证行情数据OK)。但支持补算历史数据，使用参数如下
+			&lt;br&gt;&lt;b&gt;pars=from:2010-01-10;to:2014-01-10;typ:grail;index:000300&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="commIdx_quarter">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 19 ? * 1-7</cron>
+		<env>sh</env>
+		<pars>typ:quarter</pars>
+		<description>
+		          指数指标(季度)：根据 行情和财务相关数据进行计算到comm_idx_number_quarter及历史表comm_idx_number_quarter_his，重复执
+		          行，执行update覆盖操作。默认计算本财务年的指数季度指标(共四季度)。但支持补算历史数据，使用参数如下
+		     &lt;br&gt;&lt;b&gt;pars=fp:2010,2011;q:Q1,Q2;typ:quarter;index:AAA,BBB&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<!--<task type="quant_strategy_combination">-->
+		<!--<maxHandleTime>1000</maxHandleTime>-->
+		<!--<maxRepeat>1</maxRepeat>-->
+		<!--<cron>0 00 22 ? * 1-7</cron>-->
+		<!--<env>mobi</env>-->
+		<!--<description>-->
+			<!--量化用户组合和回测策略合并。但支持补算历史数据，使用参数如下-->
+			<!--&lt;br&gt;&lt;b&gt;pars=from:2010-01-10;to:2011-10-01&lt;/b&gt;-->
+		<!--</description>-->
+		<!--<delay>300</delay>-->
+	<!--</task>-->
+	
+	<task type="secuNewsEval">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 18 ? * 1-7</cron>
+		<env>mobi</env>
+		<description>
+			计算最新的基本面动态评测，更新secu_news_eval表
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="idx_news_num">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 22 ? * 6</cron>
+		<env>mobi</env>
+		<description>
+			每周6的凌晨6点，更新指数资讯的月度数量统计。接口无参数，且不保留历史数据。可直接触发，进行最新的统计。执行时间约5-10分钟。
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<!-- 主营行业和主营产品  Andy需求-->
+	<task type="main_product_industry">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 8 * * ?</cron>
+		<!-- <pars>typ:quartar</pars>-->
+		<env>dp,mgt</env>
+		<description>
+			计算主营行业和主营产品,系统默认刷新最近三年数据 (当前年份和前两年份),其它数据会被删除 ;&lt;br&gt;
+			数据来源 opt.fin_sam_product;此定时任务分系统自动执行 和 任务手动触发;&lt;br&gt;
+			可选市场：上证，深证，新三板，计算保存表如下;&lt;br&gt;
+			    fin_industry_product、 fin_industry_product_his_a;	&lt;br&gt;		
+				fin_industry_product_otc、 fin_industry_product_his_otc;&lt;br&gt;
+				以下4表是新三板数据的表;&lt;br&gt;
+			    fin_product_node、fin_product_node_his_a;&lt;br&gt;
+				fin_product_node_otc、fin_product_node_his_otc;	&lt;br&gt;	
+		         手动执行提供参数如下：&lt;br&gt;
+			    pars=fp:2011;  执行环境&lt;br&gt;
+			    pars=q:Q4;  执行季度&lt;br&gt;
+			    pars=mkts:sh,sz,otc;  执行表选择&lt;br&gt;
+			    pars=typ:m; 值选取：m和n, &lt;br&gt;
+		        解释 m为执行 表 fin_industry_product和fin_industry_product_his_otc;&lt;br&gt;
+		       n为执行 表 fin_product_node和fin_product_node_his_otc&lt;br&gt;
+			   sh,sz 是执行上证，深证数据的表，otc是执行新三板数据的表&lt;br&gt;
+		        每天16:00点触发 刷新8个表的数据 &lt;br&gt;&lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_change_compute">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 25 0,1,2 * * ?</cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_change_compute</pars>
+		<description>
+			每天8点25分，9点25分，10点25分计算基金当日、近1月、3月、6月、12月、今年以来、成立以来、基金经理任职以来涨跌幅，
+			更新mysql库表fund_net_value_chg，mongo库表base_fund_manager,
+			默认取系统当前日期为计算基准日期. 支持重算指定日涨跌幅，使用参数如下
+		     &lt;br&gt;&lt;b&gt;pars=dt:2015-10-10&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="fund_grade_compute">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 20,35 0,1 1-7 * ?</cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_grade_compute</pars>
+		<description>
+			每月1-7号8点35，9点20分计算基金阶段性涨跌幅，基金指标及评级
+			更新mysql库表fund_period_chg，fund_indicator， mongo库表fund_grade,
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="fund_label_compute">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 0 1 2,5,8,11 ?</cron>
+		<env>dp,mgt</env>
+		<description>
+			每年2月1日、5月1日、8月1日、11月1日8点30计算基金行业、主题、风格标签，
+			更新mongo库表fund_label.
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="fund_recom_stock_ced">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 40 0 * * ?</cron>
+		<env>dp,mgt</env>
+		<pars>typ:stock_ced</pars>
+		<description>
+			每天8点40，推荐持有涨幅超过7%的个股数量最多的一支基金。同时如果有宏观指数上涨，则每个指标对应推荐一支基金。
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="fund_recom_news">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0/10 0-12 * * ?</cron>
+		<env>dp,mgt</env>
+		<pars>typ:news</pars>
+		<description>
+			每天8点至20点中的0分，10分，20分，30分，40分，50分，根据热点新闻推荐基金。
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="securities_transaction">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 16,23 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:securities_transaction</pars>
+		<description>
+			每天凌晨0点，早上7点 执行job &lt;br&gt;
+			沪深异动证券公开信息数据 securities_transaction &lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<!-- 
+	<task type="ced_data_cal">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 2,9 * * ?</cron>
+		<env>sh,dp,mgt</env>
+		<description>
+			宏观数据计算,每天10点和14点计算环比和同比数据，即计算typecode和timetype值都为c02,c08的数据。
+			具体调用方式为：&lt;br&gt;
+			&lt;b&gt;pars=startDt:2015-09-01;endDt:2015-10-31&lt;/b&gt;
+			notes:经过讨论，因为业务逻辑错误。计算工作暂时停止。待后期调整
+		</description>
+		<delay>300</delay>
+	</task>
+	 -->
+	
+	<task type="clear_fund_cache">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 0 ? * 1-7</cron>
+		<env>dp,mgt,sh</env>
+		<description>
+			每天早上8点 执行job &lt;br&gt;
+			清空基金模块服务缓存&lt;br&gt;			
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="ipo_listing">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 * ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:ipo_listing</pars>
+		<description>
+			每小时 执行job &lt;br&gt;新股发型
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="announcement_fund">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 */30 * ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:announcement_fund</pars>
+		<description>
+			每隔10分钟 执行job &lt;br&gt;基金公告
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="announceStock_upload_file">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 */10 * ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta</pars>
+		<description>
+			每隔10分钟 执行job &lt;br&gt;A股公告和新三板公告文件下载
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="announceFund_upload_file">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 */10 * ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta</pars>
+		<description>
+			每隔10分钟 执行job &lt;br&gt;基金公告文件下载
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_redemption_conversion">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 3,8 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_redemption_conversion</pars>
+		<description>
+			每天上午11点，下午16点执行job &lt;br&gt;开放式基金申赎及转换状态情况
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_industry_portfolio">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 3,9 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_industry_portfolio</pars>
+		<description>
+			每天上午11点，下午17点执行job &lt;br&gt;基金投资行业组合
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_holders_ten_former">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0,30 3,9 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_holders_ten_former</pars>
+		<description>
+			每天上午11点，下午17点半执行job &lt;br&gt;基金前十名持有人
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_intermediary">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0,30 3,9 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_intermediary</pars>
+		<description>
+			每天上午11点，下午17点半执行job &lt;br&gt;基金前十名持有人
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05		
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="top_ten_shareholder">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 23,3 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:top_ten_shareholder</pars>
+		<description>
+			每天上午7点，11点执行job &lt;br&gt;公司十大流通股东
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="top_ten_trade_shareholder">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 23,3 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:top_ten_trade_shareholder</pars>
+		<description>
+			每天上午7点，11点执行job &lt;br&gt;公司十大流通股东
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<!-- quant start -->
+		<task type="commIdxEarnRate">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 33 11 ? * 1-7</cron>
+		<env>dp,mgt,sh</env>
+		<description>股票和股指 季月周收益率, 每天wan上19:33,手动执行 pars=date:2015-01-01
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="quantFactorData">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 01 13 ? * 1-7</cron>
+		<env>dp,mgt,sh</env>
+		<description>
+			每日21:01同步行情数据，技术因子数据数据到Amazon RDS;pars=from:2015-01-01;to:2015-01-03;type:history;table=
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="quant_shift_rule">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 06 13 ? * 1-7</cron>
+		<env>dp,mgt,sh</env>
+		<description>
+			每日21:06计算量化规则数据
+		</description>
+		<delay>300</delay>
+	</task>
+		<task type="quant_shift_events">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 1,4,8,15, ? * 1-7</cron>
+		<env>dp,mgt,sh</env>
+		<description>
+			每天9:00,12:00,16:00,21:00执行四次防止数据丢失job &lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="quant_analysis_cache">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 41 13 ? * 1-7</cron>
+		<env>dp,mobi</env>
+		<description>
+			每日21:41量化因子数据到ignite
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="quant_bts_cache">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 58 13 ? * 1-7</cron>
+		<env>dp,mobi</env>
+		<description>
+			每日21:58回测数据到ignite
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="quant_analysis">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 13 ? * 1-7</cron>
+		<env>dp,mgt,sh</env>
+		<pars>type:delta</pars>
+		<description>
+			每天21:00点执行job &lt;br&gt;
+			量化分析 &lt;br&gt;
+			默认的增量数据现在不计算 &lt;br&gt;
+			计算历史: type:history;from:2010-01-01;to:2010-12-31;catalog:ic,earn;quant:single,parent;freq:M;factors:M009003,M009004
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="quant_combination_earn">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 31 8 ? * 1-7</cron>
+		<env>dp,mgt,sh,mobi</env>
+		<pars>type:delta</pars>
+		<description>
+			每天16:31执行job &lt;br&gt;
+			量化分析 &lt;br&gt;
+			计算历史: date:2016-01-01
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="quant_year_stat">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 15 ? * 1-7</cron>
+		<env>dp,mgt,sh</env>
+		<pars>type:delta</pars>
+		<description>
+			每天23:00执行job &lt;br&gt;
+			量化分析 &lt;br&gt;
+			默认的增量数据现在不计算 &lt;br&gt;
+			计算历史: type:history;from:2007-01-01;to:2015-12-31;freq:M;quant:combination
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="quant_factor_trace">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 51 14 ? * 1-7</cron>
+		<env>dp,mobi</env>
+		<description>
+			每日22:51量化跟踪,多因子,单因子,组合
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="quant_strategy_trace">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 08 15 ? * 1-7</cron>
+		<env>dp,mobi</env>
+		<description>
+			每日23:08跟踪策略
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="quant_combination_strategy_merge">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 58 15 ? * 1-7</cron>
+		<env>dp,mobi</env>
+		<description>
+			每日23:58组合策略合并
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<!-- quant end -->
+	
+	<task type="capital_flows_stk_rt">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 20 1 ? * 1-7</cron>
+		<env>sh</env>
+		<pars>clr:true</pars>
+		<description>
+			个股 资金流向（实时/排行），读取redis实时数据，&lt;br&gt;
+			将结果保存到capital_flows_stk_rt和capital_flows_stk_rank。&lt;br&gt;
+			该job从早上9:20开始，将一直执行，直到收盘。&lt;br&gt;
+			参数 clr:true，执行后将清空：（个股/指数/大盘）*（实时/排行）共6张表。&lt;br&gt;
+			默认clr=false，如果需要添加参数，请慎重！！！&lt;br&gt;
+			&lt;b&gt;pars=clr:false&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="capital_flows_idx_rt">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 */5 1-7 ? * 1-7</cron>
+		<env>sh</env>
+		<description>
+			指数/大盘 资金流向（实时/排行），读取capital_flows_stk_rt，然后计算。&lt;br&gt;
+			将结果保存到capital_flows_idx_rt，capital_flows_mkt_rt，&lt;br&gt;
+			capital_flows_idx_rank，capital_flows_mkt_rank。&lt;br&gt;
+			该job暂定执行频率为5分钟。开盘期间，都需要执行。&lt;br&gt;
+			参数 clr:true，执行后将清空：（指数/大盘）*（实时/排行）共4张表。&lt;br&gt;
+			默认clr=false，如果需要添加参数，请慎重！！！&lt;br&gt;
+			&lt;b&gt;pars=clr:false&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="capital_flows_daily">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 10 8 ? * 1-7</cron>
+		<env>sh</env>
+		<description>
+			个股/指数/大盘 资金流向（日度）。&lt;br&gt;
+			读取capital_flows_stk_rank/capital_flows_idx_rank/capital_flows_mkt_rank&lt;br&gt;
+			写入capital_flows_stk_daily/capital_flows_idx_daily/capital_flows_mkt_daily&lt;br&gt;
+			该job仅仅在收盘后执行一次
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="csf_industry">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 10 ? * 1-7</cron>
+		<env>qa,mobi</env>
+		<description>refresh csf industry daily data (for A only)&lt;br&gt;
+			 港股凌晨3点更新，job 凌晨07:00点开始运行
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="csf_industry_rt">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 5 1,5 ? * 1-7</cron>
+		<env>qa,mobi</env>
+		<pars>type:csf_realtime</pars>
+		<description>
+			refresh csf industry daily data (for A only)&lt;br&gt;
+			手机app实时行业排名，pars=type:csf_realtime
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="hq_index_chg_compute">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 7 * * ?</cron>
+		<env>dp,mgt</env>
+		<pars>typ:hq_index_chg_compute</pars>
+		<description>
+			每天15点30计算指数近1月、3月、6月、今年以来、1年、2年、3年以来涨跌幅，及月度、季度、年度涨跌幅
+			默认取系统当前日期为计算基准日期
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="cal_stock_score">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 14 ? * 1-7</cron>
+		<env>sh,dp,mgt</env>
+		<description>
+			计算个股得分到comm_stock_score及其历史表comm_stock_score_his_a。重复执行，会进行update覆盖操作。
+			默认计算当天的个股得分(每日22点执行，保证股价数据OK)。但支持补算历史数据，使用参数如下：&lt;br&gt;
+			&lt;b&gt;pars=from:2014-01-01;to:2014-01-03&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_net_estimate_rt_1">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 29/1 1 * * ? *</cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_net_estimate_rt_1</pars>
+		<description>
+			每天9点29至10点，每隔1分钟进行实时估值计算		    
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_net_estimate_rt_2">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0-30/1 3 * * ? *</cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_net_estimate_rt_2</pars>
+		<description>
+			每天11点至11点半之间，每隔1分钟进行实时估值计算		    
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_net_estimate_rt_3">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0/1 2,5-6 * * ? *</cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_net_estimate_rt_3</pars>
+		<description>
+			每天10点至11点，13点至15点之间，每隔1分钟进行实时估值计算		    
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_net_estimate_rt_4">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0-15/1 7 * * ? *</cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_net_estimate_rt_4</pars>
+		<description>
+			每天15点至15点15分每隔1分钟进行实时估值计算		    
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_net_estimate">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 10 8 * * ? *</cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_net_estimate</pars>
+		<description>
+			每天16点10分进行当日净值估算
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_net_adjust">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 10,25 1 * * ? *</cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_net_adjust</pars>
+		<description>
+			每天9点10分、25分进行前日估值仓位调整
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="fund_net_daily">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 1 * * ? *</cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_net_daily</pars>
+		<description>
+			每天9点40分进行走势计算
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_after_net">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 1 * * ? *</cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_after_net</pars>
+		<description>
+			每天9点25分进行走势计算
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_change_his">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron></cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_change_his</pars>
+		<description>
+			每天0点0分进行走势计算
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="follow_on_offering_execution">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 0 * * ? *</cron>
+		<env>dp,mgt</env>
+		<pars>typ:follow_on_offering_execution</pars>
+		<description>
+			每天8点接入A股定增预案及实施数据
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_closed_transfer_open">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 3,9 * * ? *</cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_closed_transfer_open</pars>
+		<description>
+			每天11、17点接入巨潮封闭式基金转lof、开放式基金数据
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_balance_sheet">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 2 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_balance_sheet</pars>
+		<description>
+			每天早上10:00  执行job &lt;br&gt;
+			基金数据 fund_balance_sheet&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_income_statement">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 2 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_income_statement</pars>
+		<description>
+			每天早上10:00  执行job &lt;br&gt;
+			基金数据 fund_income_statement&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_key_financial_indicators">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 2 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_key_financial_indicators</pars>
+		<description>
+			每天早上10:00  执行job &lt;br&gt;
+			基金数据 fund_key_financial_indicators&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="fund_profit_distribution">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 2 ? * 1-7</cron>
+		<env>dp,mgt</env>
+		<pars>type:delta;table:fund_profit_distribution</pars>
+		<description>
+			每天早上10:00  执行job &lt;br&gt;
+			基金数据fund_profit_distribution&lt;br&gt;
+			导入历史，参数形如: pars=type:history;from:2015-05-01;to:2015-05-05
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<!-- fenglei.ma start -->
+	<task type="csf_index_stock_rt">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>30 0/5 1-7 * * ? </cron>
+		<env>sh</env>
+		<description>
+			通过http接口 调取数据 ,存入样本股  涨幅榜表  metrics.csf_index_stock_rt 结果：存入mongo
+			暂定触发时间5分钟，后期优化到2分钟
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="csf_index_rt">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>30 0/3 1-7 * * ? </cron>
+		<env>sh</env>
+		<description>
+			通过http接口 调取数据 ,存入指数  涨幅榜表  metrics.csf_index_rt 结果：存入mongo
+			每天1:00:30 点触发，每隔 3分钟跑一次
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="csf_index_flow_rt">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>30 0/5 1-7 * * ? </cron>
+		<env>sh</env>
+		<description>
+			样本股资金流向榜  csf_index_flow_rt 结果：存入mongo
+			暂定触发时间5分钟，后期优化到2分钟
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="rank_idx_capital_flows">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>40 0/5 1-7 * * ? </cron>
+		<env>sh</env>
+		<description>
+		         将指数 资金流向表 capital_flows_idx_rank 和    样本  股资金流向榜表   csf_index_flow_rt 
+			合并成  metrics。rank_idx_capital_flows 结果：存入mongo
+			暂定触发时间5分钟，后期优化到2分钟
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="rank_idx_ratio">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>40 0/5 1-7 * * ? </cron>
+		<env>sh</env>
+		<description>
+		         将  样本股   涨幅榜     csf_index_stock_rt 和   样本      股资金流向榜   csf_index_flow_rt
+			合并成  metrics.rank_idx_ratio 结果：存入mongo
+			暂定触发时间5分钟，后期优化到2分钟
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="capital_flows_rt_backups">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 50 7 * * ?  </cron>
+		<env>sh</env>
+		<description>
+			将  capital_flows_mkt_rt（大盘）、capital_flows_idx_rt（指数）、capital_flows_stk_rt（个股）
+			分钟级资金流向历史数据保存到s3(写文件)
+			每天15:50:00触发 ,腾出收盘结算的时间
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="quant_fin_industry">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 15 * * ?</cron>
+		<env>sh</env>
+		<description>
+		          根据  opt.fin_industry_product_his_a 生成  quant.quant_fin_industry
+		          数据来源 表opt.dict_product_rs 和 表 ada.dict_industry
+		          每个行业在每一个时间点所经营该行业的所有公司
+		          每天晚上11点触发
+		</description>
+		<delay>300</delay>
+	</task>
+
+	<task type="stocks_measure_prefix">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 30 14 * * ?</cron>
+		<env>sh</env>
+		<description>
+		          个股测评买入/卖出推荐任务
+		          数据来源  metrics.secu_news_eval 事件得分表   和 metrics.comm_stock_score 个股诊断评测表
+		          根据 得分规则算出每天极力买入 和极力卖出股票   生成表  stocks_measure_prefix    
+		          每天晚上10:30点触发
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="csf_index_rt_comm">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>30 3/5 1-7 * * ?</cron>
+		<env>sh</env>
+		<description>
+			表 metrice.csf_index_rt_comm 生成
+			数据来源 metrics.csf_index_rt 和 metrics.comm_idx_number （合并）
+			每天1:03:30 触发,每隔5分钟执行一次
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="capital_rank_rt">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 10 8 * * ?</cron>
+		<env>sh</env>
+		<description>
+		          每日扫盘 (选取5只股票)  metrics。capital_rank_rt 每只股票含有目标买入和目标卖出字段,&lt;br&gt;
+		          表主键 为 dt( 每天日期),&lt;br&gt;
+		          今日扫盘结束后 今天的 每只股票的买入价和卖出价都为空,  &lt;br&gt;  
+		          今日扫盘 股票的买入价格 是今日扫盘结束后，第二天给值(第二天开盘价),卖出价格是今日扫盘结束后，第三天给值(第三天开盘价),&lt;br&gt;
+		          每天16:10点触发&lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="capital_flows_stkrt_backups">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<env>dp,mgt,sh</env>
+		<description>
+		         个股 资金流向 被选方案 读文件 数据修复. 仅供提供手动触发.&lt;br&gt;
+		         写入的表 metrics.capital_flows_rt&lt;br&gt;
+                  metrics.capital_flows_stk_rt&lt;br&gt;
+                  metrics.capital_flows_stk_rank&lt;br&gt;
+		         参数师范  目录日期如: 20160609;开始时间如: 09:30:00;结束时间如: 15:00:00&lt;br&gt;
+		         参数：&lt;br&gt;
+		    pars=dt:20160609&lt;br&gt;
+		    pars=sdt:09:30:00&lt;br&gt;
+		    pars=sdt:15:00:00&lt;br&gt;       
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="idx_fin_industry_product">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 11 * * ?</cron>
+		<env>sh</env>
+		<description>
+		          主营行业 行业占比 (行业出现次数统计) &lt;br&gt;
+		          表数据 存储 opt.idx_fin_industry_product  &lt;br&gt;
+		          无历史数据 每天进行更新和插入  &lt;br&gt;  
+		          每天19:00点触发&lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="index_time_share">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 00 9 * * ?</cron>
+		<env>sh</env>
+		<description>
+		          调用hqservice"指数5日接口"API，获得最近5日完整的"指数5日数据" &lt;br&gt;
+		          将数据保存到redis中，  &lt;br&gt;
+		    redis 的 key 如："idx:wek:AAAA"  &lt;br&gt;  
+		          每天17:00点触发&lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<!-- fenglei.ma end -->
+	
+	<task type="index_number_daily">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 18 * * ?</cron>
+		<env>dp,mgt</env>
+		<description>
+			指数因子计算，日度数据，每天23点计算,fields:计算的因子字段，如：all:计算所有，f01,f02,f03,...,:计算指定的因子&lt;br&gt;
+			默认计算最近五天&lt;br&gt;
+			具体调用方式为：&lt;br&gt;
+			&lt;b&gt;pars=from:2015-09-01;to:2015-10-31;fields:all&lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	<task type="index_number_fin">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 18 * * ?</cron>
+		<env>dp,mgt</env>
+		<description>
+			指数因子计算，日度数据，每天23点计算,fields:计算的因子字段，如：all:计算所有(默认计算所有)，f01,f02,f03,...,:计算指定的因子&lt;br&gt;
+			默认计算最近两年&lt;br&gt;
+			具体调用方式为：&lt;br&gt;
+			&lt;b&gt;pars=fp:2013,2014,2015;q:Q1,Q2,Q3,Q4;fields:all&lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="stock_limit">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 8 * * ? </cron>
+		<description>
+			个股涨跌停计算，每天16点计算，默认为计算每天涨跌停。传入startDt和endDt是计算历史，具体调用方式为：&lt;br&gt;
+			&lt;b&gt;pars=startDt:2015-01-01;endDt:2015-12-31&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+		<env>sh</env>
+	</task>
+	
+
+	<task type="stock_pick">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 40 7,14 * * ? </cron>
+		<description>
+			指标选股，每天15:40,22:40计算，默认为计算p-p13。传入不同parm会计算不同指标，具体调用方式为：&lt;br&gt;
+			&lt;b&gt;pars=p:p;p1:p1...;p13:p13&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+		<env>mgt,sh</env>
+	</task>
+	
+<!-- 	<task type="stock_pick_two">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 15 14 * * ? </cron>
+		<description>
+			指标选股，每天22:15计算，默认为计算p3,p6,p7,p10,p11,p12。传入不同parm会计算不同指标，具体调用方式为：&lt;br&gt;
+			&lt;b&gt;pars=p:p;p1:p1...;p13:p13&lt;/b&gt;
+		</description>
+		<delay>300</delay>
+		<env>mgt,sh</env>
+	</task> -->
+	
+	<task type="hot_index">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 1 * * ? </cron>
+		<description>
+			指标选股，每天早上9点计算，计算hot_idx,hot_sub,存在mongo;
+		</description>
+		<delay>300</delay>
+		<env>mgt,sh</env>
+	</task>
+	
+
+	<task type="org_comp_comprehensive">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 1 * * ? </cron>
+		<description>
+			基金公司旗下基金产品数量、
+			资产总值、
+			旗下基金经理人数;
+			基金公司重仓股和占总投资比例;
+			每天9点计算;
+		</description>
+		<delay>300</delay>
+		<env>dp,mgt</env>
+	</task>
+	
+	<task type="fund_industryRatio">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 1 * * ? </cron>
+		<description>
+			基金公司一级行业投资占比、
+			每天9点计算;
+		</description>
+		<delay>300</delay>
+		<env>dp,mgt</env>
+	</task>
+	
+	
+	<task type="fund_week_compute">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 0 ? * MON</cron>
+		<env>dp,mgt</env>
+		<pars>typ:fund_week_compute</pars>
+		<description>
+			每周一早上08:00  执行job &lt;br&gt;
+			计算周度相关数据
+			-- 可添加其他计算任务
+		</description>
+		<delay>300</delay>
+	</task> 
+	
+	<task type="hq_stock_tp_a_minu">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0/5 1-7 * * ? *</cron>
+		<env>sh</env>
+		<description>
+			停复牌数据接取，每天早上九点到下午三点，频率为5分钟一次&lt;br&gt;
+			pars=startDate:2016-06-10;endDate:2016-06-15;
+		</description>
+		<delay>300</delay>
+	</task>
+	
+	<task type="hq_stock_tp_a_hour">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 0,8-23 * * ? *</cron>
+		<env>sh</env>
+		<description>
+			停复牌数据接取，每天早上0-9点到下午15-24点，频率为1个小时一次&lt;br&gt;
+			pars=startDate:2016-06-10;endDate:2016-06-15;
+		</description>
+		<delay>300</delay>
+	</task> 
+	
+	<task type="index_tag">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 14 * * ? </cron>
+		<env>mgt,sh</env>
+		<description>
+			指数标签表，每天晚上10点计算，一天一次&lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>  
+	
+	<task type="base_stock_name_change">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 10 * * ? </cron>
+		<env>mgt</env>
+		<description>
+			简称变更表，每天晚上6点计算，一天一次&lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>  
+	
+	<task type="treasury_coupon_bond">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 1,10 * * ? </cron>
+		<env>mgt</env>
+		<description>
+			国债发行表和债券付息表，每天早上9点、晚上6点计算，一天两次&lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task>  
+	
+	<task type="corporate_bond_issuance">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 1,10 * * ? </cron>
+		<env>mgt</env>
+		<description>
+			企业债发行，每天早上9点、晚上6点计算，一天两次&lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task> 
+	
+	<task type="convertible_bond_issuance">
+		<maxHandleTime>1000</maxHandleTime>
+		<maxRepeat>1</maxRepeat>
+		<cron>0 0 1,10 * * ? </cron>
+		<env>mgt</env>
+		<description>
+			可转债发行，每天早上9点、晚上6点计算，一天两次&lt;br&gt;
+		</description>
+		<delay>300</delay>
+	</task> 
+
+</tasks>

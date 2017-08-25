@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- This xml files defines all the cache keys : cache:ns:key, e.g. cache:base:dict_common_{#placeholder} -->
+
+<CacheKeys>
+
+	<ns name="test">
+		<CacheKey id="9999" key="name_{#placeholder}" ttl="-1"
+			desc="xxx" />
+	</ns>
+
+	<ns name="base">
+		<CacheKey id="1001" key="dict_announce_customtyp_all" ttl="7"
+			unit="d" desc="csdata.DictAnnounceCustomtypService.all()" />	
+		
+		<CacheKey id="1002" key="dict_industry_all" ttl="7"
+			unit="d" desc="csdata.DictIndustryService.all()" />	
+			
+		<CacheKey id="1003" key="rr_research_org_all" ttl="7"
+			unit="d" desc="csdata.RrResearchOrgService.all()" />	
+			
+		<CacheKey id="1004" key="dict_sensitive_word_all" ttl="7"
+			unit="d" desc="csdata.DictSensitiveWordService.all()" />	
+			
+		<CacheKey id="1005" key="csf_index_daily_history_{#placeholder}" ttl="2"
+			unit="h" desc="csdata.CsfIndexDailyService.history()" />
+			
+		<CacheKey id="1006" key="extgate:message:send_record_{#placeholder}" ttl="12" unit="h" desc="记录每个手机号发送验证次数"/>
+			
+		<CacheKey id="1007" key="csdata:announcement:affairs_list" ttl="120" unit="s" desc="公告正负事件列表"/>	
+		
+		<CacheKey id="1008" key="dict_calendar_all" ttl="1" unit="d" desc="交易日历表(包括非交易日)"/>	
+		
+		<CacheKey id="1009" key="dict_currency_all" ttl="7"
+			unit="d" desc="csdata.DictCurrencyService.all()" />	
+	</ns>
+
+	<ns name="ada">
+	</ns>
+
+	<ns name="hqservice">
+		<CacheKey id="3001" key="calendar:is_tranding_{#placeholder}" ttl="6" unit="h" desc="某天是否是交易日"/>
+		<CacheKey id="3002" key="stock:base_details_data_A" ttl="2" unit="h" desc="A股股票基本信息"/>
+		<CacheKey id="3003" key="stock:unlimited_ratio_ticks_{#placeholder}" ttl="2" unit="h" desc="无限制涨跌幅股票列表"/>
+		<CacheKey id="3004" key="stock:deviation_ratio_ticks_{#placeholder}" ttl="2" unit="h" desc="涨跌幅偏移大于或小于7%值列表"/>
+		<CacheKey id="3005" key="clandar:last_trading_day_{#placeholder}" ttl="2" unit="h" desc="最近一个交易日"/>
+		<CacheKey id="3006" key="stock:capital_flows_{#placeholder}" ttl="2" unit="h" desc="股票资金流向"/>
+		<CacheKey id="3007" key="stock:last_close_price_{#placeholder}" ttl="1200" unit="s" desc="近N日收盘价"/>
+		<CacheKey id="3008" key="market_index:last_close_price_{#placeholder}" ttl="1200" unit="s" desc="近N日收盘价"/>
+		<CacheKey id="3009" key="csf_index:dict_index" ttl="6" unit="h" desc="行业指数基本信息"/>
+		<CacheKey id="3010" key="stock:amplitude_daily_{#placeholder}" ttl="2" unit="h" desc="日价格振幅值达15%的股票"/>
+		<CacheKey id="3011" key="csf_index:capital_flows_details_{#placeholder}" ttl="120" unit="s" desc="数库指数资金流向详情"/>
+		<CacheKey id="3012" key="csf_index:indicators_{#placeholder}" ttl="2" unit="h" desc="数库指数指标"/>
+		<CacheKey id="3013" key="csf_index:capital_flows_{#placeholder}" ttl="2" unit="h" desc="数库指数资金流向"/>
+		<CacheKey id="3014" key="csf_index:last_close_price_{#placeholder}" ttl="2" unit="h" desc="近N日收盘价"/>
+	</ns>
+	
+	<ns name="mobile">
+		<CacheKey id="4001" key="announcement_mine_{#placeholder}" ttl="10" unit="h" desc="用户自选公告"/>
+		
+		<CacheKey id="4002" key="combination_baseinfo_{#placeholder}" ttl="600" unit="s" desc="组合基本信息"/>
+		<CacheKey id="4003" key="combination_announcements_{#placeholder}" ttl="2" unit="h" desc="组合相关公告"/>
+		<CacheKey id="4004" key="combination_reports_{#placeholder}" ttl="2" unit="h" desc="组合相关研报"/>
+		<CacheKey id="4005" key="combination_hotnews_{#placeholder}" ttl="2" unit="h" desc="组合相关热点新闻"/>
+		<CacheKey id="4006" key="combination_analyse_{#placeholder}" ttl="2" unit="h" desc="组合动态分析"/>
+		<CacheKey id="4007" key="combination_secus_{#placeholder}" ttl="120" unit="s" desc="组合股票"/>
+		<CacheKey id="4008" key="combination_list_{#placeholder}" ttl="120" unit="s" desc="组合列表"/>
+		<CacheKey id="4009" key="combination_yield_list_{#placeholder}" ttl="120" unit="s" desc="以收益率排序组合列表"/>
+		<CacheKey id="4010" key="combination_createtime_list_{#placeholder}" ttl="120" unit="s" desc="以创建时间排序组合列表"/>
+		<CacheKey id="4011" key="combination_historical_yield_{#placeholder}" ttl="12" unit="h" desc="组合历史收益"/>
+		
+		<CacheKey id="4012" key="company_price_history_{#placeholder}" ttl="12" unit="h" desc="股票历史股价"/>
+		<CacheKey id="4013" key="company_tunover_map" ttl="240" unit="s" desc="股票换手率映射"/>
+		<CacheKey id="4014" key="company_tunover_list" ttl="240" unit="s" desc="股票换手率列表"/>
+		<CacheKey id="4015" key="company_evaluation_map" ttl="2" unit="h" desc="股票评测映射"/>
+		<CacheKey id="4016" key="company_evaluation_list" ttl="2" unit="h" desc="股票评测列表"/>
+		<CacheKey id="4017" key="company_related_reports_{#placeholder}" ttl="2" unit="h" desc="股票近9个月相关研报"/>
+		<CacheKey id="4018" key="company_related_announcement_{#placeholder}" ttl="2" unit="h" desc="股票近9个月相关公告"/>
+		<CacheKey id="4019" key="company_indicators_{#placeholder}" ttl="12" unit="h" desc="股票指标"/>
+		<CacheKey id="4020" key="stock_strategy_{#placeholder}" ttl="120" unit="s" desc="买什么股票策略列表"/>
+		<CacheKey id="4021" key="stock_strategy_details_{#placeholder}" ttl="120" unit="s" desc="买什么股票策略详细"/>
+		<CacheKey id="4022" key="homepage_banner_{#placeholder}" ttl="120" unit="s" desc="Banner"/>
+		<CacheKey id="4023" key="industry_ratio_rank_{#placeholder}" ttl="120" unit="s" desc="行业涨跌幅排行榜"/>
+		
+		<CacheKey id="4024" key="user_status_{#placeholder}" ttl="10" unit="d" desc="用户使用app状态"/>
+		<CacheKey id="4025" key="user_optional_stocks_{#placeholder}" ttl="10" unit="d" desc="用户收藏的股票"/>
+		<CacheKey id="4026" key="company_evaluation_rank_{#placeholder}" ttl="1" unit="h" desc="股票风险评测指标"/>
+		
+		<CacheKey id="4027" key="researcher_baseinfo_{#placeholder}" ttl="2" unit="h" desc="分析师基本信息"/>
+		<CacheKey id="4028" key="researcher_accuracy_{#placeholder}" ttl="12" unit="h" desc="分析师准确率"/>
+		<CacheKey id="4029" key="researcher_rank_type_{#placeholder}" ttl="6" unit="h" desc="分析师准确率分类排行"/>
+		<CacheKey id="4030" key="researcher_organization_data" ttl="7" unit="d" desc="分析师机构信息"/>
+		
+		<CacheKey id="4031" key="strategy_list_{#placeholder}" ttl="120" unit="s" desc="策略列表"/>
+		<CacheKey id="4032" key="strategy_details_{#placeholder}" ttl="120" unit="s" desc="策略详细信息"/>
+		
+		<CacheKey id="4033" key="dict_industry" ttl="14" unit="d" desc="行业数据信息"/>
+		<CacheKey id="4034" key="dict_announcement_customtyp" ttl="14" unit="d" desc="公告类型信息"/>
+		<CacheKey id="4035" key="all_a_market_stocks" ttl="1" unit="d" desc="A股股票基本信息"/>
+		<CacheKey id="4036" key="stock_industry_mapper" ttl="7" unit="d" desc="股票和对应行业映射"/>
+		<CacheKey id="4037" key="industry_stocks_mapper" ttl="7" unit="d" desc="行业和对应股票映射"/>
+		<CacheKey id="4038" key="csf_industry_analyse_{#placeholder}" ttl="4" unit="h" desc="行业涨跌幅信息"/>
+		<CacheKey id="4039" key="stock_price_analyse_{#placeholder}" ttl="2" unit="h" desc="股票涨跌幅"/>
+		<CacheKey id="4040" key="stock_evaluation_risk_{#placeholder}" ttl="2" unit="h" desc="股票评测风险值"/>
+		<CacheKey id="4041" key="stock_target_price_{#placeholder}" ttl="2" unit="h" desc="股票目标价"/>
+		<CacheKey id="4042" key="user_optional_rcher_{#placeholder}" ttl="2" unit="h" desc="收藏分析师"/>
+		
+		<CacheKey id="4043" key="guess:index_sh_user_up:user_{#placeholder}" ttl="1" unit="m" desc="每日猜涨用户列表"/>
+		<CacheKey id="4044" key="guess:index_sh_user_dn:user_{#placeholder}" ttl="1" unit="m" desc="每日猜跌用户列表"/>
+		<CacheKey id="4045" key="guess:index_sh_user_last:user_guess_map" ttl="1" unit="m" desc="用户最近一次预测是否正确"/>
+		<CacheKey id="4046" key="guess:index_sh:up_{#placeholder}" ttl="1" unit="m" desc="猜盘上证涨的数量"/>
+		<CacheKey id="4047" key="guess:index_sh:dn_{#placeholder}" ttl="1" unit="m" desc="猜盘上证跌的数量"/>
+		
+		<CacheKey id="4048" key="company:earnings_comments_{#placeholder}" ttl="2" unit="h" desc="公司中报解读"/>
+		
+		<CacheKey id="4049" key="researcher:researcher_ranklist_{#placeholder}" ttl="2" unit="h" desc="分析师周月季准确率排行"/>
+		
+		<CacheKey id="4050" key="news:hotnews_category_{#placeholder}" ttl="120" unit="s" desc="资讯新闻(热点，行业，公司，宏观)"/>
+		<CacheKey id="4051" key="news:hotnews_industry_category_{#placeholder}" ttl="120" unit="s" desc="资讯新闻"/>
+		
+		<CacheKey id="4052" key="stock:fund_analy_{#placeholder}" ttl="6" unit="h" desc="资讯新闻"/>
+		<CacheKey id="4053" key="stock:smt_balance_list_{#placeholder}" ttl="2" unit="h" desc="股票融资融券差额列表"/>
+		<CacheKey id="4054" key="stock:shsc_check_{#placeholder}" ttl="2" unit="h" desc="股票是否是沪港通/融资融券"/>
+		<CacheKey id="4055" key="combination:baseinfo_{#placeholder}" ttl="600" unit="s" desc="组合基本信息"/>
+		
+		<CacheKey id="4056" key="base:token_{#placeholder}" ttl="1" unit="h" desc="用户访问token"/>
+
+		<CacheKey id="4057" key="stock_ipo_list" ttl="2" unit="h" desc="新股列表"/>
+		
+		<CacheKey id="4058" key="stock:base_org_{#placeholder}" ttl="1" unit="m" desc="baseOrg详情"/>
+
+		<CacheKey id="4059" key="stock:base_sharevary_{#placeholder}" ttl="1" unit="d" desc="股票的股本信息"/>
+
+		<CacheKey id="4060" key="stock:base_households_{#placeholder}" ttl="1" unit="d" desc="股东人数信息" />
+
+		<CacheKey id="4061" key="stock:main_income_{#placeholder}" ttl="1" unit="d" desc="股票主营收入构成"/>
+
+		<CacheKey id="4062" key="stock:holder_topten_{#placeholder}" ttl="2" unit="h" desc="股票最新十大股东信息"/>
+
+		<CacheKey id="4063" key="stock:comm_score_{#placeholder}" ttl="2" unit="h" desc="股票的事件得分"/>
+		<CacheKey id="4064" key="stock:event_news_{#placeholder}" ttl="2" unit="h" desc="个股详评事件新闻"/>
+		<CacheKey id="4067" key="base:trading_status_{#placeholder}" ttl="2" unit="h" desc="判读某天是否是交易日"/>
+		<CacheKey id="4068" key="industry:csf_code_mapper" ttl="1" unit="d" desc="行业和数库code映射关系"/>
+		<CacheKey id="4069" key="stock:comm_idx_price" ttl="10" unit="h" desc="股票最新行情指标"/>
+		<CacheKey id="4070" key="stockcompany" ttl="2" unit="d" desc="证券公司列表"/>
+		
+		<CacheKey id="4071" key="stock:measure_list_{#placeholder}" ttl="1" unit="h" desc="股票评测列表"/>
+		<CacheKey id="4072" key="stock:index_screen_list_{#placeholder}" ttl="1" unit="h" desc="指标选股"/>
+		<CacheKey id="4073" key="csf_index:dict_index" ttl="6" unit="h" desc="行业指数基本信息"/>
+		<CacheKey id="4074" key="news:reading_{#placeholder}" ttl="2" unit="h" desc="智投读解详情"/>
+		<CacheKey id="4075" key="news:top:news_{#placeholder}" ttl="2" unit="h" desc="top_news详情"/>
+		<CacheKey id="4076" key="csf_index:billboard_{#placeholder}" ttl="30" unit="s" desc="指数收益榜"/>
+		<CacheKey id="4077" key="news:hot:news_{#placeholder}" ttl="2" unit="h" desc="hot_news详情"/>
+		<CacheKey id="4078" key="announcement:affairs_{#placeholder}" ttl="2" unit="h" desc="事件驱动历史"/>
+		<CacheKey id="4079" key="announcement:affairs_details_{#placeholder}" ttl="2" unit="h" desc="事件驱动详情"/>
+		<CacheKey id="4080" key="news:hotnews:category_list_{#placeholder}" ttl="120" unit="s" desc="资讯新闻(热点，行业，公司，宏观)"/>
+		<CacheKey id="4081" key="news:hotnews:category_industry_{#placeholder}" ttl="120" unit="s" desc="资讯新闻:行业"/>
+		<CacheKey id="4082" key="csf_index:stock_quote_{#placeholder}" ttl="5" unit="s" desc="成份股行情"/>
+		<CacheKey id="4083" key="csf_index:reports_{#placeholder}" ttl="10" unit="h" desc="指数研报"/>
+		<CacheKey id="4084" key="csf_index:announce_{#placeholder}" ttl="10" unit="h" desc="指数公告"/>
+		<CacheKey id="4085" key="csf_index:SupplyChainRelation_{#placeholder}" ttl="10" unit="h" desc="产业链关系"/>
+		<CacheKey id="4086" key="csf_index:rank_{#placeholder}" ttl="30" unit="s" desc="指数排名"/>
+		<CacheKey id="4087" key="csf_index:idx_fin_industry_product" ttl="6" unit="h" desc="指数行业分布比例"/>
+		<CacheKey id="4088" key="company:dailyScan" ttl="1" unit="h" desc="每日扫盘"/>
+	</ns>
+	
+	<ns name="userservice">
+		<CacheKey id="5001" key="stock:evaluation_map" ttl="2" unit="h" desc="股票评测映射"/>
+		<CacheKey id="5002" key="stock:tunover_map" ttl="120" unit="s" desc="股票换手率映射"/>
+		<CacheKey id="5003" key="stock:tunover_list" ttl="180" unit="s" desc="股票换手率列表"/>
+		<CacheKey id="5004" key="user:token_{#placeholder}" ttl="3" unit="h" desc="用户token"/>
+		<CacheKey id="5005" key="user:accessKey_{#placeholder}" ttl="1" unit="h" desc="用户accessKey"/>
+		<CacheKey id="5006" key="platform:secret_key_{#placeholder}" ttl="1" unit="m" desc="平台用户secret_key"/>
+		<CacheKey id="5007" key="base:is_trading_day_{#placeholder}" ttl="6" unit="h" desc="是否是交易日"/>
+		<CacheKey id="5008" key="stock:comm_idx_price_ALL" ttl="10" unit="h" desc="股票最新行情指标"/>
+		<CacheKey id="5009" key="user:visits_{#placeholder}" ttl="2" unit="d" desc="用户接口的访问次数"/>
+		<CacheKey id="5010" key="stock:attention_list_{#placeholder}" ttl="10" unit="s" desc="数库指数收藏榜"/>
+	</ns>
+	
+	<ns name="fund">
+		<CacheKey id="6001" key="label:label_{#placeholder}" ttl="8" unit="h" desc="标签数据映射"/> 
+		<CacheKey id="6002" key="base:dict_idx_{#placeholder}" ttl="8" unit="h" desc="字典数据映射"/>
+		<CacheKey id="6003" key="news:list_{#placeholder}" ttl="300" unit="s" desc="资讯列表"/>
+		<CacheKey id="6004" key="news:detail_{#placeholder}" ttl="900" unit="s" desc="资讯详情数据映射"/>
+		<CacheKey id="6005" key="fund:manager_{#placeholder}" ttl="900" unit="s" desc="基金经理数据映射"/>
+		<CacheKey id="6006" key="fund:fund_{#placeholder}" ttl="900" unit="s" desc="基金基本信息数据映射"/>
+		<CacheKey id="6007" key="base:org_{#placeholder}" ttl="3600" unit="s" desc="机构数据映射"/>
+		<CacheKey id="6008" key="idx:commn_idx_{#placeholder}" ttl="900" unit="s" desc="沪深300数据映射"/>
+		<CacheKey id="6009" key="idx:daily_{#placeholder}" ttl="900" unit="s" desc="行业指数数据映射"/>
+		<CacheKey id="6010" key="base:dict_prd_rs_{#placeholder}" ttl="8" unit="h" desc="产品数据映射"/>
+		<CacheKey id="6011" key="base:dict_ind_{#placeholder}" ttl="8" unit="h" desc="行业数据映射"/>
+		<CacheKey id="6012" key="fund:banner_list" ttl="600" unit="s" desc="banner数据列表"/>
+		<CacheKey id="6013" key="fund:stock_{#placeholder}" ttl="900" unit="s" desc="重仓持股数据列表"/>
+		<CacheKey id="6014" key="fund:recoms_{#placeholder}" ttl="600" unit="s" desc="推荐基金数据列表"/>
+		<CacheKey id="6015" key="fund:net_value_{#placeholder}" ttl="900" unit="s" desc="基金净值数据映射"/>
+		<CacheKey id="6016" key="fund:net_value_chg_{#placeholder}" ttl="900" unit="s" desc="基金涨跌幅数据映射"/>
+		<CacheKey id="6061" key="service:change_result_{#placeholder}" ttl="900" unit="s" desc="涨跌幅结果映射"/>
+		<CacheKey id="6062" key="service:label_result_{#placeholder}" ttl="900" unit="s" desc="标签枚举值结果映射"/>
+		<CacheKey id="6063" key="service:news_result_{#placeholder}" ttl="180" unit="s" desc="资讯结果映射"/>
+		<CacheKey id="6064" key="service:fund_result_{#placeholder}" ttl="600" unit="s" desc="基金主服务结果映射"/>
+		<CacheKey id="6065" key="service:index_result_{#placeholder}" ttl="600" unit="s" desc="基金模块首页服务结果映射"/>
+		<CacheKey id="6066" key="service:hs300profit_result_{#placeholder}" ttl="900" unit="s" desc="沪深300收益率结果映射"></CacheKey>
+		<CacheKey id="6067" key="service:fund_profit_result_{#placeholder}" ttl="900" unit="s" desc="基金收益率结果映射"></CacheKey>
+		<CacheKey id="6068" key="service:hq_index_daily_chg_result_{#placeholder}" ttl="900" unit="s" desc="每日行情涨幅结果映射"></CacheKey>		
+		<CacheKey id="6069" key="service:perv_trad_day_result_{#placeholder}" ttl="900" unit="s" desc="上一个交易日结果映射"></CacheKey>
+		<CacheKey id="6070" key="service:latest_stocks_result_{#placeholder}" ttl="900" unit="s" desc="十大重仓股结果映射"></CacheKey>		
+		<CacheKey id="6071" key="service:latest_edt_result_{#placeholder}" ttl="900" unit="s" desc="fund_top_ten_stock表最新交易时间结果映射"></CacheKey>
+		<CacheKey id="6072" key="service:latest_stocks_bond_result_{#placeholder}" ttl="900" unit="s" desc="五大重仓债券结果映射"></CacheKey>	
+		<CacheKey id="6073" key="service:latest_edt_bond_result_{#placeholder}" ttl="900" unit="s" desc="fund_top_five_bond表最新交易时间结果映射"></CacheKey>	
+		<CacheKey id="6074" key="service:latest_edt_ind_result_{#placeholder}" ttl="900" unit="s" desc="fund_industry_portfolio表最新交易时间结果查询"></CacheKey>	
+		<CacheKey id="6075" key="service:latest_stocks_ind_result_{#placeholder}" ttl="900" unit="s" desc="获取指定的多只基金季度十大投资行业结果映射"></CacheKey>
+		<CacheKey id="6076" key="service:latest_edt_asset_result_{#placeholder}" ttl="900" unit="s" desc="fund_asset_combination表最新交易时间结果映射"></CacheKey>	
+		<CacheKey id="6077" key="service:latest_asset_comb_result_{#placeholder}" ttl="900" unit="s" desc="获取指定的多只基金投资资产分布查询结果映射"></CacheKey>	
+		<CacheKey id="6078" key="service:fund_manager_term_result_{#placeholder}" ttl="900" unit="s" desc="获取基金经理任期情况结果映射"></CacheKey>
+		<CacheKey id="6079" key="service:fund_manager_detail_result_{#placeholder}" ttl="900" unit="s" desc="根据基金经理名字和基金code获得BaseFundManager结果映射"></CacheKey>
+		<CacheKey id="6080" key="service:fund_chg_ranks_result_{#placeholder}" ttl="900" unit="s" desc="通过基金code和基金类型 查找FundNetValueChgRank结果映射"></CacheKey>	
+		<CacheKey id="6081" key="service:fund_get_cat_result_{#placeholder}" ttl="900" unit="s" desc="通过基金code查找对应的分类结果映射"></CacheKey>
+		<CacheKey id="6082" key="service:fund_manager_recoms_result_{#placeholder}" ttl="900" unit="s" desc="获取基金经理推荐情况结果映射"></CacheKey>		
+		<CacheKey id="6083" key="service:fund_manager_list_result_{#placeholder}" ttl="900" unit="s" desc="获取基金经理一览结果映射"></CacheKey>		
+		<CacheKey id="6084" key="service:fund_dividend_result_{#placeholder}" ttl="900" unit="s" desc="获取基金分红情况结果映射"></CacheKey>
+		<CacheKey id="6085" key="service:estimate_value_ranking_result_{#placeholder}" ttl="30" unit="s" desc="获取基金分估值排行结果映射"></CacheKey>			
+		<CacheKey id="6086" key="service:latest_edt_fund_share_result_{#placeholder}" ttl="900" unit="s" desc="base_fund_share表最新交易时间结果映射"></CacheKey>				
+		<CacheKey id="6087" key="service:latest_fund_share_result_{#placeholder}" ttl="900" unit="s" desc="获取指定基金的份额信息查询结果映射"></CacheKey>					
+		<CacheKey id="6088" key="service:fund_org_stock_{#placeholder}" ttl="900" unit="s" desc="获取指定基金公司持仓信息查询结果映射"></CacheKey>		
+		<CacheKey id="6089" key="service:fund_manager_grade_{#placeholder}" ttl="900" unit="s" desc="获取基金经理评级信息查询结果映射"></CacheKey>								
+		<CacheKey id="6090" key="announce:list_{#placeholder}" ttl="300" unit="s" desc="基金公告列表"/>
+		<CacheKey id="6091" key="announce:detail_{#placeholder}" ttl="900" unit="s" desc="基金公告详情数据映射"/>
+		<CacheKey id="6092" key="company:search_{#placeholder}" ttl="900" unit="s" desc="按字母检索公司数据映射"/>
+		<CacheKey id="6093" key="fundtype:count_{#placeholder}" ttl="900" unit="s" desc="查询公司旗下基金分类数据映射"/>
+		<CacheKey id="6094" key="fund:LatestNet:date_{#placeholder}" ttl="900" unit="s" desc="查询基金最新净值日期数据映射"/>
+		<CacheKey id="6095" key="fund:LatestNet:value_{#placeholder}" ttl="900" unit="s" desc="查询基金最新净值数据映射"/>
+		<CacheKey id="6096" key="fund:hs300profit_result_{#placeholder}" ttl="900" unit="s" desc="新接口沪深300收益率结果映射"></CacheKey>
+		<CacheKey id="6097" key="fund:dayliprofit_result_{#placeholder}" ttl="900" unit="s" desc="基金走势查询结果映射"></CacheKey>
+		<CacheKey id="6098" key="fund:weekrecomm_result_{#placeholder}" ttl="900" unit="s" desc="一周领涨基金结果映射"></CacheKey>
+		<CacheKey id="6099" key="fund:basefund_{#placeholder}" ttl="900" unit="s" desc="基金基本信息结果映射"></CacheKey>
+		<CacheKey id="6100" key="fund:basefund_org_{#placeholder}" ttl="900" unit="s" desc="基金公司信息结果映射"></CacheKey>
+		<CacheKey id="6101" key="fund:fund_indtry_ratio_{#placeholder}" ttl="900" unit="s" desc="基金行业占比结果映射"></CacheKey>
+		<CacheKey id="6102" key="service:select_fund_stock_and_bond_{#placeholder}" ttl="900" unit="s" desc="自选基金重仓股债信息结果映射"></CacheKey>
+		<CacheKey id="6103" key="service:select_fund_diagnose_{#placeholder}" ttl="900" unit="s" desc="自选基金诊断信息结果映射"></CacheKey>
+		<CacheKey id="6104" key="service:select_fund_industry_{#placeholder}" ttl="900" unit="s" desc="自选基金行业分布信息结果映射"></CacheKey>
+		<CacheKey id="6105" key="service:fund_indicator_{#placeholder}" ttl="900" unit="s" desc="自选基金波动率相关信息结果映射"></CacheKey>
+		<CacheKey id="6106" key="service:fund_manager_list_{#placeholder}" ttl="900" unit="s" desc="基金历任基金经理结果映射"></CacheKey>
+		<CacheKey id="6107" key="service:fund_grade_{#placeholder}" ttl="900" unit="s" desc="基金最新评级信息结果映射"></CacheKey>
+	</ns>
+	
+	<ns name="datasupply">
+		<CacheKey id="7001" key="stock:price_daily_{#placeholder}" ttl="2" unit="h" desc="股票每日行情数据"/>
+		<CacheKey id="7002" key="index:included_stocks_{#placeholder}" ttl="1" unit="d" desc="指数成分股"/>
+		<CacheKey id="7003" key="csfindex:included_stocks_{#placeholder}" ttl="1" unit="d" desc="行业指数(数库指数)成分股"/>
+		<CacheKey id="7004" key="stock:details_{#placeholder}" ttl="6" unit="h" desc="股票基本信息"/>
+		<CacheKey id="7005" key="finance:reports_{#placeholder}" ttl="8" unit="h" desc="财报信息"/>
+		<CacheKey id="7006" key="user:visits_{#placeholder}" ttl="2" unit="d" desc="用户接口的访问次数"/>
+		<CacheKey id="7007" key="stock:news_{#placeholder}" ttl="2" unit="d" desc="股票相关新闻"/>
+		<CacheKey id="7008" key="stock:announce_{#placeholder}" ttl="2" unit="d" desc="股票相关公告"/>
+		<CacheKey id="7009" key="stock:report_{#placeholder}" ttl="2" unit="d" desc="股票相关研报"/>
+		<CacheKey id="7010" key="stock:category_check_{#placeholder}" ttl="2" unit="d" desc="融资融券沪港通股票判断"/>
+		<CacheKey id="7011" key="stock:ipo_history_list_{#placeholder}" ttl="8" unit="h" desc="新股发行列表"/>
+		<CacheKey id="7012" key="stock:ipo_detail_{#placeholder}" ttl="8" unit="h" desc="新股详情"/>
+		<CacheKey id="7013" key="stock:ipo_subscribe_details_{#placeholder}" ttl="8" unit="h" desc="新股申购详情"/>
+		<CacheKey id="7014" key="csfindex:csf_index_info_{#placeholder}" ttl="1" unit="d" desc="数库指数基本信息(含京东大数据指数)"/>
+		<CacheKey id="7015" key="csfindex:csf_index_currency_{#placeholder}" ttl="1" unit="d" desc="指数货币计价单位代码与名称映射结果"/>
+		<CacheKey id="7016" key="csfindex:csf_index_industry_{#placeholder}" ttl="1" unit="d" desc="数库指数所属行业代码与行业名称映射结果"/>
+		<CacheKey id="7017" key="stock:subnew" ttl="8" unit="h" desc="次新股"/>
+		<CacheKey id="7018" key="dict_product_rs:level_45" ttl="6" unit="h" desc="数库行业4级和5级hash"/>
+		<CacheKey id="7019" key="dict_product_rs:code_name_hash" ttl="6" unit="h" desc="数库行业code对应name,hash"/>
+		<CacheKey id="7020" key="ced:product:sam45_code_name_hash" ttl="6" unit="h" desc="数库行业4,5级对应的宏观code对应name,hash"/>
+		<CacheKey id="7021" key="ced:sam_mapping" ttl="6" unit="h" desc="数库行业对应宏观指标hash"/>
+		<CacheKey id="7030" key="stock:summary_{#placeholder}" ttl="8" unit="h" desc="股票简况和股东股本"/>
+		<CacheKey id="7031" key="stock:business_profile_{#placeholder}" ttl="8" unit="h" desc="股票业务概况"/>
+		<CacheKey id="7032" key="stock:bonus_{#placeholder}" ttl="8" unit="h" desc="股票分红配股"/>
+		<CacheKey id="7033" key="stock:holders_{#placeholder}" ttl="8" unit="h" desc="股票十大股东信息"/>
+		<CacheKey id="7034" key="stock:evaluation_summary_{#placeholder}" ttl="8" unit="h" desc="指投建议"/>
+		<CacheKey id="7035" key="stock:capital_flows_main_{#placeholder}" ttl="8" unit="h" desc="股票近5日主力资金增减仓"/>
+		<CacheKey id="7036" key="stock:realtime_state_{#placeholder}" ttl="5" unit="s" desc="股票实时状态"/>
+		<CacheKey id="7037" key="stock:capital_flows_latest_{#placeholder}" ttl="5" unit="s" desc="股票最新资金流向占比"/>
+		<CacheKey id="7038" key="stock:amount_ranking_{#placeholder}" ttl="5" unit="s" desc="股票成交额榜"/>
+		<CacheKey id="7039" key="stock:ratio_ranking_{#placeholder}" ttl="5" unit="s" desc="股票涨跌幅榜"/>
+		<CacheKey id="7040" key="stock:turnover_ranking_{#placeholder}" ttl="5" unit="s" desc="股票换手率榜"/>
+		<CacheKey id="7041" key="stock:capital_flows_ranking_{#placeholder}" ttl="5" unit="s" desc="股票资金流向排行榜"/>
+		<CacheKey id="7042" key="marketindex:stocks_quotes_{#placeholder}" ttl="5" unit="s" desc="成分股换手率/涨跌幅榜"/>
+		<CacheKey id="7043" key="marketindex:capital_flows_latest_{#placeholder}" ttl="5" unit="s" desc="最新资金流向占比"/>
+		<CacheKey id="7044" key="marketindex:capital_flows_main_{#placeholder}" ttl="8" unit="h" desc="近五日主力资金增减仓"/>
+		<CacheKey id="7045" key="marketindex:capital_flows_realtime_{#placeholder}" ttl="5" unit="s" desc="实时资金流向"/>
+		<CacheKey id="7046" key="csfindex:csf_index_billboard_{#placeholder}" ttl="5" unit="s" desc="指数风云榜"/>
+		<CacheKey id="7047" key="csfindex:csf_index_capital_flows_ranking_{#placeholder}" ttl="5" unit="s" desc="行业概念资金流向排行榜"/>
+		<CacheKey id="7048" key="csfindex:csf_index_capital_flows_details_{#placeholder}" ttl="5" unit="s" desc="行业/概念内成分股资金流向排行榜"/>
+		<CacheKey id="7049" key="csfindex:csf_index_ratio_ranking_{#placeholder}" ttl="5" unit="s" desc="概念指数涨幅榜"/>
+		<CacheKey id="7050" key="csfindex:csf_index_ratio_details_{#placeholder}" ttl="5" unit="s" desc="概念指数成分股涨跌幅详情"/>
+		<CacheKey id="7051" key="csfindex:csf_index_realtim_state_{#placeholder}" ttl="5" unit="s" desc="数库指数实时状态"/>
+		<CacheKey id="7052" key="announce_type:list" ttl="6" unit="h" desc="公告类型列表"/>
+		<CacheKey id="7053" key="announce_type:map" ttl="6" unit="h" desc="公告类型hash_code_szh"/>
+		<CacheKey id="7054" key="stock:search_{#placeholder}" ttl="8" unit="h" desc="股票搜索"/>
+		<CacheKey id="7055" key="stock:ipo_calendar" ttl="8" unit="h" desc="新股日历"/>
+		<CacheKey id="7056" key="stock:evaluation_totalview_{#placeholder}" ttl="8" unit="h" desc="个股全貌"/>
+		<CacheKey id="7057" key="stock:measure_list_{#placeholder}" ttl="2" unit="h" desc="股票评测列表"/>
+		<CacheKey id="7058" key="news:tag_relevant_{#placeholder}" ttl="120" unit="s" desc="标签相关新闻"/>
+		<CacheKey id="7059" key="news:top_list_{#placeholder}" ttl="120" unit="s" desc="top news list"/>
+		<CacheKey id="7060" key="news:details_{#placeholder}" ttl="120" unit="s" desc="新闻详情"/>
+		<CacheKey id="7061" key="news:category_stock_{#placeholder}" ttl="120" unit="s" desc="公司分类新闻"/>
+		<CacheKey id="7062" key="news:category_industry_{#placeholder}" ttl="120" unit="s" desc="行业分类新闻"/>
+		<CacheKey id="7063" key="stock:product:top_hash" ttl="6" unit="h" desc="公司主要4级行业及5级产品(fin_product_node_his_a)"/>
+		<CacheKey id="7064" key="index:info_{#placeholder}" ttl="1" unit="d" desc="指数基本信息"/>
+		<CacheKey id="7065" key="index:included_stocks_ticks_{#placeholder}" ttl="1" unit="d" desc="指数成分股tick信息"/>
+		<CacheKey id="7066" key="fund:service_lazy_{#placeholder}" ttl="1" unit="d" desc="基金相关服务-少量更新数据"/>
+		<CacheKey id="7067" key="fund:service_repeat_{#placeholder}" ttl="900" unit="s" desc="基金相关服务-重算数据"/>
+		<CacheKey id="7068" key="affairs:list" ttl="900" unit="s" desc="正负事件"/>
+		<CacheKey id="7069" key="stock:ipo_list" ttl="1" unit="d" desc="新股发行列表"/>
+		<CacheKey id="7070" key="hq:_{#placeholder}" ttl="2" unit="h" desc="日度周度月度行情数据"/>
+	</ns>
+	
+	<ns name="quant">
+		<CacheKey id="8001" key="quant:service:quant_ic_{#placeholder}" ttl="5" unit="h" desc="" />
+		<CacheKey id="8002" key="quant:service:quant_combination_" ttl="2" unit="h" desc=""/>
+		<CacheKey id="8003" key="quant:service:quant_strategy_" ttl="2" unit="h" desc=""/>
+		<CacheKey id="8010" key="quant:service:quant_factor:value_{#placeholder}" ttl="2" unit="h" desc=""/>
+
+		<CacheKey id="8020" key="quant:service:quant_analysis_icCache" ttl="2" unit="h" desc=""/>
+		<CacheKey id="8021" key="quant:service:quant_analysis_icGroupCache" ttl="2" unit="h" desc=""/>
+		<CacheKey id="8022" key="quant:service:quant_analysis_icDeclineCache" ttl="2" unit="h" desc=""/>
+		<CacheKey id="8023" key="quant:service:quant_analysis:earnCache_{#placeholder}" ttl="2" unit="h" desc=""/>
+		<CacheKey id="8024" key="quant:service:quant_analysis:turnCache_{#placeholder}" ttl="2" unit="h" desc=""/>
+		<CacheKey id="8025" key="quant:service:quant_analysis:turnDeclineReverseCache_{#placeholder}" ttl="2" unit="h" desc=""/>
+		<CacheKey id="8026" key="quant:service:quant_analysis:turnStockMapCache_{#placeholder}" ttl="2" unit="h" desc=""/>
+		<CacheKey id="8027" key="quant:service:quant_analysis:turnTfcAndIndustryCache_{#placeholder}" ttl="2" unit="h" desc=""/>
+		<CacheKey id="8028" key="quant:service:quant_analysis_stockSummaryCache" ttl="2" unit="h" desc=""/>
+
+		<CacheKey id="8050" key="quant:service:quant_user_award_summary" ttl="300" unit="s" desc="奖励概况"/>
+		<CacheKey id="8051" key="quant:service:quant_user_award" ttl="300" unit="s" desc="奖励"/>
+		<CacheKey id="8052" key="quant:service:quant_user_award_user_" ttl="300" unit="s" desc="奖励"/>
+        <CacheKey id="8053" key="quant:service:quant_zan_" ttl="-1" desc="给策略点赞"/>
+        <CacheKey id="8054" key="quant:service:quant_strategy_rank_man_{#placeholder}" ttl="900" unit="s" desc="量化优选" />
+        <CacheKey id="8055" key="quant:service:quant_factor_dist" ttl="12" unit="h" desc="因子数据分布" />
+        <CacheKey id="8056" key="quant:service:quant_news" ttl="3" unit="d" desc="事件新闻列表" />
+        <CacheKey id="8057" key="quant:service:quant_news_is_updae" ttl="3" unit="h" desc="事件新闻列表是否正在更新" />
+        <CacheKey id="8058" key="quant:service:quant_sc_rank_{#placeholder}" ttl="600" unit="s" desc="首页策略组合排行榜" />
+        <CacheKey id="8059" key="quant:service:quant_strategy_combination_limit_hash" ttl="600" unit="s" desc="用户策略数量限制" />
+
+
+	</ns>
+	
+	<ns name="message">
+		<CacheKey id="9001" key="message:list_talk_room" ttl="5" unit="h" desc="直播间列表" />
+		<CacheKey id="9002" key="message:list_talk_topic_{#placeholder}" ttl="5" unit="h" desc="话题列表" />
+		<CacheKey id="9003" key="message:talk_topic_{#placeholder}" ttl="1" unit="s" desc="话题信息" />
+		<CacheKey id="9004" key="message:list_talk_comment_{#placeholder}" ttl="1" unit="m" desc="评论列表" />
+	</ns>
+
+	<!-- business suite configuration add by jack 2016年6月23日 09:55:48 -->
+	<!-- all key ( usePkey + bizKey ) -->
+	<ns name="openapi">
+		<CacheKey id="10001" key="user:suites_instance_#placeholder}" ttl="30" unit="d" desc="suite_user info 集合"/>
+		<CacheKey id="10002" key="user:suites_key_#placeholder}" ttl="30" unit="d" desc="use suite ids key codes 集合"/>
+		<CacheKey id="10003" key="info:priviles_{#placeholder}" ttl="30" unit="d" desc=" info:priviles"/>
+		<CacheKey id="10004" key="info:service_{#placeholder}" ttl="-1" unit="d" desc=""/>
+		<CacheKey id="10005" key="info:suite_{#placeholder}" ttl="-1" unit="d" desc=""/>
+		
+		<!-- statistic -->
+		<!-- map: ukey: userPkey + yyyMM (201606) | suiteId  -->
+		<CacheKey id="11000" key="user:statis_info_{#placeholder}" ttl="-1" unit="d" desc="  group key for sub info"/>
+		<CacheKey id="11001" key="statis:total_use_count_{#placeholder}" ttl="-1" unit="d" desc=" month total use count"/>
+		<CacheKey id="11005" key="statis:api_use_count_{#placeholder}" ttl="-1" unit="d" desc="use count"/>
+		
+		<!-- map: ukey: userPkey  | direct to access [ userPkey + suiteid ]  -->
+		<CacheKey id="11002" key="statis:limit_count_{#placeholder}" ttl="-1" unit="d" desc="use count"/>
+		<CacheKey id="11003" key="statis:outof_rate_{#placeholder}" ttl="-1" unit="d" desc="use count"/>
+		<CacheKey id="11004" key="statis:total_outof_count_{#placeholder}" ttl="-1" unit="d" desc="use out off count"/>
+		<CacheKey id="11005" key="user:sub_begin_date_{#placeholder}" ttl="-1" unit="d" desc="sub suite begin date"/>
+		
+	</ns>
+	
+</CacheKeys>

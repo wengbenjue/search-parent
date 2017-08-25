@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- This xml files defines all the cache keys : cache:ns:key, e.g. cache:base:dict_common_{#placeholder} -->
+
+<CacheKeys>
+
+	<ns name="test">
+		<CacheKey id="9999" key="name_{#placeholder}" ttl="-1"
+			desc="xxx" />
+	</ns>
+
+	<ns name="base">
+		<CacheKey id="1001" key="dict_region_{#placeholder}" ttl="24"
+			unit="h" desc="xxx" />
+
+		<CacheKey id="1002" key="dict_common_{#placeholder}" ttl="30"
+			unit="d" desc="xxx" />
+	</ns>
+
+	<ns name="ada">
+	</ns>
+
+	<ns name="plugin">
+	</ns>
+
+	<ns name="mobile">
+	</ns>
+</CacheKeys>
