@@ -43,6 +43,7 @@ import scala.collection.JavaConversions._
 import Numeric.Implicits._
 import scala.collection.{JavaConversions, JavaConverters, mutable}
 import scala.util.control.Breaks._
+import scala.collection.JavaConversions._
 
 /**
   * Created by soledede.weng on 2016/7/28.
@@ -441,7 +442,6 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       loadTopicToCache()
       loadIndexIndustryToCache()
       loadEventToCache()
-      loadTopicToCache()
       loadCache
       loadEventRegexToCache()
 
@@ -453,14 +453,15 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   def loadEventToCache(): Long = {
     val events = conf.mongoDataManager.findEvent()
     if (events != null && events.size() > 0) {
-      events.map { m =>
+      events.foreach{ m =>
         val id: String = if (m.get("_id") != null) m.get("_id").toString.trim else null
         val eventName: String = if (m.get("szh") != null) m.get("szh").toString.trim else null
         val eventWeight: Double = if (m.get("w") != null) m.get("w").toString.toDouble else 0.0
         if (eventName != null && !eventName.equalsIgnoreCase("")) {
           LocalCache.eventCache(id) = new GraphEvent(id, eventName, eventWeight)
           LocalCache.eventSet += eventName
-          conf.dictionary.add(eventName, id)
+          addWordToGraphTrieNode(eventName,id)
+         // conf.dictionary.add(eventName, id)
         }
       }
     }
@@ -472,7 +473,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     loadGraphHotTopicWeightCache()
     val topicConps = conf.mongoDataManager.findGrapnTopicConp()
     if (topicConps != null && topicConps.size() > 0) {
-      topicConps.map { m =>
+      topicConps.foreach{ m =>
         val topicName: String = if (m.get("w") != null) m.get("w").toString.trim else null
         val id: String = if (m.get("_id") != null) m.get("_id").toString.trim else null
         val codeSet: BasicDBList = if (m.get("code") != null) m.get("code").asInstanceOf[BasicDBList] else null
@@ -483,7 +484,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
             topic.setWeight(LocalCache.topicHotWeightCache(topicName))
           }
           LocalCache.topicCache(id) = topic
-          conf.dictionary.add(topicName, id)
+          addWordToGraphTrieNode(topicName,id)
+          //conf.dictionary.add(topicName, id)
           logInfo(s"添加Topic到前缀树，topicName:${topicName}")
           //添加code到topip集合的缓存映射
           if (codeSet != null && codeSet.size() > 0) {
@@ -507,7 +509,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
           val indName = industryJobj.getString("ind")
           val weitht = industryJobj.getDouble("w")
           LocalCache.industryCache(id) = new Industry(id, indName, weitht)
-          conf.dictionary.add(indName, id)
+          addWordToGraphTrieNode(indName,id)
+          //conf.dictionary.add(indName, id)
         } catch {
           case e: Exception =>
         }
