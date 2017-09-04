@@ -53,6 +53,11 @@ private[search] object Util extends Logging {
     format.format(date)
   }
 
+  def dataFomatStringYMDHSMS(date: java.util.Date): String = {
+    val format = new SimpleDateFormat("yyyyMMddHHmmssSSS")
+    format.format(date)
+  }
+
   def dataFomatStringYYYY_MM_dd_HH_mm_ss(date: java.util.Date): String = {
     val format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
     format.format(date)

@@ -37,5 +37,7 @@ public class MongoTableConstants extends Constants{
 
     public static final String SOUGOU_RELATE_WORDS = "synonym_words.sougou_relate_words";
 
+    public static final String CRAWLER_NEWS= "crawler_storage.crawler_news";
+
 
 }

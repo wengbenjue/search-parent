@@ -65,6 +65,14 @@ private[search] class EsClientConf(loadDefaults: Boolean) extends Cloneable with
   }
 
 
+  def initMongo() = {
+
+
+    this.mongoDataManager = new DataManager(this)
+
+  }
+
+
   private val settings = new HashMap[String, String]()
 
   if (loadDefaults) {

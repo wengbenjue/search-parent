@@ -2192,8 +2192,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     //testIndexReport
 
-    testQueryResearchReport
+    //testQueryResearchReport
+
   }
+
+
+
 
 
   def testQueryResearchReport(): Unit = {

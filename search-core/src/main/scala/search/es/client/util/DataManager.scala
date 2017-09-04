@@ -70,6 +70,11 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     getCollection(MongoTableConstants.NEWS_NEWS_TOPIC)
   }
 
+  //news.news_topic
+  def getCrawlerNewsCollection: DBCollection = {
+    getCollection(MongoTableConstants.CRAWLER_NEWS)
+  }
+
 
   def getNewsEntityMultiRelCollection: DBCollection = {
     getCollection(MongoTableConstants.NEWS_ENTITY_MULTI_REL)
@@ -251,6 +256,28 @@ private[search] class DataManager(conf: EsClientConf) extends MongoBase {
     result
   }
 
+
+
+  def findFetchNews(from: Date,to: Date): java.util.List[DBObject] = {
+    val projection = new BasicDBObject()
+    projection.put("url", Integer.valueOf(1))
+    val query = new BasicDBObject()
+    val contitionDB = new BasicDBObject()
+    if(from!=null){
+      val fromDate = Util.dataFomatStringYMDHS(from)
+      println(fromDate)
+      contitionDB.append("$gte",fromDate )
+    }
+
+    if(to!=null)
+    contitionDB.append("$lte",Util.dataFomatStringYMDHS(to))
+    query.put("dt",contitionDB)
+
+    val dbCurson = getCrawlerNewsCollection.find(query, projection)
+    if (dbCurson == null) return null.asInstanceOf[java.util.List[DBObject]]
+    val result = dbCurson.toArray
+    result
+  }
 
   def queryALl() = {
     val cur = getCollection().find()
