@@ -21,7 +21,7 @@ object TestMongo {
     val set = new util.HashSet[String]()
     conf.initMongo()
     var calendar = Calendar.getInstance()
-    calendar.set(Calendar.DAY_OF_MONTH,4)
+    calendar.set(Calendar.DAY_OF_MONTH,1)
     calendar.set(Calendar.HOUR_OF_DAY,0)
     calendar.set(Calendar.SECOND,0)
     val news = conf.mongoDataManager.findFetchNews(calendar.getTime, null)

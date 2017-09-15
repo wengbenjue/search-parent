@@ -1,6 +1,7 @@
 package search.es.client.biz
 
 import java.io.IOException
+import java.net.{URI, URL, URLEncoder}
 import java.util.{Calendar, Date}
 
 import com.alibaba.fastjson.{JSON, JSONObject}
@@ -132,13 +133,73 @@ private[search] object BizUtil extends Logging with EsConfiguration {
     -1
   }
 
+def urlEncode(url: String): String = {
+  val query = url.substring(url.indexOf("?")+1)
+  println(query)
+  val parameters = query.split("&")
+  parameters.map{p=>
+    val kv =p.split("=")
+    val newP =kv(0)+"="+URLEncoder.encode(kv(1),"UTF-8")
+    println(newP)
+    newP
+  }
+ val newParameters= parameters.mkString("&")
+  var newUrl = url.substring(0,url.indexOf("?")+1)+newParameters
+  println("new url="+newUrl)
+  newUrl= newUrl.replaceAll("$","u0024")
+  newUrl= newUrl.replaceAll(".","u002E")
+  newUrl= newUrl.replaceAll("^","u005E")
+  newUrl= newUrl.replaceAll("{","u007B")
+  newUrl= newUrl.replaceAll("[","u005B")
+  newUrl= newUrl.replaceAll("(","u0028")
+  newUrl= newUrl.replaceAll("|","u007C")
+  newUrl= newUrl.replaceAll(")","u0029")
+  newUrl= newUrl.replaceAll("*","u002A")
+  newUrl= newUrl.replaceAll("?","u003F")
+  newUrl= newUrl.replaceAll("：","u005C")
 
+  newUrl
+}
 
+  def testUrlEncode() = {
 
+    var urlStr ="http://nufm.dfcfw.com/EM_Finance2014NumericApplication/JS.aspx?type=CT&cmd=C.2&sty=FCOIATA&sortType=C&sortRule=-1&page=1&pageSize=20&js=var%20quote_123%3d{rank:[(x)],pages:(pc)}&token=7bc05d0d4c3c22ef9fca8c2a912d779c&jsName=quote_123&_g=0.9014834940002028"
+    val url= new URL(urlStr)
+    val uri = new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef());
+    urlStr =uri.toASCIIString()
+    println(urlStr)
+   // url =urlEncode(url)
+
+    var httpResp: CloseableHttpResponse = null
+    try {
+      httpResp = HttpClientUtil.requestHttpSyn(urlStr, "get", null, null)
+      if (httpResp != null) {
+        val entity: HttpEntity = httpResp.getEntity
+        if (entity != null) {
+          val sResponse: String = EntityUtils.toString(entity)
+          println(sResponse)
+         /* val jsonArray = JSON.parseArray(sResponse)
+          println(jsonArray)
+          jsonArray*/
+        } else null
+      } else null
+    }
+    catch {
+      case e: IOException => {
+        logError("request synonym failed!", e)
+        null
+      }
+    } finally {
+      if (httpResp != null)
+        HttpClientUtils.closeQuietly(httpResp)
+    }
+  }
 
 
   def main(args: Array[String]) {
     //getAllFromGraphsToDictionary(graphNodeDataUrl)
-    indexNewsFromMinutes(null,null,8)
+   // indexNewsFromMinutes(null,null,8)
+    testUrlEncode()
+
   }
 }

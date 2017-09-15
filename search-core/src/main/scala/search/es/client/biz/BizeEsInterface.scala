@@ -465,6 +465,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         }
       }
     }
+
+    loadCacheFromCom()
     -1
   }
 
@@ -494,6 +496,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         }
       }
     }
+
+    loadCacheFromCom()
+
     -1
   }
 
@@ -2194,7 +2199,10 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
     //testQueryResearchReport
 
+
   }
+
+
 
 
 
