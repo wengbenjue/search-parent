@@ -349,7 +349,7 @@ public class EsSearchController {
     public NiNi syncStock() {
         NiNi nini = new NiNi();
         nini.setCode(0);
-        BizeEsInterface.loadCacheFromCom();
+        BizeEsInterface.loadCacheFromCom(true);
         nini.setData(true);
         return nini;
     }

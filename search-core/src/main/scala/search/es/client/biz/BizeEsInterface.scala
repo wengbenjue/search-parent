@@ -186,9 +186,9 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       loadTopicToCache()
       loadIndexIndustryToCache()
       loadEventToCache()
-      loadCache
-      loadCacheFromCom
-      loadStart
+      loadCache()
+      loadCacheFromCom()
+      loadStart()
 
       /**
         * Trie Node
@@ -304,7 +304,7 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   def warpLoadCache(): NiNi = {
     Util.caculateCostTime {
       //loadCache()
-      loadCacheFromCom
+      loadCacheFromCom()
     }
   }
 
@@ -372,10 +372,16 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
     -1
   }
 
-  def loadCacheFromCom(): String = {
+
+
+
+
+
+  def loadCacheFromCom(needLoad: Boolean = true): String = {
     val stocks = conf.mongoDataManager.findCompanyCode()
     if (stocks != null && stocks.size() > 0) {
 
+      if(needLoad)
       clearTrieNode()
       try {
         //clean all old companys
@@ -439,9 +445,12 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
 
       //load others
       loadCompanyWeightCache()
-      loadTopicToCache()
+      if(needLoad){
+        loadTopicToCache(false)
+        loadEventToCache(false)
+      }
+
       loadIndexIndustryToCache()
-      loadEventToCache()
       loadCache
       loadEventRegexToCache()
 
@@ -450,9 +459,11 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
   }
 
 
-  def loadEventToCache(): Long = {
+  def loadEventToCache(needLoad: Boolean = true): Long = {
     val events = conf.mongoDataManager.findEvent()
     if (events != null && events.size() > 0) {
+      if(needLoad)
+      clearTrieNode()
       events.foreach{ m =>
         val id: String = if (m.get("_id") != null) m.get("_id").toString.trim else null
         val eventName: String = if (m.get("szh") != null) m.get("szh").toString.trim else null
@@ -465,16 +476,18 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
         }
       }
     }
-
-    loadCacheFromCom()
+    if(needLoad)
+      loadCacheFromCom(false)
     -1
   }
 
 
-  def loadTopicToCache(): Long = {
+  def loadTopicToCache(needLoad: Boolean = true): Long = {
     loadGraphHotTopicWeightCache()
     val topicConps = conf.mongoDataManager.findGrapnTopicConp()
     if (topicConps != null && topicConps.size() > 0) {
+      if(needLoad)
+      clearTrieNode()
       topicConps.foreach{ m =>
         val topicName: String = if (m.get("w") != null) m.get("w").toString.trim else null
         val id: String = if (m.get("_id") != null) m.get("_id").toString.trim else null
@@ -497,7 +510,8 @@ private[search] object BizeEsInterface extends Logging with EsConfiguration {
       }
     }
 
-    loadCacheFromCom()
+    if(needLoad)
+    loadCacheFromCom(false)
 
     -1
   }
