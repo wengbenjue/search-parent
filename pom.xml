@@ -56,7 +56,7 @@
         <dl4j.version>0.4-rc3.8</dl4j.version>
         <ansj.version>1.4</ansj.version>
         <jna.version>4.2.2</jna.version>
-        <corenlp.version>3.6.0</corenlp.version>
+        <corenlp.version>4.4.0</corenlp.version>
         <redisclient.version>1.2.6</redisclient.version>
         <mongoclient.version>3.0.1</mongoclient.version>
         <pinyin4j.version>2.5.0</pinyin4j.version>
