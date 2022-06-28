@@ -60,7 +60,7 @@
         <redisclient.version>1.2.6</redisclient.version>
         <mongoclient.version>3.0.1</mongoclient.version>
         <pinyin4j.version>2.5.0</pinyin4j.version>
-        <poi.version>3.14</poi.version>
+        <poi.version>4.1.1</poi.version>
         <start-class>search.Application</start-class>
         <MaxPermSize>128m</MaxPermSize>
     </properties>
